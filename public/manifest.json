@@ -1,0 +1,22 @@
+{
+  "name": "MindArk",
+  "short_name": "MindArk",
+  "description": "Dein sicherer Raum für Gedanken, Gefühle und Wachstum.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0D0B14",
+  "theme_color": "#7B5EA7",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
