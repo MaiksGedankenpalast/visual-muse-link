@@ -14,7 +14,170 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      challenges: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_preset: boolean
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_preset?: boolean
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_preset?: boolean
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      daily_completions: {
+        Row: {
+          challenge_id: string
+          completed: boolean
+          created_at: string
+          date: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          completed?: boolean
+          created_at?: string
+          date?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          completed?: boolean
+          created_at?: string
+          date?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_completions_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_entries: {
+        Row: {
+          category: string
+          content: string | null
+          created_at: string
+          date: string
+          id: string
+          mood_snapshot: number | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          mood_snapshot?: number | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          mood_snapshot?: number | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries: {
+        Row: {
+          calm_anxious: number
+          confident_insecure: number
+          created_at: string
+          date: string
+          excited_bored: number
+          happy_sad: number
+          id: string
+          rested_tired: number
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          calm_anxious?: number
+          confident_insecure?: number
+          created_at?: string
+          date: string
+          excited_bored?: number
+          happy_sad?: number
+          id?: string
+          rested_tired?: number
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          calm_anxious?: number
+          confident_insecure?: number
+          created_at?: string
+          date?: string
+          excited_bored?: number
+          happy_sad?: number
+          id?: string
+          rested_tired?: number
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string | null
+          onboarding_complete: boolean
+          onboarding_goals: string[] | null
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          name?: string | null
+          onboarding_complete?: boolean
+          onboarding_goals?: string[] | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string | null
+          onboarding_complete?: boolean
+          onboarding_goals?: string[] | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
