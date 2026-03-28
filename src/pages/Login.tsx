@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { user, onboardingComplete } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (onboardingComplete) {
+        navigate("/home", { replace: true });
+      } else {
+        navigate("/onboarding/name", { replace: true });
+      }
+    }
+  }, [user, onboardingComplete, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +30,6 @@ const Login = () => {
       setError(error.message);
       setLoading(false);
     }
-    // Auth state change will handle navigation
   };
 
   return (
