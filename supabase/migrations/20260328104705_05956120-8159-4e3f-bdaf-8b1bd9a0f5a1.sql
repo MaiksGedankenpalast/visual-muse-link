@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS mood_entries_user_date_unique ON public.mood_entries (user_id, date);
