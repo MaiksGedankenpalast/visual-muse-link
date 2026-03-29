@@ -1,5 +1,13 @@
+import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, BarChart3, Target, Plus } from "lucide-react";
+import { Home, BookOpen, BarChart3, Target, Plus, X } from "lucide-react";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/home" },
@@ -12,66 +20,100 @@ const navItems = [
 const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [open, setOpen] = useState(false);
+
+  const quickActions = [
+    { label: "Tagebuch schreiben", path: "/journal/new" },
+    { label: "Mood eintragen", path: "/moodtracker" },
+    { label: "Challenge hinzufügen", path: "/challenges" },
+  ];
 
   return (
-    <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50"
-      style={{
-        background: "var(--mindark-nav-bg)",
-        borderTop: "1px solid var(--mindark-card-border)",
-      }}
-    >
-      <div className="flex items-end justify-around px-2 pb-5 pt-2">
-        {navItems.map((item, i) => {
-          if (i === 2) {
-            // Center + button
+    <>
+      <nav
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50"
+        style={{
+          background: "var(--mindark-nav-bg)",
+          borderTop: "1px solid var(--mindark-card-border)",
+        }}
+      >
+        <div className="flex items-end justify-around px-2 pb-5 pt-2">
+          {navItems.map((item, i) => {
+            if (i === 2) {
+              return (
+                <button
+                  key="add"
+                  onClick={() => setOpen(true)}
+                  className="relative -mt-6 flex flex-col items-center"
+                >
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center gradient-primary"
+                    style={{ boxShadow: "0 0 20px rgba(180,127,232,0.4)" }}
+                  >
+                    <Plus className="w-7 h-7 text-foreground" />
+                  </div>
+                </button>
+              );
+            }
+
+            const isActive = location.pathname.startsWith(item.path);
+            const Icon = item.icon!;
+
             return (
               <button
-                key="add"
-                onClick={() => navigate("/journal/new")}
-                className="relative -mt-6 flex flex-col items-center"
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className="flex flex-col items-center gap-1 min-w-[56px]"
               >
-                <div
-                  className="w-14 h-14 rounded-full flex items-center justify-center border-2"
+                <Icon
+                  className="w-6 h-6"
                   style={{
-                    borderColor: "var(--mindark-card-border)",
-                    background: "var(--mindark-bg)",
+                    color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
+                  }}
+                />
+                <span
+                  className="text-[10px]"
+                  style={{
+                    color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
                   }}
                 >
-                  <Plus className="w-7 h-7 text-foreground" />
-                </div>
+                  {item.label}
+                </span>
               </button>
             );
-          }
+          })}
+        </div>
+      </nav>
 
-          const isActive = location.pathname.startsWith(item.path);
-          const Icon = item.icon!;
-
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className="flex flex-col items-center gap-1 min-w-[56px]"
-            >
-              <Icon
-                className="w-6 h-6"
-                style={{
-                  color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
-                }}
-              />
-              <span
-                className="text-[10px]"
-                style={{
-                  color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
-                }}
+      <Drawer open={open} onOpenChange={setOpen}>
+        <DrawerContent className="border-t-0" style={{ background: "var(--mindark-bg)", borderColor: "var(--mindark-card-border)" }}>
+          <DrawerHeader className="flex items-center justify-between">
+            <DrawerTitle className="text-foreground">Was möchtest du tun?</DrawerTitle>
+            <DrawerClose asChild>
+              <button className="text-muted-foreground"><X className="w-5 h-5" /></button>
+            </DrawerClose>
+          </DrawerHeader>
+          <div className="px-4 pb-6 space-y-2">
+            {quickActions.map((a) => (
+              <button
+                key={a.path}
+                onClick={() => { setOpen(false); navigate(a.path); }}
+                className="w-full py-3 px-4 rounded-full text-sm font-medium text-foreground text-left"
+                style={{ background: "rgba(255,255,255,0.08)" }}
               >
-                {item.label}
-              </span>
+                {a.label}
+              </button>
+            ))}
+            <button
+              onClick={() => setOpen(false)}
+              className="w-full py-3 text-sm text-muted-foreground text-center mt-2"
+            >
+              Abbrechen
             </button>
-          );
-        })}
-      </div>
-    </nav>
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </>
   );
 };
 
