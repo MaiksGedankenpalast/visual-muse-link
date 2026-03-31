@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import AuthGuard from "@/components/AuthGuard";
 import AppLayout from "@/components/AppLayout";
+import PWAInstallBanner from "@/components/PWAInstallBanner";
 
 import Splash from "@/pages/Splash";
 import Login from "@/pages/Login";
@@ -33,6 +34,7 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+        <PWAInstallBanner />
         <Routes>
           {/* Public routes */}
           <Route path="/" element={<Navigate to="/splash" replace />} />

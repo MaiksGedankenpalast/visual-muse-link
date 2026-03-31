@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Arkie from "@/components/Arkie";
+import { seedDevData } from "@/lib/seedDevData";
 
 const Splash = () => {
   const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Splash = () => {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("profiles").update({ onboarding_complete: true, name: "Developer" }).eq("id", user.id);
+      await seedDevData(user.id);
     }
     navigate("/home", { replace: true });
   };
@@ -32,12 +33,10 @@ const Splash = () => {
       <div className="star-bg" />
 
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
-        {/* App Name */}
         <h1 style={{ fontSize: 36, fontWeight: 300, letterSpacing: 4, marginTop: 40 }} className="text-foreground">
           MindArk
         </h1>
 
-        {/* Arkie on wave */}
         <div className="relative w-full flex flex-col items-center mt-8">
           <div style={{ marginBottom: -30, zIndex: 2, position: "relative" }}>
             <Arkie size={100} />
@@ -46,8 +45,8 @@ const Splash = () => {
             <svg viewBox="0 0 430 100" className="w-full" preserveAspectRatio="none" style={{ position: "absolute", bottom: 0 }}>
               <defs>
                 <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#7B5EA7" />
-                  <stop offset="100%" stopColor="#9B6FD4" />
+                  <stop offset="0%" stopColor="var(--mindark-primary-start)" />
+                  <stop offset="100%" stopColor="var(--mindark-primary-end)" />
                 </linearGradient>
               </defs>
               <path d="M0 60 C60 20, 140 80, 215 40 C290 0, 370 60, 430 30 L430 100 L0 100Z" fill="url(#waveGrad)" opacity="0.5" />
@@ -56,7 +55,6 @@ const Splash = () => {
           </div>
         </div>
 
-        {/* Tagline */}
         <p className="text-center mt-6" style={{ fontSize: 15, opacity: 0.8, maxWidth: 280, lineHeight: 1.6 }}>
           Dein sicherer Raum für Gedanken,
           <br />
@@ -64,7 +62,6 @@ const Splash = () => {
         </p>
       </div>
 
-      {/* Buttons */}
       <div className="relative z-10 w-full space-y-4 mt-8">
         <button onClick={() => navigate("/login")} className="btn-pill">
           ANMELDEN
