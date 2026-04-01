@@ -20,8 +20,8 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
             bottom: -px * 0.12,
             left: "50%",
             transform: "translateX(-50%)",
-            background: "radial-gradient(ellipse, rgba(168,85,247,0.6), rgba(124,58,237,0.25) 50%, transparent 70%)",
-            filter: "blur(8px)",
+            background: "radial-gradient(ellipse, rgba(192,132,252,0.35), rgba(168,85,247,0.12) 50%, transparent 70%)",
+            filter: "blur(10px)",
           }}
         />
         {/* Body */}
@@ -30,13 +30,14 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
           width={px}
           height={px}
           className="relative"
-          style={{ filter: "drop-shadow(0 0 12px rgba(168,85,247,0.5))" }}
+          style={{ filter: "drop-shadow(0 0 14px rgba(192,132,252,0.25))" }}
         >
           <defs>
-            <radialGradient id={`arkie-body-${px}`} cx="40%" cy="35%" r="55%">
-              <stop offset="0%" stopColor="#E8D5FF" />
-              <stop offset="40%" stopColor="#C084FC" />
-              <stop offset="100%" stopColor="#9333EA" />
+            <radialGradient id={`arkie-body-${px}`} cx="45%" cy="40%" r="52%">
+              <stop offset="0%" stopColor="#F0E4FF" />
+              <stop offset="35%" stopColor="#D8B4FE" />
+              <stop offset="70%" stopColor="#C084FC" />
+              <stop offset="100%" stopColor="#A855F7" />
             </radialGradient>
           </defs>
           {/* Circle body */}
