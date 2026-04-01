@@ -70,7 +70,7 @@ const AppLayout = () => {
           </div>
           <div className="flex flex-col items-center px-6 pb-6">
             <div className="arkie-pulse mb-4">
-              <Arkie size={90} />
+              <Arkie size="large" />
             </div>
             <p className="text-foreground text-center text-sm mb-6 max-w-[280px]">
               {getMessage()}
