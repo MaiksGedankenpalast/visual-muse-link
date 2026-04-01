@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import Arkie from "@/components/Arkie";
+import ArkieScene from "@/components/ArkieScene";
+import StarBackground from "@/components/StarBackground";
 import { seedDevData } from "@/lib/seedDevData";
 
 const Splash = () => {
@@ -30,29 +32,15 @@ const Splash = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto flex flex-col items-center justify-between px-8 py-12 overflow-hidden">
-      <div className="star-bg" />
+      <StarBackground />
 
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <h1 style={{ fontSize: 36, fontWeight: 300, letterSpacing: 4, marginTop: 40 }} className="text-foreground">
           MindArk
         </h1>
 
-        <div className="relative w-full flex flex-col items-center mt-8">
-          <div style={{ marginBottom: -30, zIndex: 2, position: "relative" }}>
-            <Arkie size={100} />
-          </div>
-          <div className="w-full relative" style={{ height: 100 }}>
-            <svg viewBox="0 0 430 100" className="w-full" preserveAspectRatio="none" style={{ position: "absolute", bottom: 0 }}>
-              <defs>
-                <linearGradient id="waveGrad" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="var(--mindark-primary-start)" />
-                  <stop offset="100%" stopColor="var(--mindark-primary-end)" />
-                </linearGradient>
-              </defs>
-              <path d="M0 60 C60 20, 140 80, 215 40 C290 0, 370 60, 430 30 L430 100 L0 100Z" fill="url(#waveGrad)" opacity="0.5" />
-              <path d="M0 70 C80 40, 180 90, 260 50 C340 10, 400 50, 430 40 L430 100 L0 100Z" fill="url(#waveGrad)" opacity="0.35" />
-            </svg>
-          </div>
+        <div className="relative w-full mt-8">
+          <ArkieScene arkieSize="large" />
         </div>
 
         <p className="text-center mt-6" style={{ fontSize: 15, opacity: 0.8, maxWidth: 280, lineHeight: 1.6 }}>
