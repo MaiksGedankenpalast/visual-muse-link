@@ -30,7 +30,7 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
           width={px}
           height={px}
           className="relative"
-          style={{ filter: "drop-shadow(0 0 12px rgba(168,85,247,0.5))" }}
+          style={{ filter: "drop-shadow(0 0 14px rgba(192,132,252,0.25))" }}
         >
           <defs>
             <radialGradient id={`arkie-body-${px}`} cx="40%" cy="35%" r="55%">
