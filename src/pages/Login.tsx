@@ -45,7 +45,7 @@ const Login = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto flex flex-col px-8 py-8 overflow-y-auto">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full">
         <div className="w-full">
           <button onClick={() => navigate("/splash")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center active:scale-95 transition-transform">
