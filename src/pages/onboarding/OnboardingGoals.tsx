@@ -44,7 +44,7 @@ const OnboardingGoals = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto flex flex-col px-8 py-8 onboarding-slide overflow-y-auto">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <div className="w-full flex items-center justify-between mb-6">
           <button onClick={() => navigate("/onboarding/mood")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
@@ -54,7 +54,7 @@ const OnboardingGoals = () => {
           <div className="w-10" />
         </div>
 
-        <Arkie size={80} />
+        <Arkie size="medium" />
 
         <h2 className="text-2xl font-bold text-center mt-4 mb-1">
           Wofür bist du hier,{" "}

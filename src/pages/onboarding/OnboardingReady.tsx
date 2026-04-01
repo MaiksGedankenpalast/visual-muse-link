@@ -20,12 +20,12 @@ const OnboardingReady = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto flex flex-col items-center justify-center px-8 py-8 onboarding-slide">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full">
         <OnboardingProgress currentStep={4} />
 
         <div className="mt-12 mb-8 arkie-pulse">
-          <Arkie size={120} />
+          <Arkie size="large" />
         </div>
 
         <h2 className="text-[26px] font-bold text-center mb-3">
