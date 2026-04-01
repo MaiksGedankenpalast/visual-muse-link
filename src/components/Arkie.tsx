@@ -33,10 +33,11 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
           style={{ filter: "drop-shadow(0 0 14px rgba(192,132,252,0.25))" }}
         >
           <defs>
-            <radialGradient id={`arkie-body-${px}`} cx="40%" cy="35%" r="55%">
-              <stop offset="0%" stopColor="#E8D5FF" />
-              <stop offset="40%" stopColor="#C084FC" />
-              <stop offset="100%" stopColor="#9333EA" />
+            <radialGradient id={`arkie-body-${px}`} cx="45%" cy="40%" r="52%">
+              <stop offset="0%" stopColor="#F0E4FF" />
+              <stop offset="35%" stopColor="#D8B4FE" />
+              <stop offset="70%" stopColor="#C084FC" />
+              <stop offset="100%" stopColor="#A855F7" />
             </radialGradient>
           </defs>
           {/* Circle body */}
