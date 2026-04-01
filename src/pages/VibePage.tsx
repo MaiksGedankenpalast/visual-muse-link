@@ -97,7 +97,7 @@ const VibePage = () => {
         </div>
       ) : items.length === 0 ? (
         <div className="text-center py-12">
-          <div className="arkie-float inline-block mb-4"><Arkie size={80} /></div>
+          <div className="arkie-float inline-block mb-4"><Arkie size="medium" /></div>
           <p className="text-muted-foreground text-sm">
             Noch keine Vibes für heute. Such dir welche aus, {name}! 💜
           </p>

@@ -53,7 +53,7 @@ const Login = () => {
           </button>
         </div>
 
-        <div className="mt-8 mb-10"><Arkie size={90} /></div>
+        <div className="mt-8 mb-10"><Arkie size="large" /></div>
 
         <form onSubmit={handleLogin} className="space-y-4 w-full">
           <input type="email" placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)}
