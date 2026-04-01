@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
+import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 const OnboardingName = () => {
@@ -25,7 +26,7 @@ const OnboardingName = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto flex flex-col px-8 py-8 onboarding-slide">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <div className="w-full flex items-center justify-between mb-6">
           <button onClick={() => navigate("/splash")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
@@ -36,7 +37,7 @@ const OnboardingName = () => {
         </div>
 
         <div className="mt-4 mb-8">
-          <Arkie size={90} />
+          <Arkie size="large" />
         </div>
 
         <h2 className="text-2xl font-bold text-center mb-2">Wie soll ich dich nennen?</h2>

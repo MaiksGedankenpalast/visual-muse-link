@@ -243,7 +243,7 @@ const InsightsPage = () => {
             <p className="font-bold text-foreground text-sm mb-3">Mood-Verlauf</p>
             {weekMoods.length === 0 ? (
               <div className="text-center py-8">
-                <div className="arkie-float inline-block mb-3"><Arkie size={60} /></div>
+                <div className="arkie-float inline-block mb-3"><Arkie size="small" /></div>
                 <p className="text-muted-foreground text-sm">Noch keine Daten für diese Woche.</p>
               </div>
             ) : (
@@ -332,7 +332,7 @@ const InsightsPage = () => {
             <p className="font-bold text-foreground text-sm mb-3">Arkie hat etwas bemerkt 🔮</p>
             {moods.length < 7 ? (
               <div className="glass-card p-5 text-center">
-                <div className="arkie-float inline-block mb-3"><Arkie size={60} /></div>
+                <div className="arkie-float inline-block mb-3"><Arkie size="small" /></div>
                 <p className="text-muted-foreground text-sm">
                   Arkie sammelt noch Daten für dich. Komm in ein paar Tagen wieder! 🔮
                 </p>
@@ -347,7 +347,7 @@ const InsightsPage = () => {
                 {insights.map((insight, i) => (
                   <div key={i} className="rounded-[14px] p-4 flex items-start gap-3"
                     style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
-                    <div className="shrink-0 mt-0.5"><Arkie size={24} /></div>
+                    <div className="shrink-0 mt-0.5"><Arkie size="small" /></div>
                     <p className="text-foreground text-[14px]">{insight.text}</p>
                   </div>
                 ))}

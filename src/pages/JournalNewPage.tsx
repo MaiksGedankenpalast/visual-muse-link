@@ -101,7 +101,7 @@ const JournalNewPage = () => {
 
       {/* ARKIE + PROMPT */}
       <div className="flex flex-col items-center mb-5">
-        <div className="arkie-float"><Arkie size={60} /></div>
+        <div className="arkie-float"><Arkie size="small" /></div>
       </div>
 
       {showPrompt && (

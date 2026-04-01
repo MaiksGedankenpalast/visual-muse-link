@@ -1,76 +1,59 @@
 interface ArkieProps {
-  size?: number;
+  size?: "large" | "medium" | "small" | number;
   className?: string;
 }
 
-const Arkie = ({ size = 90, className = "" }: ArkieProps) => {
-  const eyeSize = size * 0.09;
-  const eyeY = size * 0.38;
-  const leftEyeX = size * 0.35;
-  const rightEyeX = size * 0.65;
-  const smileY = size * 0.52;
+const SIZE_MAP = { large: 90, medium: 70, small: 50 };
+
+const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
+  const px = typeof size === "number" ? size : SIZE_MAP[size];
 
   return (
     <div className={`flex flex-col items-center ${className}`}>
-      <div
-        className="arkie-float relative"
-        style={{ width: size, height: size }}
-      >
-        {/* Glow */}
+      <div className="arkie-float relative" style={{ width: px, height: px }}>
+        {/* Outer glow */}
         <div
           className="absolute rounded-full"
           style={{
-            width: size * 0.8,
-            height: size * 0.3,
-            bottom: -size * 0.05,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            background: 'radial-gradient(ellipse, var(--mindark-glow), transparent 70%)',
+            width: px * 1.4,
+            height: px * 0.5,
+            bottom: -px * 0.12,
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "radial-gradient(ellipse, rgba(168,85,247,0.6), rgba(124,58,237,0.25) 50%, transparent 70%)",
+            filter: "blur(8px)",
           }}
         />
         {/* Body */}
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: `radial-gradient(circle at 40% 35%, #E4D4F4, #C99EF0 40%, #9B6FD4 80%, #7B5EA7)`,
-            boxShadow: '0 0 30px var(--mindark-glow), 0 0 60px rgba(155, 111, 212, 0.2)',
-          }}
-        />
-        {/* Left eye */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: eyeSize,
-            height: eyeSize * 1.2,
-            left: leftEyeX,
-            top: eyeY,
-            background: '#1a1a2e',
-          }}
-        />
-        {/* Right eye */}
-        <div
-          className="absolute rounded-full"
-          style={{
-            width: eyeSize,
-            height: eyeSize * 1.2,
-            left: rightEyeX,
-            top: eyeY,
-            background: '#1a1a2e',
-          }}
-        />
-        {/* Smile */}
-        <div
-          className="absolute"
-          style={{
-            width: size * 0.18,
-            height: size * 0.08,
-            left: '50%',
-            top: smileY,
-            transform: 'translateX(-50%)',
-            borderBottom: '2px solid #1a1a2e',
-            borderRadius: '0 0 50% 50%',
-          }}
-        />
+        <svg
+          viewBox="0 0 100 100"
+          width={px}
+          height={px}
+          className="relative"
+          style={{ filter: "drop-shadow(0 0 12px rgba(168,85,247,0.5))" }}
+        >
+          <defs>
+            <radialGradient id={`arkie-body-${px}`} cx="40%" cy="35%" r="55%">
+              <stop offset="0%" stopColor="#E8D5FF" />
+              <stop offset="40%" stopColor="#C084FC" />
+              <stop offset="100%" stopColor="#9333EA" />
+            </radialGradient>
+          </defs>
+          {/* Circle body */}
+          <circle cx="50" cy="50" r="48" fill={`url(#arkie-body-${px})`} />
+          {/* Left eye */}
+          <ellipse cx="38" cy="44" rx="4.5" ry="4" fill="#1a1a2e" />
+          {/* Right eye */}
+          <ellipse cx="62" cy="44" rx="4.5" ry="4" fill="#1a1a2e" />
+          {/* Smile */}
+          <path
+            d="M42 56 Q50 63 58 56"
+            fill="none"
+            stroke="#1a1a2e"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </svg>
       </div>
     </div>
   );

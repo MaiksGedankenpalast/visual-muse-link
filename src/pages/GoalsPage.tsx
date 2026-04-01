@@ -133,7 +133,7 @@ const GoalsPage = () => {
         </div>
       ) : goals.length === 0 ? (
         <div className="text-center py-12">
-          <div className="arkie-float inline-block mb-4"><Arkie size={100} /></div>
+          <div className="arkie-float inline-block mb-4"><Arkie size="large" /></div>
           <p className="text-muted-foreground text-sm mb-4">
             Wähle deine ersten Ziele aus, {name}. Arkie hilft dir dabei. 💜
           </p>
@@ -233,7 +233,7 @@ const GoalsPage = () => {
 
           {/* MOTIVATION CARD */}
           <div className="rounded-[20px] p-5 gradient-primary flex items-center gap-4">
-            <Arkie size={48} className={streak > 3 ? "arkie-pulse" : ""} />
+            <Arkie size="small" className={streak > 3 ? "arkie-pulse" : ""} />
             <p className="text-foreground text-sm flex-1">{motivationMsg}</p>
           </div>
         </>

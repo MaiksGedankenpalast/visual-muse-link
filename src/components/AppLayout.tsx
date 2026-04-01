@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import Arkie from "./Arkie";
+import StarBackground from "./StarBackground";
 import { useAuth } from "@/hooks/useAuth";
 import { X } from "lucide-react";
 import {
@@ -35,7 +36,7 @@ const AppLayout = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 pb-24">
         <Outlet />
       </div>
@@ -46,12 +47,12 @@ const AppLayout = () => {
         style={{ right: "max(16px, calc(50% - 215px + 16px))" }}
       >
         <button onClick={() => setArkieOpen(true)} className="flex flex-col items-center">
-          <div className="w-14 h-14 rounded-full flex items-center justify-center"
+           <div className="w-14 h-14 rounded-full flex items-center justify-center"
             style={{
               background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
               boxShadow: "0 0 20px rgba(180,127,232,0.4)",
             }}>
-            <Arkie size={32} />
+            <Arkie size="small" />
           </div>
           <span className="text-[10px] text-muted-foreground mt-1">Arkie</span>
         </button>
@@ -69,7 +70,7 @@ const AppLayout = () => {
           </div>
           <div className="flex flex-col items-center px-6 pb-6">
             <div className="arkie-pulse mb-4">
-              <Arkie size={90} />
+              <Arkie size="large" />
             </div>
             <p className="text-foreground text-center text-sm mb-6 max-w-[280px]">
               {getMessage()}
