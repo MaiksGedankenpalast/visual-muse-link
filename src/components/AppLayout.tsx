@@ -36,7 +36,7 @@ const AppLayout = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 pb-24">
         <Outlet />
       </div>
