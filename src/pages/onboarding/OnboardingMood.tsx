@@ -66,7 +66,7 @@ const OnboardingMood = () => {
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto flex flex-col px-8 py-8 onboarding-slide overflow-y-auto">
-      <div className="star-bg" />
+      <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         {/* Header */}
         <div className="w-full flex items-center justify-between mb-6">
@@ -79,7 +79,7 @@ const OnboardingMood = () => {
           </button>
         </div>
 
-        <Arkie size={70} />
+        <Arkie size="medium" />
 
         <h2 className="text-[22px] font-bold text-center mt-4 mb-1">
           Wie geht's dir heute, <span style={{ color: "#C99EF0" }}>{profileName || "du"}</span>?
