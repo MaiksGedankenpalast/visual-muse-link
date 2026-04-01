@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
+import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 const OnboardingName = () => {
