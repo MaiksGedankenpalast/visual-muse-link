@@ -170,7 +170,7 @@ const MoodTrackerPage = () => {
       {/* ARKIE */}
       <div className="flex flex-col items-center mb-6">
         <div className="arkie-float">
-          <Arkie size={80} />
+          <Arkie size="medium" />
         </div>
         <h1 className="text-[22px] font-bold text-foreground text-center mt-4">
           {showSliders
