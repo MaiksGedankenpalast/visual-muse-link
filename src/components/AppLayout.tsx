@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import Arkie from "./Arkie";
+import StarBackground from "./StarBackground";
 import { useAuth } from "@/hooks/useAuth";
 import { X } from "lucide-react";
 import {
