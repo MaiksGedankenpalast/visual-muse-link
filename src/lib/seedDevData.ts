@@ -2,12 +2,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 export async function seedDevData(userId: string) {
   // Check ALL tables — only seed if user has zero data
-  const [{ count: moodCount }, { count: journalCount }, { count: completionCount }] = await Promise.all([
+  const [{ count: moodCount }, { count: journalCount }, { count: completionCount }, { count: vibeCount }] = await Promise.all([
     supabase.from("mood_entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("daily_completions").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("vibe_items").select("id", { count: "exact", head: true }).eq("user_id", userId),
   ]);
-  if ((moodCount && moodCount > 0) || (journalCount && journalCount > 0) || (completionCount && completionCount > 0)) return; // already seeded
+  if ((moodCount && moodCount > 0) || (journalCount && journalCount > 0) || (completionCount && completionCount > 0) || (vibeCount && vibeCount > 0)) return;
 
   // Update profile
   await supabase.from("profiles").update({
