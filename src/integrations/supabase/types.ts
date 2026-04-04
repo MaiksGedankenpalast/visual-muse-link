@@ -178,6 +178,36 @@ export type Database = {
         }
         Relationships: []
       }
+      vibe_items: {
+        Row: {
+          completed: boolean
+          created_at: string
+          date: string
+          id: string
+          is_suggestion: boolean
+          text: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          id?: string
+          is_suggestion?: boolean
+          text: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          date?: string
+          id?: string
+          is_suggestion?: boolean
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

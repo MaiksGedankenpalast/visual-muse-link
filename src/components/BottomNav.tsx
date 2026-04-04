@@ -23,9 +23,10 @@ const BottomNav = () => {
   const [open, setOpen] = useState(false);
 
   const quickActions = [
-    { label: "Tagebuch schreiben", path: "/journal/new" },
-    { label: "Mood eintragen", path: "/moodtracker" },
-    { label: "Challenge hinzufügen", path: "/challenges" },
+    { label: "🎯 Vibe hinzufügen", path: "/vibe" },
+    { label: "⚡ Challenge hinzufügen", path: "/challenges" },
+    { label: "📝 Tagebuch schreiben", path: "/journal/new" },
+    { label: "💜 Mood eintragen", path: "/moodtracker" },
   ];
 
   return (
