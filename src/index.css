@@ -94,16 +94,20 @@
 
 /* Wave animations */
 @keyframes wave-scroll {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .wave-back svg {
   animation: wave-scroll 10s linear infinite;
+  animation-fill-mode: none;
+  will-change: transform;
 }
 
 .wave-front svg {
   animation: wave-scroll 7s linear infinite;
+  animation-fill-mode: none;
+  will-change: transform;
 }
 
 /* Arkie float animation */
