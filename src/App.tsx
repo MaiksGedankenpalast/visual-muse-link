@@ -21,6 +21,7 @@ import ChallengesPage from "@/pages/ChallengesPage";
 import JournalPage from "@/pages/JournalPage";
 import JournalNewPage from "@/pages/JournalNewPage";
 import JournalDetailPage from "@/pages/JournalDetailPage";
+import JournalDayPage from "@/pages/JournalDayPage";
 import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
 import GoalsPage from "@/pages/GoalsPage";
