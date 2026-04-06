@@ -58,6 +58,7 @@ const App = () => (
               <Route path="/challenges" element={<ChallengesPage />} />
               <Route path="/journal" element={<JournalPage />} />
               <Route path="/journal/new" element={<JournalNewPage />} />
+              <Route path="/journal/day/:date" element={<JournalDayPage />} />
               <Route path="/journal/:id" element={<JournalDetailPage />} />
               <Route path="/moodtracker" element={<MoodTrackerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
