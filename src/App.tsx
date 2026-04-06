@@ -21,6 +21,7 @@ import ChallengesPage from "@/pages/ChallengesPage";
 import JournalPage from "@/pages/JournalPage";
 import JournalNewPage from "@/pages/JournalNewPage";
 import JournalDetailPage from "@/pages/JournalDetailPage";
+import JournalDayPage from "@/pages/JournalDayPage";
 import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
 import GoalsPage from "@/pages/GoalsPage";
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/challenges" element={<ChallengesPage />} />
               <Route path="/journal" element={<JournalPage />} />
               <Route path="/journal/new" element={<JournalNewPage />} />
+              <Route path="/journal/day/:date" element={<JournalDayPage />} />
               <Route path="/journal/:id" element={<JournalDetailPage />} />
               <Route path="/moodtracker" element={<MoodTrackerPage />} />
               <Route path="/insights" element={<InsightsPage />} />

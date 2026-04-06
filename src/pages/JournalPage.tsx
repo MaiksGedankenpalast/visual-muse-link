@@ -24,6 +24,14 @@ interface MoodDay {
 const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
+const moodColor = (avg: number | undefined) => {
+  if (avg === undefined) return "#9B6FD4";
+  if (avg < 35) return "#4ade80";
+  if (avg < 50) return "#facc15";
+  if (avg < 65) return "#fb923c";
+  return "#ef4444";
+};
+
 const JournalPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -74,7 +82,6 @@ const JournalPage = () => {
       const q = search.toLowerCase();
       result = result.filter((e) => e.title.toLowerCase().includes(q) || (e.content ?? "").toLowerCase().includes(q));
     }
-    // filter by month/year
     result = result.filter((e) => {
       const d = new Date(e.date);
       return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
@@ -83,13 +90,6 @@ const JournalPage = () => {
   }, [entries, filter, search, viewMonth, viewYear]);
 
   const getMoodForDate = (dateStr: string) => moodDays.find((m) => m.date === dateStr);
-
-  const moodColor = (avg: number | undefined) => {
-    if (avg === undefined) return "#9B6FD4";
-    if (avg < 40) return "#4ade80";
-    if (avg > 60) return "#ef4444";
-    return "#9B6FD4";
-  };
 
   const dominantTag = (dateStr: string) => {
     const mood = getMoodForDate(dateStr);
@@ -108,22 +108,13 @@ const JournalPage = () => {
     return days;
   }, [firstDayOfWeek, daysInMonth]);
 
-  const entriesForDay = (day: number) => {
-    const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return filtered.filter((e) => e.date === dateStr);
-  };
-
-  const [selectedDay, setSelectedDay] = useState<number | null>(null);
-
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
     else setViewMonth((m) => m - 1);
-    setSelectedDay(null);
   };
   const nextMonth = () => {
     if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
     else setViewMonth((m) => m + 1);
-    setSelectedDay(null);
   };
 
   const addCategory = () => {
@@ -134,33 +125,49 @@ const JournalPage = () => {
     setNewCat(false);
   };
 
+  const handleDayTap = (day: number) => {
+    const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const hasEntry = entries.some((e) => e.date === dateStr);
+    if (hasEntry) {
+      navigate(`/journal/day/${dateStr}`);
+    }
+  };
+
   return (
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-5">
-        <button onClick={() => navigate("/home")}><ArrowLeft className="w-6 h-6 text-foreground" /></button>
-        <h1 className="font-bold text-foreground text-[22px]">Your Journal</h1>
-        <div className="w-6" />
+        <button onClick={() => navigate("/home")}
+          className="w-10 h-10 rounded-full flex items-center justify-center"
+          style={{ background: "rgba(139,92,246,0.3)" }}>
+          <ArrowLeft className="w-5 h-5 text-foreground" />
+        </button>
+        <h1 className="font-bold text-foreground text-[22px]">Dein Journal</h1>
+        <div className="w-10" />
       </div>
 
       {/* CATEGORY FILTER */}
       <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
         <button onClick={() => setFilter("Alle")}
-          className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors"
+          className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors flex flex-col items-center"
           style={{
-            background: filter === "Alle" ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.08)",
+            background: filter === "Alle" ? "#5B2D9E" : "rgba(255,255,255,0.1)",
             color: filter === "Alle" ? "white" : "rgba(255,255,255,0.5)",
+            minWidth: 70,
           }}>
-          Alle {catCounts.Alle || 0}
+          <span className="font-medium">Alle</span>
+          <span className="text-[11px] opacity-70">{catCounts.Alle || 0} Entries</span>
         </button>
         {categories.map((c) => (
           <button key={c} onClick={() => setFilter(c)}
-            className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors"
+            className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors flex flex-col items-center"
             style={{
-              background: filter === c ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.08)",
+              background: filter === c ? "#5B2D9E" : "rgba(255,255,255,0.1)",
               color: filter === c ? "white" : "rgba(255,255,255,0.5)",
+              minWidth: 70,
             }}>
-            {c} {catCounts[c] || 0}
+            <span className="font-medium">{c}</span>
+            <span className="text-[11px] opacity-70">{catCounts[c] || 0} Entries</span>
           </button>
         ))}
         {newCat ? (
@@ -168,13 +175,14 @@ const JournalPage = () => {
             onKeyDown={(e) => e.key === "Enter" && addCategory()}
             onBlur={addCategory}
             placeholder="Kategorie..."
-            className="px-3 py-1.5 rounded-full text-[13px] bg-transparent text-foreground outline-none shrink-0"
+            className="px-3 py-2 rounded-full text-[13px] bg-transparent text-foreground outline-none shrink-0"
             style={{ border: "1px dashed rgba(255,255,255,0.3)", width: 120 }} />
         ) : (
           <button onClick={() => setNewCat(true)}
-            className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0"
-            style={{ border: "1px dashed rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.4)" }}>
-            + Neue Kategorie
+            className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 flex flex-col items-center justify-center"
+            style={{ border: "1px dashed rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.4)", minWidth: 70 }}>
+            <span>+</span>
+            <span className="text-[10px]">Neue Kategorie</span>
           </button>
         )}
       </div>
@@ -185,7 +193,7 @@ const JournalPage = () => {
         <input value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Suchen..."
           className="w-full pl-9 pr-9 py-2.5 rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none"
-          style={{ background: "rgba(255,255,255,0.08)" }} />
+          style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.08)" }} />
         {search && (
           <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
             <X className="w-4 h-4 text-muted-foreground" />
@@ -196,9 +204,9 @@ const JournalPage = () => {
       {/* CALENDAR TOGGLE */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-foreground text-sm">Kalender</span>
-        <button onClick={() => { setCalendarView((v) => !v); setSelectedDay(null); }}
-          className="w-8 h-8 rounded-lg flex items-center justify-center"
-          style={{ background: calendarView ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.08)" }}>
+        <button onClick={() => setCalendarView((v) => !v)}
+          className="w-9 h-9 rounded-lg flex items-center justify-center"
+          style={{ background: calendarView ? "#5B2D9E" : "rgba(255,255,255,0.08)" }}>
           <CalendarDays className="w-4 h-4 text-foreground" />
         </button>
       </div>
@@ -218,13 +226,13 @@ const JournalPage = () => {
 
       {loading ? (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 rounded-[16px]" />)}
+          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-24 rounded-[16px]" />)}
         </div>
       ) : calendarView ? (
         /* ═══ CALENDAR VIEW ═══ */
         <div>
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {WEEKDAYS.map((d) => <div key={d} className="text-center text-[12px] text-muted-foreground">{d}</div>)}
+            {WEEKDAYS.map((d) => <div key={d} className="text-center text-[11px] text-muted-foreground font-medium">{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-1 mb-4">
             {calendarDays.map((day, i) => {
@@ -232,37 +240,41 @@ const JournalPage = () => {
               const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
               const hasEntry = entries.some((e) => e.date === dateStr);
               const isToday = dateStr === todayStr;
-              const multiEntries = entries.filter((e) => e.date === dateStr).length > 1;
+              const mood = getMoodForDate(dateStr);
+              const avg = mood?.avg;
+
+              // Color: entries with good mood = pink/lighter, entries = purple, no entry = dark
+              let bg = "rgba(255,255,255,0.06)";
+              let textColor = "rgba(255,255,255,0.4)";
+              let fontWeight = 400;
+              let border = "2px solid transparent";
+
+              if (hasEntry) {
+                bg = "#5B2D9E";
+                textColor = "white";
+                fontWeight = 600;
+                // Highlight positive mood days with a brighter purple/pink
+                if (avg !== undefined && avg < 35) {
+                  bg = "#A855F7";
+                } else if (avg !== undefined && avg < 50) {
+                  bg = "#7C3AED";
+                }
+              }
+              if (isToday) {
+                border = "2px solid #C99EF0";
+                fontWeight = 700;
+                textColor = "white";
+              }
+
               return (
-                <button key={day} onClick={() => hasEntry && setSelectedDay(day === selectedDay ? null : day)}
-                  className="aspect-square rounded-lg flex flex-col items-center justify-center relative text-sm transition-colors"
-                  style={{
-                    background: hasEntry ? "rgba(139,92,246,0.4)" : "rgba(255,255,255,0.06)",
-                    border: isToday ? "2px solid #C99EF0" : "none",
-                    color: "white",
-                    fontWeight: isToday ? 700 : 400,
-                  }}>
+                <button key={day} onClick={() => handleDayTap(day)}
+                  className="aspect-square rounded-lg flex items-center justify-center text-sm transition-colors"
+                  style={{ background: bg, border, color: textColor, fontWeight }}>
                   {day}
-                  {multiEntries && <div className="absolute bottom-1 w-1 h-1 rounded-full bg-foreground" />}
                 </button>
               );
             })}
           </div>
-          {/* Selected day entries */}
-          {selectedDay && (
-            <div className="space-y-2 mt-2">
-              {entriesForDay(selectedDay).map((entry) => (
-                <button key={entry.id} onClick={() => navigate(`/journal/${entry.id}`)}
-                  className="glass-card p-4 w-full text-left flex gap-3">
-                  <div className="w-1.5 rounded-full shrink-0" style={{ background: moodColor(getMoodForDate(entry.date)?.avg) }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-foreground text-[15px] truncate">{entry.title}</p>
-                    <p className="text-muted-foreground text-[13px] line-clamp-2 mt-0.5">{entry.content}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       ) : (
         /* ═══ LIST VIEW ═══ */
@@ -275,41 +287,40 @@ const JournalPage = () => {
             </button>
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {filtered.map((entry) => {
               const d = new Date(entry.date);
               const dayName = WEEKDAYS[d.getDay()];
               const dayNum = d.getDate();
               const mood = getMoodForDate(entry.date);
               const tag = dominantTag(entry.date);
+              const barColor = moodColor(mood?.avg);
               return (
-                <button key={entry.id} onClick={() => navigate(`/journal/${entry.id}`)}
-                  className="glass-card p-4 w-full text-left flex gap-3">
+                <button key={entry.id} onClick={() => navigate(`/journal/day/${entry.date}`)}
+                  className="w-full text-left flex rounded-[16px] overflow-hidden transition-transform active:scale-[0.98]"
+                  style={{ background: "rgba(139,92,246,0.12)" }}>
                   {/* Color bar */}
-                  <div className="w-1.5 rounded-full shrink-0 self-stretch" style={{ background: moodColor(mood?.avg) }} />
-                  {/* Date */}
-                  <div className="flex flex-col items-center justify-center shrink-0 w-10">
-                    <span className="text-[11px] text-muted-foreground">{dayName}</span>
-                    <span className="font-bold text-foreground text-lg leading-tight">{dayNum}</span>
+                  <div className="w-1.5 shrink-0 self-stretch" style={{ background: barColor }} />
+                  {/* Date column */}
+                  <div className="flex flex-col items-center justify-center shrink-0 w-12 py-4 px-1">
+                    <span className="text-[11px] text-muted-foreground leading-none">{dayName}</span>
+                    <span className="font-bold text-foreground text-xl leading-tight mt-0.5">{dayNum}</span>
                   </div>
                   {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-foreground text-[15px] truncate">{entry.title}</p>
-                    <p className="text-muted-foreground text-[13px] line-clamp-2 mt-0.5">{entry.content}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <span className="text-[11px] text-muted-foreground">• {entry.category}</span>
+                  <div className="flex-1 min-w-0 py-3 pr-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-bold text-foreground text-[15px] truncate flex-1">{entry.title}</p>
+                      {tag && (
+                        <span className="text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 mt-0.5"
+                          style={{ background: "rgba(255,255,255,0.08)" }}>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: barColor }} />
+                          {tag}
+                        </span>
+                      )}
                     </div>
+                    <p className="text-muted-foreground text-[13px] line-clamp-2 mt-1">{entry.content}</p>
+                    <span className="text-[11px] text-muted-foreground mt-1.5 block">• {entry.category}</span>
                   </div>
-                  {/* Mood badge */}
-                  {tag && (
-                    <div className="shrink-0 flex items-start">
-                      <span className="text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1"
-                        style={{ background: "rgba(255,255,255,0.08)" }}>
-                        <span className="w-1.5 h-1.5 rounded-full" style={{ background: moodColor(mood?.avg) }} />
-                        {tag}
-                      </span>
-                    </div>
-                  )}
                 </button>
               );
             })}
