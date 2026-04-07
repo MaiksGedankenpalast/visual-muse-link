@@ -51,16 +51,16 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
           <circle cx="50" cy="50" r="47" fill={`url(#arkie-body-${px})`} />
           {/* Inner glow highlight */}
           <circle cx="50" cy="50" r="47" fill={`url(#arkie-highlight-${px})`} />
-          {/* Left eye — soft dark oval */}
-          <ellipse cx="38" cy="44" rx="4.5" ry="4" fill="#1a1a2e" opacity="0.85" />
-          {/* Right eye */}
-          <ellipse cx="62" cy="44" rx="4.5" ry="4" fill="#1a1a2e" opacity="0.85" />
-          {/* Subtle smile */}
+          {/* Left eye — oval, slightly tilted upward-left */}
+          <ellipse cx="39" cy="45" rx="5" ry="4.5" fill="#1a1a2e" opacity="0.85" transform="rotate(-8 39 45)" />
+          {/* Right eye — oval, slightly tilted upward-right */}
+          <ellipse cx="61" cy="45" rx="5" ry="4.5" fill="#1a1a2e" opacity="0.85" transform="rotate(8 61 45)" />
+          {/* Small centered smile */}
           <path
-            d="M41 58 Q50 64 59 58"
+            d="M45 57 Q50 61 55 57"
             fill="none"
             stroke="#1a1a2e"
-            strokeWidth="1.5"
+            strokeWidth="1.4"
             strokeLinecap="round"
             opacity="0.7"
           />
