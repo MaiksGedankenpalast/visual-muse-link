@@ -92,21 +92,24 @@
   animation: star-twinkle 3s ease-in-out infinite;
 }
 
-/* Wave animations */
+/* Wave animations — 3 layers with parallax speeds */
 @keyframes wave-scroll {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
 .wave-back svg {
+  animation: wave-scroll 14s linear infinite;
+  will-change: transform;
+}
+
+.wave-mid svg {
   animation: wave-scroll 10s linear infinite;
-  animation-fill-mode: none;
   will-change: transform;
 }
 
 .wave-front svg {
   animation: wave-scroll 7s linear infinite;
-  animation-fill-mode: none;
   will-change: transform;
 }
 
