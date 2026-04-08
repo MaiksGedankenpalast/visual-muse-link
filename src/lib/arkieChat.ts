@@ -5,59 +5,92 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-const SYSTEM_PROMPT = `Du bist Arkie, ein warmer, empathischer und nachdenklicher Begleiter für mentale Reflexion. 
-
-Du sprichst natürlich, auf Augenhöhe und mit Wärme. Du validierst die Gefühle des Users, stellst sanfte, neugierige Fragen und hilfst ihm dabei, seine Gedankenmuster zu erkennen und langsam zu verändern. 
-
-Du bist kein Ja-Sager. Du bist ehrlich, aber immer wohlwollend. 
-
-Wenn etwas schwierig oder negativ ist, erkennst du es an und hilfst dem User, eine neue Perspektive oder einen kleinen nächsten Schritt zu finden. 
-
-Antworte persönlich, warm und maximal 3–4 Sätze lang. Verwende den Namen des Users, wenn möglich.`;
-
-export function getSystemPrompt(userName?: string): string {
-  if (userName) {
-    return `${SYSTEM_PROMPT}\n\nDer Name des Users ist: ${userName}`;
-  }
-  return SYSTEM_PROMPT;
-}
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arkie-chat`;
 
 export async function sendMessageToArkie(
   userMessage: string,
   conversationHistory: ChatMessage[],
-  userName?: string
+  userName?: string,
+  onDelta?: (chunk: string) => void
 ): Promise<string> {
-  // TODO: Hier kommt der Mistral API Call vom Developer rein (API-Key + Endpoint)
-  // 
-  // Beispiel-Struktur für den API Call:
-  // const messages = [
-  //   { role: "system", content: getSystemPrompt(userName) },
-  //   ...conversationHistory.map(m => ({ role: m.role, content: m.content })),
-  //   { role: "user", content: userMessage }
-  // ];
-  //
-  // const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-  //   method: "POST",
-  //   headers: {
-  //     "Content-Type": "application/json",
-  //     "Authorization": `Bearer ${API_KEY}`
-  //   },
-  //   body: JSON.stringify({ model: "mistral-medium", messages })
-  // });
-  //
-  // const data = await response.json();
-  // return data.choices[0].message.content;
-
-  // Placeholder: simulierte Antwort für den Prototypen
-  await new Promise((r) => setTimeout(r, 1200));
-
-  const placeholderResponses = [
-    `Das klingt wirklich wichtig${userName ? `, ${userName}` : ""}. Magst du mir mehr darüber erzählen, was dich gerade beschäftigt? 💜`,
-    `Ich höre dich${userName ? `, ${userName}` : ""}. Es ist völlig okay, so zu fühlen. Was glaubst du, was dir gerade gut tun würde?`,
-    `Danke, dass du das mit mir teilst. Manchmal hilft es schon, Gedanken auszusprechen. Was war heute ein kleiner Lichtblick für dich? ✨`,
-    `Das verstehe ich${userName ? `, ${userName}` : ""}. Lass uns das mal gemeinsam anschauen — was genau macht dir dabei am meisten Sorgen?`,
-    `Spannend, dass du das so siehst. Hast du schonmal versucht, die Situation aus einer anderen Perspektive zu betrachten? Ich bin neugierig 🌙`,
+  const messages = [
+    ...conversationHistory.map((m) => ({ role: m.role, content: m.content })),
+    { role: "user" as const, content: userMessage },
   ];
 
-  return placeholderResponses[Math.floor(Math.random() * placeholderResponses.length)];
+  const resp = await fetch(CHAT_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+    },
+    body: JSON.stringify({ messages, userName }),
+  });
+
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ error: "Unbekannter Fehler" }));
+    throw new Error(err.error || `Fehler ${resp.status}`);
+  }
+
+  if (!resp.body) {
+    throw new Error("Keine Antwort erhalten");
+  }
+
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let textBuffer = "";
+  let fullContent = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    textBuffer += decoder.decode(value, { stream: true });
+
+    let newlineIndex: number;
+    while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+      let line = textBuffer.slice(0, newlineIndex);
+      textBuffer = textBuffer.slice(newlineIndex + 1);
+
+      if (line.endsWith("\r")) line = line.slice(0, -1);
+      if (line.startsWith(":") || line.trim() === "") continue;
+      if (!line.startsWith("data: ")) continue;
+
+      const jsonStr = line.slice(6).trim();
+      if (jsonStr === "[DONE]") break;
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          fullContent += content;
+          onDelta?.(content);
+        }
+      } catch {
+        textBuffer = line + "\n" + textBuffer;
+        break;
+      }
+    }
+  }
+
+  // Flush remaining buffer
+  if (textBuffer.trim()) {
+    for (let raw of textBuffer.split("\n")) {
+      if (!raw) continue;
+      if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+      if (raw.startsWith(":") || raw.trim() === "") continue;
+      if (!raw.startsWith("data: ")) continue;
+      const jsonStr = raw.slice(6).trim();
+      if (jsonStr === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(jsonStr);
+        const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+        if (content) {
+          fullContent += content;
+          onDelta?.(content);
+        }
+      } catch { /* ignore */ }
+    }
+  }
+
+  return fullContent;
 }
