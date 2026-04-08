@@ -51,16 +51,26 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
     setInput("");
     setIsLoading(true);
 
+    const assistantId = crypto.randomUUID();
+    let assistantContent = "";
+
     try {
-      const reply = await sendMessageToArkie(text, messages, userName);
-      const assistantMsg: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: reply,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch {
+      await sendMessageToArkie(text, messages, userName, (chunk) => {
+        assistantContent += chunk;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.id === assistantId) {
+            return prev.map((m) =>
+              m.id === assistantId ? { ...m, content: assistantContent } : m
+            );
+          }
+          return [
+            ...prev,
+            { id: assistantId, role: "assistant" as const, content: assistantContent, timestamp: new Date() },
+          ];
+        });
+      });
+    } catch (err) {
       setMessages((prev) => [
         ...prev,
         {
