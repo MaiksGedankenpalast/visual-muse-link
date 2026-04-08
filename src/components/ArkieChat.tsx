@@ -56,6 +56,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
 
     try {
       await sendMessageToArkie(text, messages, userName, (chunk) => {
+        setIsLoading(false);
         assistantContent += chunk;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
