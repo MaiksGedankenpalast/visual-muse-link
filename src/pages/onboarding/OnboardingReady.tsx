@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { seedPitchData } from "@/lib/seedPitchData";
 import Arkie from "@/components/Arkie";
 import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
@@ -14,7 +15,13 @@ const OnboardingReady = () => {
   const handleStart = async () => {
     if (!user) return;
     setLoading(true);
-    await supabase.from("profiles").update({ onboarding_complete: true }).eq("id", user.id);
+    const isPitch = localStorage.getItem("mindark_pitch_mode") === "true";
+    if (isPitch) {
+      await seedPitchData(user.id);
+      localStorage.removeItem("mindark_pitch_mode");
+    } else {
+      await supabase.from("profiles").update({ onboarding_complete: true }).eq("id", user.id);
+    }
     navigate("/home", { replace: true });
   };
 

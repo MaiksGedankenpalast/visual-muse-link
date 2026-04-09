@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, ChevronRight, Plus, Pencil, Flame, Send } from "lucide-react";
+import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw } from "lucide-react";
 
 /* ── helpers ── */
 const germanDate = () => {
@@ -226,11 +227,27 @@ const HomePage = () => {
       )}
 
       {/* HEADER */}
-      <div className="px-4 pt-6">
-        <p className="text-sm text-muted-foreground">{capitalize(germanDate())}</p>
-        <h1 className="text-[28px] font-bold text-foreground mt-1">
-          Hallo {name} 👋
-        </h1>
+      <div className="px-4 pt-6 flex items-start justify-between">
+        <div>
+          <p className="text-sm text-muted-foreground">{capitalize(germanDate())}</p>
+          <h1 className="text-[28px] font-bold text-foreground mt-1">
+            Hallo {name} 👋
+          </h1>
+        </div>
+        {user?.email === "pitch@mindark.app" && (
+          <button
+            onClick={async () => {
+              if (!user) return;
+              await resetPitchData(user.id);
+              await supabase.auth.signOut();
+              navigate("/login", { replace: true });
+            }}
+            className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+          >
+            <RotateCcw size={12} />
+            Reset
+          </button>
+        )}
       </div>
 
       {/* ARKIE WAVE SECTION */}
