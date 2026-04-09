@@ -3,7 +3,7 @@ interface ArkieProps {
   className?: string;
 }
 
-const SIZE_MAP = { large: 85, medium: 64, small: 47 };
+const SIZE_MAP = { large: 77, medium: 58, small: 42 };
 
 const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
   const px = typeof size === "number" ? size : SIZE_MAP[size];
@@ -11,17 +11,17 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <div className="arkie-float relative" style={{ width: px, height: px }}>
-        {/* Under-glow reflection on waves */}
+        {/* White oval glow under Arkie */}
         <div
           className="absolute"
           style={{
-            width: px * 1.4,
-            height: px * 0.5,
-            bottom: -px * 0.18,
+            width: px * 1.1,
+            height: px * 0.35,
+            bottom: -px * 0.12,
             left: "50%",
             transform: "translateX(-50%)",
-            background: "radial-gradient(ellipse, rgba(190,160,255,0.45) 0%, rgba(160,120,240,0.2) 40%, transparent 70%)",
-            filter: "blur(16px)",
+            background: "radial-gradient(ellipse, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 40%, transparent 70%)",
+            filter: "blur(10px)",
           }}
         />
         {/* Body — luminous 3D sphere */}
@@ -51,10 +51,10 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
           <circle cx="50" cy="50" r="47" fill={`url(#arkie-body-${px})`} />
           {/* Inner glow highlight */}
           <circle cx="50" cy="50" r="47" fill={`url(#arkie-highlight-${px})`} />
-          {/* Left eye — almond-shaped, slightly tilted */}
-          <path d="M33 46 Q39 40 45 46 Q39 49 33 46Z" fill="#1a1a2e" opacity="0.85" />
-          {/* Right eye — almond-shaped, slightly tilted */}
-          <path d="M55 46 Q61 40 67 46 Q61 49 55 46Z" fill="#1a1a2e" opacity="0.85" />
+          {/* Left eye — almond-shaped, 15% larger */}
+          <path d="M31 46 Q39 38.5 47 46 Q39 50 31 46Z" fill="#1a1a2e" opacity="0.85" />
+          {/* Right eye — almond-shaped, 15% larger */}
+          <path d="M53 46 Q61 38.5 69 46 Q61 50 53 46Z" fill="#1a1a2e" opacity="0.85" />
           {/* Small centered smile */}
           <path
             d="M45 57 Q50 61 55 57"
