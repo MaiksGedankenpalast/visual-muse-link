@@ -11,20 +11,55 @@ const SYSTEM_PROMPT = `Du bist Arkie, ein emotionaler Begleiter, der verständni
 Verwende gelegentlich passende Emojis (💜, ✨, 🌙) aber übertreibe es nicht.
 Antworte persönlich, warm und maximal 3–4 Sätze lang. Verwende den Namen des Users, wenn möglich.`;
 
-  // ... existing serve code ...
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { messages, userName } = await req.json();
+
+    if (!messages || !Array.isArray(messages)) {
+      return new Response(
+        JSON.stringify({ error: "messages array is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY");
     if (!MISTRAL_API_KEY) {
       throw new Error("MISTRAL_API_KEY is not configured");
+    }
+
+    const systemContent = userName
+      ? `${SYSTEM_PROMPT}\n\nDer Name des Users ist: ${userName}`
+      : SYSTEM_PROMPT;
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
-
+      method: "POST",
+      headers: {
         Authorization: `Bearer ${MISTRAL_API_KEY}`,
-
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
         model: "mistral-medium-latest",
+        messages: [
+          { role: "system", content: systemContent },
+          ...messages,
+        ],
+        stream: true,
+      }),
+    });
 
+    if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Zu viele Anfragen. Bitte warte einen Moment 💜" }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      console.error("Mistral API error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "AI-Fehler aufgetreten" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
