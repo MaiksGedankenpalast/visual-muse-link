@@ -20,7 +20,7 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
             bottom: -px * 0.12,
             left: "50%",
             transform: "translateX(-50%)",
-            background: "radial-gradient(ellipse, rgba(255,255,255,0.77) 0%, rgba(255,255,255,0.35) 40%, transparent 70%)",
+            background: "radial-gradient(ellipse, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.49) 40%, transparent 70%)",
             filter: "blur(10px)",
           }}
         />
