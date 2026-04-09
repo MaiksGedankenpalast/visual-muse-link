@@ -28,6 +28,8 @@ const Login = () => {
     }
   }, [user, onboardingComplete, navigate]);
 
+  const [pitchLoading, setPitchLoading] = useState(false);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -37,6 +39,24 @@ const Login = () => {
       setError(translateError(error.message));
       setLoading(false);
     }
+  };
+
+  const handlePitchAccess = async () => {
+    setPitchLoading(true);
+    setError("");
+    const pitchEmail = "pitch@mindark.app";
+    const pitchPw = "pitchdemo2026";
+    // Try login first, then signup if needed
+    let { error: loginErr } = await supabase.auth.signInWithPassword({ email: pitchEmail, password: pitchPw });
+    if (loginErr) {
+      const { error: signupErr } = await supabase.auth.signUp({ email: pitchEmail, password: pitchPw });
+      if (signupErr) { setError("Demo-Zugang fehlgeschlagen."); setPitchLoading(false); return; }
+      await supabase.auth.signInWithPassword({ email: pitchEmail, password: pitchPw });
+    }
+    // Mark as pitch user so OnboardingReady seeds data
+    localStorage.setItem("mindark_pitch_mode", "true");
+    // Navigate to onboarding
+    navigate("/onboarding/name", { replace: true });
   };
 
   const inputStyle = {
