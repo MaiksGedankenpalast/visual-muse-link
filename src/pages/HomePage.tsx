@@ -2,9 +2,10 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, ChevronRight, Plus, Pencil, Flame, Send } from "lucide-react";
+import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw } from "lucide-react";
 
 /* ── helpers ── */
 const germanDate = () => {
