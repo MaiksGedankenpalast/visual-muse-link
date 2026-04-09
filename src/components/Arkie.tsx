@@ -3,7 +3,7 @@ interface ArkieProps {
   className?: string;
 }
 
-const SIZE_MAP = { large: 85, medium: 64, small: 47 };
+const SIZE_MAP = { large: 77, medium: 58, small: 42 };
 
 const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
   const px = typeof size === "number" ? size : SIZE_MAP[size];
