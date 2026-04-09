@@ -11,17 +11,17 @@ const Arkie = ({ size = "large", className = "" }: ArkieProps) => {
   return (
     <div className={`flex flex-col items-center ${className}`}>
       <div className="arkie-float relative" style={{ width: px, height: px }}>
-        {/* Under-glow reflection on waves */}
+        {/* White oval glow under Arkie */}
         <div
           className="absolute"
           style={{
-            width: px * 1.4,
-            height: px * 0.5,
-            bottom: -px * 0.18,
+            width: px * 1.1,
+            height: px * 0.35,
+            bottom: -px * 0.12,
             left: "50%",
             transform: "translateX(-50%)",
-            background: "radial-gradient(ellipse, rgba(190,160,255,0.45) 0%, rgba(160,120,240,0.2) 40%, transparent 70%)",
-            filter: "blur(16px)",
+            background: "radial-gradient(ellipse, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.25) 40%, transparent 70%)",
+            filter: "blur(10px)",
           }}
         />
         {/* Body — luminous 3D sphere */}
