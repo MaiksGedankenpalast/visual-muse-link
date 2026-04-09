@@ -93,6 +93,21 @@ const Login = () => {
             Registrieren
           </button>
         </p>
+
+        <div className="mt-8 w-full">
+          <button
+            onClick={handlePitchAccess}
+            disabled={pitchLoading}
+            className="w-full h-12 rounded-full text-sm font-medium transition-all active:scale-95"
+            style={{
+              background: "linear-gradient(135deg, rgba(168,85,247,0.25), rgba(139,92,246,0.15))",
+              border: "1px solid rgba(168,85,247,0.4)",
+              color: "rgba(216,180,254,0.95)",
+            }}
+          >
+            {pitchLoading ? "Wird vorbereitet..." : "🎯 Testzugang BSS-Pitch"}
+          </button>
+        </div>
       </div>
     </div>
   );
