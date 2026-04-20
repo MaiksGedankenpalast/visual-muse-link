@@ -12,14 +12,21 @@ export interface ArkieContextPayload {
   journals?: Array<{ date: string; excerpt: string }>;
 }
 
+export interface ExtraSystemMessage {
+  role: "system";
+  content: string;
+}
+
 export async function sendMessageToArkie(
   userMessage: string,
-  conversationHistory: ChatMessage[],
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>,
   userName?: string,
   onDelta?: (chunk: string) => void,
-  context?: ArkieContextPayload
+  context?: ArkieContextPayload,
+  extraSystem?: ExtraSystemMessage | null
 ): Promise<string> {
   const messages = [
+    ...(extraSystem ? [extraSystem] : []),
     ...conversationHistory.map((m) => ({ role: m.role, content: m.content })),
     { role: "user" as const, content: userMessage },
   ];
