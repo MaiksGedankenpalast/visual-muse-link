@@ -254,6 +254,33 @@ const JournalDayPage = () => {
         </div>
       )}
 
+      {/* CHALLENGES FOR THIS DAY */}
+      {dayChallenges.length > 0 && (
+        <div className="mb-6">
+          <p className="text-[13px] text-muted-foreground mb-2 font-medium">Challenges</p>
+          <div className="space-y-2">
+            {dayChallenges.map((c) => {
+              const statusMeta: Record<DayChallenge["status"], { label: string; icon: string; color: string }> = {
+                completed: { label: "Erledigt", icon: "✅", color: "rgba(74, 222, 128, 0.15)" },
+                partial: { label: "Teilweise", icon: "🔶", color: "rgba(251, 191, 36, 0.15)" },
+                missed: { label: "Verpasst", icon: "❌", color: "rgba(255,255,255,0.05)" },
+                pending: { label: "Offen", icon: "⬜", color: "rgba(255,255,255,0.06)" },
+              };
+              const m = statusMeta[c.status];
+              return (
+                <div key={c.challenge_id}
+                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+                  style={{ background: m.color, border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span className="text-lg">{c.icon || m.icon}</span>
+                  <span className="flex-1 text-foreground text-[14px]">{c.title}</span>
+                  <span className="text-[11px] text-muted-foreground">{m.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* ARKIE PROMPT CARD — only if there's a mood entry (we derive prompt from mood) */}
       {mood && entries.length > 0 && entries[0].mood_snapshot !== null && (
         <div className="rounded-2xl p-4 mb-6"
