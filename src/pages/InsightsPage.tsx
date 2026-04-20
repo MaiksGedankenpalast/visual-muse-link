@@ -244,7 +244,7 @@ const InsightsPage = () => {
       {mode === "weekly_review" && user && <ReviewsPanel userId={user.id} type="weekly" />}
       {mode === "four_weekly_review" && user && <ReviewsPanel userId={user.id} type="four_weekly" />}
 
-      {mode === "week" ? (
+      {mode === "week" && (
         <>
           {/* ═══ WEEK VIEW ═══ */}
           {/* MOOD CHART */}
