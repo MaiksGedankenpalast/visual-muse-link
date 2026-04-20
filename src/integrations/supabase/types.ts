@@ -243,6 +243,66 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          created_at: string
+          generated_at: string | null
+          id: string
+          llm_narrative: string | null
+          period_end: string
+          period_start: string
+          stats_snapshot: Json | null
+          status: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string | null
+          id?: string
+          llm_narrative?: string | null
+          period_end: string
+          period_start: string
+          stats_snapshot?: Json | null
+          status?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string | null
+          id?: string
+          llm_narrative?: string | null
+          period_end?: string
+          period_start?: string
+          stats_snapshot?: Json | null
+          status?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_app_start: {
+        Row: {
+          created_at: string
+          first_seen_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          first_seen_at: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          first_seen_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_challenges: {
         Row: {
           added_at: string
