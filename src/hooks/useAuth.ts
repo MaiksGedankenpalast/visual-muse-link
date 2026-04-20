@@ -19,8 +19,15 @@ export function useAuth() {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
         const user = session?.user ?? null;
+        if (event === "SIGNED_OUT") {
+          setState({ user: null, loading: false, onboardingComplete: null, profileName: null });
+          if (typeof window !== "undefined" && window.location.pathname !== "/splash") {
+            window.location.replace("/splash");
+          }
+          return;
+        }
         if (user) {
           // Defer profile fetch to avoid Supabase deadlock
           setTimeout(async () => {
