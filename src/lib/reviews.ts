@@ -349,7 +349,7 @@ export async function generateWeeklyReview(userId: string, period: Period): Prom
       .eq("id", row.id)
       .select()
       .single();
-    return (updated ?? row) as ReviewRow;
+    return (updated ?? row) as unknown as ReviewRow;
   } catch (e) {
     await supabase.from("reviews").update({ status: "error" }).eq("id", row.id);
     throw e;
@@ -371,7 +371,7 @@ export async function generateFourWeeklyReview(
     .lte("period_end", period.end)
     .order("period_start", { ascending: true });
 
-  const weeklies = (existing ?? []) as ReviewRow[];
+  const weeklies = (existing ?? []) as unknown as ReviewRow[];
 
   // Build a lightweight stats snapshot by aggregating weekly stats
   const agg: StatsSnapshot = {
@@ -442,7 +442,7 @@ export async function generateFourWeeklyReview(
       .eq("id", row.id)
       .select()
       .single();
-    return (updated ?? row) as ReviewRow;
+    return (updated ?? row) as unknown as ReviewRow;
   } catch (e) {
     await supabase.from("reviews").update({ status: "error" }).eq("id", row.id);
     throw e;
@@ -458,7 +458,7 @@ export async function listReviews(userId: string, type: ReviewType): Promise<Rev
     .eq("user_id", userId)
     .eq("type", type)
     .order("period_end", { ascending: false });
-  return (data ?? []) as ReviewRow[];
+  return (data ?? []) as unknown as ReviewRow[];
 }
 
 export function findMissingPeriods(periods: Period[], existing: ReviewRow[]): Period[] {
