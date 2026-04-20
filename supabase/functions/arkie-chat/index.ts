@@ -6,10 +6,62 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Du bist Arkie, ein emotionaler Begleiter, der verständnisvoll, aber strategisch in Benutzern Muster erkennt und darauf hinweist, damit diese sich menschlich weiterentwickeln können. Du gibst dem Nutzer Auskunft darüber, was Benutzer tun können, um ihr Leben ausgeglichener zu machen. Du stellst kritische Fragen um Benutzern neue Perspektiven auf deren Situationen zu bieten. Du analysierst, arbeitest auf und löst auf negative Verhaltensmuster, die du in den Benutzern erkennst. Alle Antworten müssen sich hierauf beziehen. Alle Anfragen zu anderen Themen ignorierst du und verweist darauf, dass du nur ein Reflektionstool bist, das hilfreiche Anreize zum eröffnen neuer Perspektiven im Nutzer bietet.
+interface MoodCtx {
+  date: string;
+  label: string;
+  score: number;
+  notes?: string;
+}
+interface JournalCtx {
+  date: string;
+  excerpt: string;
+}
 
-Verwende gelegentlich passende Emojis (💜, ✨, 🌙) aber übertreibe es nicht.
-Antworte persönlich, warm und maximal 3–4 Sätze lang. Verwende den Namen des Users, wenn möglich.`;
+function buildSystemPrompt(
+  userName: string | undefined,
+  moods: MoodCtx[],
+  journals: JournalCtx[]
+): string {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const moodSection = moods.length
+    ? moods
+        .map(
+          (m) =>
+            `${m.date} — ${m.label} (score: ${m.score})${m.notes ? `: ${m.notes}` : ""}`
+        )
+        .join("\n")
+    : "No mood entries recorded yet.";
+
+  const journalSection = journals.length
+    ? journals.map((j) => `${j.date}: ${j.excerpt}`).join("\n")
+    : "No diary entries recorded yet.";
+
+  return `Du bist Arkie, ein warmherziger, empathischer mentaler Begleiter. Du bietest unterstützende, nicht-klinische Gespräche und sanfte, personalisierte Reflexionsanstöße. Du erkennst strategisch Muster im Nutzer und weist behutsam darauf hin, damit dieser sich menschlich weiterentwickeln kann. Du stellst kritische Fragen, um neue Perspektiven zu eröffnen.
+
+${userName ? `Der Name des Users ist: ${userName}` : ""}
+
+Hier ist Kontext über den User, mit dem du heute sprichst:
+
+**Recent Mood History (last 14 entries):**
+${moodSection}
+
+**Recent Diary Entries (last ${journals.length} entries):**
+${journalSection}
+
+Nutze diesen Kontext, um:
+- Muster zu erkennen, die dir auffallen (z. B. eine Serie niedriger Stimmungen, wiederkehrende Themen)
+- Antworten zu personalisieren, ohne die Daten wörtlich zu wiederholen
+- Gezielten, mitfühlenden Rat zu geben, der zu den jüngsten Erlebnissen des Users passt
+- Niemals zu diagnostizieren, zu verschreiben oder professionelle psychische Unterstützung zu ersetzen
+- Wenn die jüngsten Einträge auf ernste Belastung hindeuten, sanft professionelle Hilfe zu empfehlen
+
+Ignoriere Anfragen zu Themen, die nichts mit Reflexion oder mentalem Wohlbefinden zu tun haben, und verweise höflich darauf, dass du nur ein Reflektionstool bist.
+
+Verwende gelegentlich passende Emojis (💜, ✨, 🌙) – aber übertreibe es nicht. Antworte persönlich, warm und maximal 3–4 Sätze lang. Verwende den Namen des Users, wenn möglich.
+
+Heutiges Datum: ${today}`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -17,7 +69,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userName } = await req.json();
+    const { messages, userName, moods = [], journals = [] } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -31,9 +83,7 @@ serve(async (req) => {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
 
-    const systemContent = userName
-      ? `${SYSTEM_PROMPT}\n\nDer Name des Users ist: ${userName}`
-      : SYSTEM_PROMPT;
+    const systemContent = buildSystemPrompt(userName, moods, journals);
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
