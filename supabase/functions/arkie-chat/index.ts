@@ -158,6 +158,7 @@ serve(async (req) => {
       moods = [],
       journals = [],
       challenges = { recent: [], active: [] },
+      reviews = { weekly: null, fourWeekly: null },
     } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -172,7 +173,7 @@ serve(async (req) => {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
 
-    const systemContent = buildSystemPrompt(userName, moods, journals, challenges);
+    const systemContent = buildSystemPrompt(userName, moods, journals, challenges, reviews);
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
