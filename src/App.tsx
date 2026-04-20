@@ -25,6 +25,7 @@ import JournalDayPage from "@/pages/JournalDayPage";
 import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
 import GoalsPage from "@/pages/GoalsPage";
+import SettingsPage from "@/pages/SettingsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/moodtracker" element={<MoodTrackerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
               <Route path="/goals" element={<GoalsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
 

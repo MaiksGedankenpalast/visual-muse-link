@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw } from "lucide-react";
+import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw, Settings as SettingsIcon } from "lucide-react";
 
 /* ── helpers ── */
 const germanDate = () => {
@@ -234,20 +234,30 @@ const HomePage = () => {
             Hallo {name} 👋
           </h1>
         </div>
-        {user?.email === "pitch@mindark.app" && (
+        <div className="flex items-center gap-2 mt-2">
+          {user?.email === "pitch@mindark.app" && (
+            <button
+              onClick={async () => {
+                if (!user) return;
+                await resetPitchData(user.id);
+                await supabase.auth.signOut();
+                navigate("/login", { replace: true });
+              }}
+              className="flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            >
+              <RotateCcw size={12} />
+              Reset
+            </button>
+          )}
           <button
-            onClick={async () => {
-              if (!user) return;
-              await resetPitchData(user.id);
-              await supabase.auth.signOut();
-              navigate("/login", { replace: true });
-            }}
-            className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+            onClick={() => navigate("/settings")}
+            className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+            style={{ background: "rgba(255,255,255,0.06)" }}
+            aria-label="Settings"
           >
-            <RotateCcw size={12} />
-            Reset
+            <SettingsIcon className="w-5 h-5 text-foreground" />
           </button>
-        )}
+        </div>
       </div>
 
       {/* ARKIE WAVE SECTION */}
