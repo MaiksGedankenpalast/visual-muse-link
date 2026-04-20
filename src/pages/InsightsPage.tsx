@@ -368,7 +368,9 @@ const InsightsPage = () => {
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {mode === "month" && (
         <>
           {/* ═══ MONTH VIEW ═══ */}
           {/* Month nav */}
