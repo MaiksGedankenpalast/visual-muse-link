@@ -6,7 +6,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "./Arkie";
 import { ChatMessage, sendMessageToArkie } from "@/lib/arkieChat";
-import { fetchArkieContext, MoodCtx, JournalCtx } from "@/lib/arkieContext";
+import { fetchArkieContext, MoodCtx, JournalCtx, ChallengeContext } from "@/lib/arkieContext";
 import {
   ChatSession,
   StoredMessage,
@@ -159,9 +159,10 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       /* non-fatal: continue conversation */
     }
 
-    // Fetch context (mood + journals) and cross-session memory in parallel
+    // Fetch context (mood + journals + challenges) and cross-session memory in parallel
     let moods: MoodCtx[] = [];
     let journals: JournalCtx[] = [];
+    let challenges: ChallengeContext = { recent: [], active: [] };
     let crossMemory: string | null = null;
     try {
       const [ctx, mem] = await Promise.all([
@@ -170,6 +171,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       ]);
       moods = ctx.moods;
       journals = ctx.journals;
+      challenges = ctx.challenges;
       crossMemory = mem;
     } catch {
       /* fall back to empty context */
@@ -209,7 +211,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
             ];
           });
         },
-        { moods, journals },
+        { moods, journals, challenges },
         crossMemory ? { role: "system", content: crossMemory } : null
       );
 
