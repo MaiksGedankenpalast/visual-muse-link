@@ -51,13 +51,13 @@ const ChallengesPage = () => {
   const fetchAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: chData }, { data: compData }, { data: profile }] = await Promise.all([
+    const [{ data: chData }, { data: ucData }, { data: profile }] = await Promise.all([
       supabase.from("challenges").select("*").or(`is_preset.eq.true,user_id.eq.${user.id}`),
-      supabase.from("daily_completions").select("challenge_id").eq("user_id", user.id).eq("date", todayStr()),
+      supabase.from("user_challenges").select("challenge_id").eq("user_id", user.id).eq("is_active", true),
       supabase.from("profiles").select("onboarding_goals").eq("id", user.id).single(),
     ]);
     setChallenges((chData ?? []) as Challenge[]);
-    setTodayIds(new Set((compData ?? []).map((c: any) => c.challenge_id)));
+    setTodayIds(new Set((ucData ?? []).map((c: any) => c.challenge_id)));
     setGoals((profile?.onboarding_goals as string[]) ?? []);
     setLoading(false);
   }, [user]);
@@ -81,13 +81,16 @@ const ChallengesPage = () => {
   const toggleToday = async (challengeId: string) => {
     if (!user) return;
     if (todayIds.has(challengeId)) {
-      // remove
+      // deactivate
       setTodayIds((prev) => { const n = new Set(prev); n.delete(challengeId); return n; });
-      await supabase.from("daily_completions").delete().eq("user_id", user.id).eq("challenge_id", challengeId).eq("date", todayStr());
+      await supabase.from("user_challenges").update({ is_active: false }).eq("user_id", user.id).eq("challenge_id", challengeId);
     } else {
-      // add
+      // activate (upsert)
       setTodayIds((prev) => new Set(prev).add(challengeId));
-      await supabase.from("daily_completions").insert({ user_id: user.id, challenge_id: challengeId, date: todayStr() });
+      await supabase.from("user_challenges").upsert(
+        { user_id: user.id, challenge_id: challengeId, is_active: true },
+        { onConflict: "user_id,challenge_id" }
+      );
     }
   };
 
@@ -102,8 +105,11 @@ const ChallengesPage = () => {
     }).select().single();
     if (data) {
       setChallenges((prev) => [data as Challenge, ...prev]);
-      // also add to today
-      await supabase.from("daily_completions").insert({ user_id: user.id, challenge_id: data.id, date: todayStr() });
+      // also activate for this user
+      await supabase.from("user_challenges").upsert(
+        { user_id: user.id, challenge_id: data.id, is_active: true },
+        { onConflict: "user_id,challenge_id" }
+      );
       setTodayIds((prev) => new Set(prev).add(data.id));
     }
     setNewTitle("");
