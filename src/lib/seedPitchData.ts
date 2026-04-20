@@ -172,14 +172,31 @@ export async function seedPitchData(userId: string) {
   });
   await supabase.from("journal_entries").insert(journalEntries);
 
-  // ── Challenges + completions ──
-  const { data: challenges } = await supabase.from("challenges").select("id, category").eq("is_preset", true).limit(10);
+  // ── Challenges: activate 4 presets + generate completion history ──
+  const { data: challenges } = await supabase
+    .from("challenges")
+    .select("id, category")
+    .eq("is_preset", true)
+    .limit(10);
 
   if (challenges && challenges.length > 0) {
+    const activeChallenges = challenges.slice(0, 4);
+
+    await supabase.from("user_challenges").upsert(
+      activeChallenges.map((c) => ({
+        user_id: userId,
+        challenge_id: c.id,
+        is_active: true,
+      })),
+      { onConflict: "user_id,challenge_id" }
+    );
+
+    type Status = "completed" | "partial" | "missed" | "pending";
     const completionEntries: Array<{
       user_id: string;
       challenge_id: string;
       date: string;
+      status: Status;
       completed: boolean;
     }> = [];
 
@@ -187,18 +204,32 @@ export async function seedPitchData(userId: string) {
       const d = new Date(today);
       d.setDate(today.getDate() - i);
       const dateStr = d.toISOString().slice(0, 10);
-      // More completions as days get more recent (showing engagement growth)
-      const numChallenges = i > 10 ? 1 : i > 6 ? 2 : 3;
-      for (let j = 0; j < numChallenges && j < challenges.length; j++) {
+      for (let j = 0; j < activeChallenges.length; j++) {
+        let status: Status;
+        if (i >= 10) {
+          const r = Math.random();
+          status = r < 0.5 ? "missed" : r < 0.8 ? "partial" : "completed";
+        } else if (i >= 5) {
+          const r = Math.random();
+          status = r < 0.2 ? "missed" : r < 0.45 ? "partial" : "completed";
+        } else if (i === 0) {
+          status = j < 2 ? "completed" : "pending";
+        } else {
+          const r = Math.random();
+          status = r < 0.1 ? "partial" : "completed";
+        }
         completionEntries.push({
           user_id: userId,
-          challenge_id: challenges[j].id,
+          challenge_id: activeChallenges[j].id,
           date: dateStr,
-          completed: i < 10 ? true : Math.random() > 0.3,
+          status,
+          completed: status === "completed",
         });
       }
     }
-    await supabase.from("daily_completions").insert(completionEntries.slice(0, 30));
+    await supabase
+      .from("daily_completions")
+      .upsert(completionEntries, { onConflict: "user_id,challenge_id,date" });
   }
 
   // ── Vibe items (today + yesterday) ──
@@ -246,6 +277,9 @@ export async function resetPitchData(userId: string) {
     supabase.from("journal_entries").delete().eq("user_id", userId),
     supabase.from("daily_completions").delete().eq("user_id", userId),
     supabase.from("vibe_items").delete().eq("user_id", userId),
+    supabase.from("user_challenges").delete().eq("user_id", userId),
+    supabase.from("chat_messages").delete().eq("user_id", userId),
+    supabase.from("chat_sessions").delete().eq("user_id", userId),
     supabase.from("challenges").delete().eq("user_id", userId).eq("is_preset", false),
   ]);
   await supabase
