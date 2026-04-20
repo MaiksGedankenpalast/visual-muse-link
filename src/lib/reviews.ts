@@ -36,7 +36,14 @@ export interface StatsSnapshot {
     missed: number;
     completion_rate: number; // 0-100
     best_streak: number;
-    breakdown: { title: string; completed: number }[];
+    breakdown: {
+      title: string;
+      completed: number;
+      total_logged_value: number;
+      total_target_value: number;
+      unit: string | null;
+      is_quantifiable: boolean;
+    }[];
   };
   chat: {
     sessions: number;
@@ -136,7 +143,7 @@ export async function buildStatsSnapshot(
       .order("date", { ascending: true }),
     supabase
       .from("daily_completions")
-      .select("date, status, challenge_id, challenges!inner(title)")
+      .select("date, status, logged_value, target_value, challenge_id, challenges!inner(title, unit, is_quantifiable)")
       .eq("user_id", userId)
       .gte("date", periodStart)
       .lte("date", periodEnd),
@@ -201,15 +208,24 @@ export async function buildStatsSnapshot(
     prev = d;
   }
 
-  // Per-challenge breakdown
-  const breakdownMap = new Map<string, number>();
-  compRows
-    .filter((r) => r.status === "completed")
-    .forEach((r) => {
-      const title = r.challenges?.title ?? "Challenge";
-      breakdownMap.set(title, (breakdownMap.get(title) ?? 0) + 1);
-    });
-  const breakdown = Array.from(breakdownMap.entries()).map(([title, completed]) => ({ title, completed }));
+  // Per-challenge breakdown (completed count + logged/target totals)
+  const breakdownMap = new Map<
+    string,
+    { title: string; completed: number; total_logged_value: number; total_target_value: number; unit: string | null; is_quantifiable: boolean }
+  >();
+  compRows.forEach((r) => {
+    const title = r.challenges?.title ?? "Challenge";
+    const unit = r.challenges?.unit ?? null;
+    const isQ = r.challenges?.is_quantifiable ?? true;
+    const entry =
+      breakdownMap.get(title) ??
+      { title, completed: 0, total_logged_value: 0, total_target_value: 0, unit, is_quantifiable: isQ };
+    if (r.status === "completed") entry.completed += 1;
+    entry.total_logged_value += Number(r.logged_value ?? 0);
+    entry.total_target_value += Number(r.target_value ?? 0);
+    breakdownMap.set(title, entry);
+  });
+  const breakdown = Array.from(breakdownMap.values());
 
   // Chat
   const sessionRows = (sessionsRes.data ?? []) as any[];
@@ -266,7 +282,18 @@ export function buildWeeklyUserPrompt(stats: StatsSnapshot, period: Period): str
   const worst = mood.lowest ? `${mood.lowest.date} (${mood.lowest.score}/100)` : "—";
   const breakdown =
     challenges.breakdown.length > 0
-      ? challenges.breakdown.map((b) => `${b.title}: ${b.completed} abgeschlossen`).join("; ")
+      ? challenges.breakdown
+          .map((b) => {
+            if (!b.is_quantifiable || b.total_target_value === 0) {
+              return `${b.title}: ${b.completed} abgeschlossen`;
+            }
+            const pct = b.total_target_value > 0
+              ? Math.round((b.total_logged_value / b.total_target_value) * 100)
+              : 0;
+            const unit = b.unit ?? "";
+            return `${b.title}: ${b.total_logged_value}${unit ? ` ${unit}` : ""} von ${b.total_target_value}${unit ? ` ${unit}` : ""} (${pct}% des Ziels)`;
+          })
+          .join("; ")
       : "keine";
   const excerpts =
     diary.excerpts.length > 0

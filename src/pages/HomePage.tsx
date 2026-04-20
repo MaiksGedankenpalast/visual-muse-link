@@ -37,6 +37,11 @@ interface ActiveChallenge {
   icon: string | null;
   category: string | null;
   status: ChallengeStatus; // status for TODAY
+  is_quantifiable: boolean;
+  default_target: number | null;
+  unit: string | null;
+  logged_value: number | null;
+  target_value: number | null;
 }
 
 interface VibeItem {
@@ -116,13 +121,13 @@ const HomePage = () => {
       supabase.from("mood_entries").select("date").eq("user_id", user.id).order("date", { ascending: false }).limit(100),
       supabase
         .from("user_challenges")
-        .select("challenge_id, added_at, challenges!inner(id,title,icon,category)")
+        .select("challenge_id, added_at, challenges!inner(id,title,icon,category,is_quantifiable,default_target,unit)")
         .eq("user_id", user.id)
         .eq("is_active", true)
         .order("added_at", { ascending: true }),
       supabase
         .from("daily_completions")
-        .select("challenge_id, status")
+        .select("challenge_id, status, logged_value, target_value")
         .eq("user_id", user.id)
         .eq("date", todayStr),
     ]);
@@ -131,16 +136,26 @@ const HomePage = () => {
     setYesterdayMood(yesterdayMoodData as MoodEntry | null);
     setVibeItems((vibeData as VibeItem[]) ?? []);
 
-    const statusByChallenge = new Map<string, ChallengeStatus>();
-    (todayLogs ?? []).forEach((l: any) => statusByChallenge.set(l.challenge_id, l.status));
+    const logByChallenge = new Map<string, { status: ChallengeStatus; logged_value: number | null; target_value: number | null }>();
+    (todayLogs ?? []).forEach((l: any) =>
+      logByChallenge.set(l.challenge_id, { status: l.status, logged_value: l.logged_value, target_value: l.target_value }),
+    );
 
-    const active: ActiveChallenge[] = (activeUC ?? []).map((uc: any) => ({
-      id: uc.challenges.id,
-      title: uc.challenges.title,
-      icon: uc.challenges.icon,
-      category: uc.challenges.category,
-      status: statusByChallenge.get(uc.challenges.id) ?? "pending",
-    }));
+    const active: ActiveChallenge[] = (activeUC ?? []).map((uc: any) => {
+      const log = logByChallenge.get(uc.challenges.id);
+      return {
+        id: uc.challenges.id,
+        title: uc.challenges.title,
+        icon: uc.challenges.icon,
+        category: uc.challenges.category,
+        status: log?.status ?? "pending",
+        is_quantifiable: uc.challenges.is_quantifiable ?? true,
+        default_target: uc.challenges.default_target ?? null,
+        unit: uc.challenges.unit ?? null,
+        logged_value: log?.logged_value ?? null,
+        target_value: log?.target_value ?? uc.challenges.default_target ?? null,
+      };
+    });
     setActiveChallenges(active);
 
     // Streak calculation
@@ -424,14 +439,19 @@ const HomePage = () => {
                         <span className="text-[22px] leading-none shrink-0">{ch.icon || "✨"}</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-foreground text-[14px] truncate">{ch.title}</p>
-                          {ch.category && (
+                          {ch.is_quantifiable && ch.status === "partial" && ch.logged_value != null ? (
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {ch.logged_value} / {ch.target_value ?? ch.default_target ?? "—"}
+                              {ch.unit ? ` ${ch.unit}` : ""}
+                            </p>
+                          ) : ch.category ? (
                             <span
                               className="inline-block mt-0.5 text-[10px] px-2 py-0.5 rounded-full"
                               style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}
                             >
                               {ch.category}
                             </span>
-                          )}
+                          ) : null}
                         </div>
                         <div
                           className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"

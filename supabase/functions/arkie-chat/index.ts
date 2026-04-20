@@ -21,6 +21,10 @@ interface ChallengeLogCtx {
   title: string;
   status: string;
   notes?: string;
+  logged_value?: number | null;
+  target_value?: number | null;
+  unit?: string | null;
+  is_quantifiable?: boolean;
 }
 interface ChallengesCtx {
   recent: ChallengeLogCtx[];
@@ -39,6 +43,22 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+function formatChallengeLine(i: ChallengeLogCtx): string {
+  const unit = i.unit ?? "";
+  let body: string;
+  if (i.is_quantifiable === false) {
+    // Binary
+    body = i.status === "completed" ? "Done" : i.status === "missed" ? "Not done" : i.status;
+  } else if (i.logged_value != null && i.target_value != null) {
+    body = `${i.logged_value}${unit ? ` ${unit}` : ""} / ${i.target_value}${unit ? ` ${unit}` : ""}`;
+  } else {
+    body = i.status;
+  }
+  let line = `${i.date}: ${i.title} — ${body} (${i.status})`;
+  if (line.length > 100) line = line.slice(0, 97) + "...";
+  return line;
+}
+
 function buildChallengeSection(c: ChallengesCtx): string {
   // Group logs by date, newest first
   let logs = c.recent ?? [];
@@ -53,14 +73,7 @@ function buildChallengeSection(c: ChallengesCtx): string {
     }
     const sortedDates = Array.from(byDate.keys()).sort().reverse();
     return sortedDates
-      .map((d) => {
-        const items = byDate.get(d)!;
-        return items
-          .map((i) =>
-            `${d}: ${i.title} — ${i.status}${i.notes ? ` (notes: ${i.notes})` : ""}`
-          )
-          .join("\n");
-      })
+      .map((d) => byDate.get(d)!.map(formatChallengeLine).join("\n"))
       .join("\n");
   };
 

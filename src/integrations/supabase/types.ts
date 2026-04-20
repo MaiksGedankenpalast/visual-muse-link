@@ -18,31 +18,40 @@ export type Database = {
         Row: {
           category: string | null
           created_at: string
+          default_target: number | null
           description: string | null
           icon: string | null
           id: string
           is_preset: boolean
+          is_quantifiable: boolean
           title: string
+          unit: string | null
           user_id: string | null
         }
         Insert: {
           category?: string | null
           created_at?: string
+          default_target?: number | null
           description?: string | null
           icon?: string | null
           id?: string
           is_preset?: boolean
+          is_quantifiable?: boolean
           title: string
+          unit?: string | null
           user_id?: string | null
         }
         Update: {
           category?: string | null
           created_at?: string
+          default_target?: number | null
           description?: string | null
           icon?: string | null
           id?: string
           is_preset?: boolean
+          is_quantifiable?: boolean
           title?: string
+          unit?: string | null
           user_id?: string | null
         }
         Relationships: []
@@ -113,8 +122,10 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          logged_value: number | null
           notes: string | null
           status: string
+          target_value: number | null
           user_id: string
         }
         Insert: {
@@ -123,8 +134,10 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          logged_value?: number | null
           notes?: string | null
           status?: string
+          target_value?: number | null
           user_id: string
         }
         Update: {
@@ -133,8 +146,10 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          logged_value?: number | null
           notes?: string | null
           status?: string
+          target_value?: number | null
           user_id?: string
         }
         Relationships: [
