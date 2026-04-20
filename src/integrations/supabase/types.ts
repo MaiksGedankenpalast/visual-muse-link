@@ -113,6 +113,8 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          notes: string | null
+          status: string
           user_id: string
         }
         Insert: {
@@ -121,6 +123,8 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          notes?: string | null
+          status?: string
           user_id: string
         }
         Update: {
@@ -129,6 +133,8 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          notes?: string | null
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -236,6 +242,38 @@ export type Database = {
           onboarding_goals?: string[] | null
         }
         Relationships: []
+      }
+      user_challenges: {
+        Row: {
+          added_at: string
+          challenge_id: string
+          id: string
+          is_active: boolean
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          challenge_id: string
+          id?: string
+          is_active?: boolean
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          challenge_id?: string
+          id?: string
+          is_active?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_challenges_challenge_id_fkey"
+            columns: ["challenge_id"]
+            isOneToOne: false
+            referencedRelation: "challenges"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       vibe_items: {
         Row: {
