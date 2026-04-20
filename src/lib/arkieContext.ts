@@ -17,6 +17,10 @@ export interface ChallengeLogCtx {
   title: string;
   status: string;
   notes?: string;
+  logged_value?: number | null;
+  target_value?: number | null;
+  unit?: string | null;
+  is_quantifiable?: boolean;
 }
 
 export interface ChallengeContext {
@@ -86,7 +90,7 @@ export async function fetchArkieContext(userId: string): Promise<{
       .limit(10),
     supabase
       .from("daily_completions")
-      .select("date, status, notes, challenge_id, challenges!inner(title)")
+      .select("date, status, notes, logged_value, target_value, challenge_id, challenges!inner(title, unit, is_quantifiable)")
       .eq("user_id", userId)
       .gte("date", sevenCutoff)
       .order("date", { ascending: false })
@@ -139,6 +143,10 @@ export async function fetchArkieContext(userId: string): Promise<{
     title: l.challenges?.title ?? "Challenge",
     status: l.status ?? "pending",
     notes: l.notes ?? undefined,
+    logged_value: l.logged_value ?? null,
+    target_value: l.target_value ?? null,
+    unit: l.challenges?.unit ?? null,
+    is_quantifiable: l.challenges?.is_quantifiable ?? true,
   }));
   const active: string[] = (activeRes.data ?? [])
     .map((r: any) => r.challenges?.title)
