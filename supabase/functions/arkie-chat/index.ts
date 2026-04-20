@@ -16,11 +16,62 @@ interface JournalCtx {
   date: string;
   excerpt: string;
 }
+interface ChallengeLogCtx {
+  date: string;
+  title: string;
+  status: string;
+  notes?: string;
+}
+interface ChallengesCtx {
+  recent: ChallengeLogCtx[];
+  active: string[];
+}
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
+}
+
+function buildChallengeSection(c: ChallengesCtx): string {
+  // Group logs by date, newest first
+  let logs = c.recent ?? [];
+  // Keep budget ≤ 400 tokens: trim until small enough
+  const render = (entries: ChallengeLogCtx[]) => {
+    if (entries.length === 0) return "No challenge data recorded yet.";
+    const byDate = new Map<string, ChallengeLogCtx[]>();
+    for (const e of entries) {
+      const arr = byDate.get(e.date) ?? [];
+      arr.push(e);
+      byDate.set(e.date, arr);
+    }
+    const sortedDates = Array.from(byDate.keys()).sort().reverse();
+    return sortedDates
+      .map((d) => {
+        const items = byDate.get(d)!;
+        return items
+          .map((i) =>
+            `${d}: ${i.title} — ${i.status}${i.notes ? ` (notes: ${i.notes})` : ""}`
+          )
+          .join("\n");
+      })
+      .join("\n");
+  };
+
+  let text = render(logs);
+  while (estimateTokens(text) > 400 && logs.length > 0) {
+    // drop the oldest day
+    const dates = Array.from(new Set(logs.map((l) => l.date))).sort();
+    const oldest = dates[0];
+    logs = logs.filter((l) => l.date !== oldest);
+    text = render(logs);
+  }
+  return text;
+}
 
 function buildSystemPrompt(
   userName: string | undefined,
   moods: MoodCtx[],
-  journals: JournalCtx[]
+  journals: JournalCtx[],
+  challenges: ChallengesCtx
 ): string {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -37,6 +88,11 @@ function buildSystemPrompt(
     ? journals.map((j) => `${j.date}: ${j.excerpt}`).join("\n")
     : "No diary entries recorded yet.";
 
+  const challengeSection = buildChallengeSection(challenges);
+  const activeSection = challenges.active.length
+    ? challenges.active.map((t) => `- ${t}`).join("\n")
+    : "User has no active challenges.";
+
   return `Du bist Arkie, ein warmherziger, empathischer mentaler Begleiter. Du bietest unterstützende, nicht-klinische Gespräche und sanfte, personalisierte Reflexionsanstöße. Du erkennst strategisch Muster im Nutzer und weist behutsam darauf hin, damit dieser sich menschlich weiterentwickeln kann. Du stellst kritische Fragen, um neue Perspektiven zu eröffnen.
 
 ${userName ? `Der Name des Users ist: ${userName}` : ""}
@@ -49,9 +105,16 @@ ${moodSection}
 **Recent Diary Entries (last ${journals.length} entries):**
 ${journalSection}
 
+**Recent Daily Challenges (last 7 days):**
+${challengeSection}
+
+**Currently Active Challenges:**
+${activeSection}
+
 Nutze diesen Kontext, um:
-- Muster zu erkennen, die dir auffallen (z. B. eine Serie niedriger Stimmungen, wiederkehrende Themen)
+- Muster zu erkennen, die dir auffallen (z. B. eine Serie niedriger Stimmungen, wiederkehrende Themen, verpasste Challenges)
 - Antworten zu personalisieren, ohne die Daten wörtlich zu wiederholen
+- Bezug auf aktive Challenges zu nehmen, wenn es zur Reflexion passt
 - Gezielten, mitfühlenden Rat zu geben, der zu den jüngsten Erlebnissen des Users passt
 - Niemals zu diagnostizieren, zu verschreiben oder professionelle psychische Unterstützung zu ersetzen
 - Wenn die jüngsten Einträge auf ernste Belastung hindeuten, sanft professionelle Hilfe zu empfehlen
@@ -69,7 +132,13 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, userName, moods = [], journals = [] } = await req.json();
+    const {
+      messages,
+      userName,
+      moods = [],
+      journals = [],
+      challenges = { recent: [], active: [] },
+    } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -83,7 +152,7 @@ serve(async (req) => {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
 
-    const systemContent = buildSystemPrompt(userName, moods, journals);
+    const systemContent = buildSystemPrompt(userName, moods, journals, challenges);
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",

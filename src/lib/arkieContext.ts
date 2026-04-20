@@ -12,6 +12,18 @@ export interface JournalCtx {
   excerpt: string;
 }
 
+export interface ChallengeLogCtx {
+  date: string;
+  title: string;
+  status: string;
+  notes?: string;
+}
+
+export interface ChallengeContext {
+  recent: ChallengeLogCtx[]; // last 7 days, grouped/sorted
+  active: string[]; // active challenge titles
+}
+
 const SLIDER_KEYS = [
   "happy_sad",
   "calm_anxious",
@@ -28,9 +40,6 @@ function moodLabel(score: number): string {
   return "schwer";
 }
 
-/**
- * Rough char-based token estimate (1 token ≈ 4 chars).
- */
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
@@ -38,9 +47,14 @@ function estimateTokens(text: string): number {
 export async function fetchArkieContext(userId: string): Promise<{
   moods: MoodCtx[];
   journals: JournalCtx[];
+  challenges: ChallengeContext;
 }> {
-  // Fetch in parallel
-  const [moodRes, journalRes] = await Promise.all([
+  // 7-day window for challenge logs
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  const sevenCutoff = sevenDaysAgo.toISOString().slice(0, 10);
+
+  const [moodRes, journalRes, logRes, activeRes] = await Promise.all([
     supabase
       .from("mood_entries")
       .select("date, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
@@ -54,6 +68,18 @@ export async function fetchArkieContext(userId: string): Promise<{
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("daily_completions")
+      .select("date, status, notes, challenge_id, challenges!inner(title)")
+      .eq("user_id", userId)
+      .gte("date", sevenCutoff)
+      .order("date", { ascending: false })
+      .limit(40),
+    supabase
+      .from("user_challenges")
+      .select("challenge_id, challenges!inner(title)")
+      .eq("user_id", userId)
+      .eq("is_active", true),
   ]);
 
   const moods: MoodCtx[] = (moodRes.data ?? []).map((m: any) => {
@@ -76,12 +102,24 @@ export async function fetchArkieContext(userId: string): Promise<{
     };
   });
 
-  // Token budget check (~2000 tokens). If exceeded, reduce journals to 5.
+  const recent: ChallengeLogCtx[] = (logRes.data ?? []).map((l: any) => ({
+    date: l.date,
+    title: l.challenges?.title ?? "Challenge",
+    status: l.status ?? "pending",
+    notes: l.notes ?? undefined,
+  }));
+  const active: string[] = (activeRes.data ?? [])
+    .map((r: any) => r.challenges?.title)
+    .filter((t: unknown): t is string => typeof t === "string");
+
+  const challenges: ChallengeContext = { recent, active };
+
+  // Token budget check (~2000 tokens for moods+journals; challenge block ≤400)
   const combined =
-    JSON.stringify(moods) + JSON.stringify(journals);
-  if (estimateTokens(combined) > 2000) {
+    JSON.stringify(moods) + JSON.stringify(journals) + JSON.stringify(challenges);
+  if (estimateTokens(combined) > 2400) {
     journals = journals.slice(0, 5);
   }
 
-  return { moods, journals };
+  return { moods, journals, challenges };
 }

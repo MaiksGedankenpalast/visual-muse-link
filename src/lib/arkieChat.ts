@@ -10,6 +10,10 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arkie-chat`;
 export interface ArkieContextPayload {
   moods?: Array<{ date: string; label: string; score: number; notes?: string }>;
   journals?: Array<{ date: string; excerpt: string }>;
+  challenges?: {
+    recent: Array<{ date: string; title: string; status: string; notes?: string }>;
+    active: string[];
+  };
 }
 
 export interface ExtraSystemMessage {
@@ -42,6 +46,7 @@ export async function sendMessageToArkie(
       userName,
       moods: context?.moods ?? [],
       journals: context?.journals ?? [],
+      challenges: context?.challenges ?? { recent: [], active: [] },
     }),
   });
 
@@ -90,7 +95,6 @@ export async function sendMessageToArkie(
     }
   }
 
-  // Flush remaining buffer
   if (textBuffer.trim()) {
     for (let raw of textBuffer.split("\n")) {
       if (!raw) continue;
