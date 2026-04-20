@@ -18,6 +18,7 @@ import OnboardingReady from "@/pages/onboarding/OnboardingReady";
 import HomePage from "@/pages/HomePage";
 import VibePage from "@/pages/VibePage";
 import ChallengesPage from "@/pages/ChallengesPage";
+import ChallengeDetailPage from "@/pages/ChallengeDetailPage";
 import JournalPage from "@/pages/JournalPage";
 import JournalNewPage from "@/pages/JournalNewPage";
 import JournalDetailPage from "@/pages/JournalDetailPage";
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/home" element={<HomePage />} />
               <Route path="/vibe" element={<VibePage />} />
               <Route path="/challenges" element={<ChallengesPage />} />
+              <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
               <Route path="/journal" element={<JournalPage />} />
               <Route path="/journal/new" element={<JournalNewPage />} />
               <Route path="/journal/day/:date" element={<JournalDayPage />} />
