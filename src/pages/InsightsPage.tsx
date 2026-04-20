@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
+import ReviewsPanel from "@/components/ReviewsPanel";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
@@ -28,7 +29,7 @@ const InsightsPage = () => {
   const name = profileName || "du";
   const navigate = useNavigate();
 
-  const [mode, setMode] = useState<"week" | "month">("week");
+  const [mode, setMode] = useState<"week" | "month" | "weekly_review" | "four_weekly_review">("week");
   const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [journalCount, setJournalCount] = useState(0);
@@ -220,22 +221,30 @@ const InsightsPage = () => {
       <h1 className="font-bold text-foreground text-[24px] mb-5">Deine Insights</h1>
 
       {/* MODE TOGGLE */}
-      <div className="flex justify-center mb-6">
-        <div className="flex rounded-full p-1" style={{ background: "rgba(255,255,255,0.08)" }}>
-          {(["week", "month"] as const).map((m) => (
-            <button key={m} onClick={() => setMode(m)}
-              className="px-5 py-1.5 rounded-full text-sm font-medium transition-colors"
+      <div className="flex justify-center mb-6 overflow-x-auto scrollbar-hide">
+        <div className="flex rounded-full p-1 gap-0.5 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
+          {([
+            { k: "week", label: "Woche" },
+            { k: "month", label: "Monat" },
+            { k: "weekly_review", label: "7-Tage" },
+            { k: "four_weekly_review", label: "28-Tage" },
+          ] as const).map(({ k, label }) => (
+            <button key={k} onClick={() => setMode(k)}
+              className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
               style={{
-                background: mode === m ? "var(--mindark-accent-start)" : "transparent",
-                color: mode === m ? "white" : "rgba(255,255,255,0.5)",
+                background: mode === k ? "var(--mindark-accent-start)" : "transparent",
+                color: mode === k ? "white" : "rgba(255,255,255,0.5)",
               }}>
-              {m === "week" ? "Woche" : "Monat"}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
-      {mode === "week" ? (
+      {mode === "weekly_review" && user && <ReviewsPanel userId={user.id} type="weekly" />}
+      {mode === "four_weekly_review" && user && <ReviewsPanel userId={user.id} type="four_weekly" />}
+
+      {mode === "week" && (
         <>
           {/* ═══ WEEK VIEW ═══ */}
           {/* MOOD CHART */}
@@ -359,7 +368,9 @@ const InsightsPage = () => {
             )}
           </div>
         </>
-      ) : (
+      )}
+
+      {mode === "month" && (
         <>
           {/* ═══ MONTH VIEW ═══ */}
           {/* Month nav */}

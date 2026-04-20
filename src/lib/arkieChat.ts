@@ -14,6 +14,10 @@ export interface ArkieContextPayload {
     recent: Array<{ date: string; title: string; status: string; notes?: string }>;
     active: string[];
   };
+  reviews?: {
+    weekly: { label: string; excerpt: string } | null;
+    fourWeekly: { label: string; excerpt: string } | null;
+  };
 }
 
 export interface ExtraSystemMessage {
@@ -47,6 +51,7 @@ export async function sendMessageToArkie(
       moods: context?.moods ?? [],
       journals: context?.journals ?? [],
       challenges: context?.challenges ?? { recent: [], active: [] },
+      reviews: context?.reviews ?? { weekly: null, fourWeekly: null },
     }),
   });
 

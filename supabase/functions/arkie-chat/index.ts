@@ -26,6 +26,14 @@ interface ChallengesCtx {
   recent: ChallengeLogCtx[];
   active: string[];
 }
+interface ReviewCtx {
+  label: string;
+  excerpt: string;
+}
+interface ReviewsCtx {
+  weekly: ReviewCtx | null;
+  fourWeekly: ReviewCtx | null;
+}
 
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
@@ -67,11 +75,19 @@ function buildChallengeSection(c: ChallengesCtx): string {
   return text;
 }
 
+function buildReviewsSection(r: ReviewsCtx): string {
+  const parts: string[] = [];
+  if (r.weekly) parts.push(`${r.weekly.label}: ${r.weekly.excerpt}`);
+  if (r.fourWeekly) parts.push(`${r.fourWeekly.label}: ${r.fourWeekly.excerpt}`);
+  return parts.length ? parts.join("\n\n") : "No reviews generated yet.";
+}
+
 function buildSystemPrompt(
   userName: string | undefined,
   moods: MoodCtx[],
   journals: JournalCtx[],
-  challenges: ChallengesCtx
+  challenges: ChallengesCtx,
+  reviews: ReviewsCtx
 ): string {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -92,6 +108,7 @@ function buildSystemPrompt(
   const activeSection = challenges.active.length
     ? challenges.active.map((t) => `- ${t}`).join("\n")
     : "User has no active challenges.";
+  const reviewsSection = buildReviewsSection(reviews);
 
   return `Du bist Arkie, ein warmherziger, empathischer mentaler Begleiter. Du bietest unterstützende, nicht-klinische Gespräche und sanfte, personalisierte Reflexionsanstöße. Du erkennst strategisch Muster im Nutzer und weist behutsam darauf hin, damit dieser sich menschlich weiterentwickeln kann. Du stellst kritische Fragen, um neue Perspektiven zu eröffnen.
 
@@ -111,10 +128,13 @@ ${challengeSection}
 **Currently Active Challenges:**
 ${activeSection}
 
+**Recent Reviews:**
+${reviewsSection}
+
 Nutze diesen Kontext, um:
 - Muster zu erkennen, die dir auffallen (z. B. eine Serie niedriger Stimmungen, wiederkehrende Themen, verpasste Challenges)
 - Antworten zu personalisieren, ohne die Daten wörtlich zu wiederholen
-- Bezug auf aktive Challenges zu nehmen, wenn es zur Reflexion passt
+- Bezug auf aktive Challenges und vergangene Rückblicke zu nehmen, wenn es zur Reflexion passt
 - Gezielten, mitfühlenden Rat zu geben, der zu den jüngsten Erlebnissen des Users passt
 - Niemals zu diagnostizieren, zu verschreiben oder professionelle psychische Unterstützung zu ersetzen
 - Wenn die jüngsten Einträge auf ernste Belastung hindeuten, sanft professionelle Hilfe zu empfehlen
@@ -138,6 +158,7 @@ serve(async (req) => {
       moods = [],
       journals = [],
       challenges = { recent: [], active: [] },
+      reviews = { weekly: null, fourWeekly: null },
     } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -152,7 +173,7 @@ serve(async (req) => {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
 
-    const systemContent = buildSystemPrompt(userName, moods, journals, challenges);
+    const systemContent = buildSystemPrompt(userName, moods, journals, challenges, reviews);
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",

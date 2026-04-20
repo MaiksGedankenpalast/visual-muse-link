@@ -42,6 +42,11 @@ export function useAuth() {
               onboardingComplete: profile?.onboarding_complete ?? false,
               profileName: profile?.name ?? null,
             });
+            // First-use tracking: anchor review cycles to first login day
+            try {
+              const { ensureUserAppStart } = await import("@/lib/reviews");
+              ensureUserAppStart(user.id).catch(() => {});
+            } catch { /* ignore */ }
           }, 0);
         } else {
           setState({ user: null, loading: false, onboardingComplete: null, profileName: null });

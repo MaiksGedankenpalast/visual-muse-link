@@ -24,6 +24,16 @@ export interface ChallengeContext {
   active: string[]; // active challenge titles
 }
 
+export interface ReviewCtx {
+  label: string; // e.g. "Woche 4 (14.04.–20.04.)"
+  excerpt: string; // truncated to 400 chars
+}
+
+export interface ReviewsCtx {
+  weekly: ReviewCtx | null;
+  fourWeekly: ReviewCtx | null;
+}
+
 const SLIDER_KEYS = [
   "happy_sad",
   "calm_anxious",
@@ -44,17 +54,23 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+function formatShort(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.`;
+}
+
 export async function fetchArkieContext(userId: string): Promise<{
   moods: MoodCtx[];
   journals: JournalCtx[];
   challenges: ChallengeContext;
+  reviews: ReviewsCtx;
 }> {
   // 7-day window for challenge logs
   const sevenDaysAgo = new Date();
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   const sevenCutoff = sevenDaysAgo.toISOString().slice(0, 10);
 
-  const [moodRes, journalRes, logRes, activeRes] = await Promise.all([
+  const [moodRes, journalRes, logRes, activeRes, weeklyRes, fourWeeklyRes] = await Promise.all([
     supabase
       .from("mood_entries")
       .select("date, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
@@ -80,6 +96,22 @@ export async function fetchArkieContext(userId: string): Promise<{
       .select("challenge_id, challenges!inner(title)")
       .eq("user_id", userId)
       .eq("is_active", true),
+    supabase
+      .from("reviews")
+      .select("period_start, period_end, llm_narrative")
+      .eq("user_id", userId)
+      .eq("type", "weekly")
+      .eq("status", "complete")
+      .order("period_end", { ascending: false })
+      .limit(1),
+    supabase
+      .from("reviews")
+      .select("period_start, period_end, llm_narrative")
+      .eq("user_id", userId)
+      .eq("type", "four_weekly")
+      .eq("status", "complete")
+      .order("period_end", { ascending: false })
+      .limit(1),
   ]);
 
   const moods: MoodCtx[] = (moodRes.data ?? []).map((m: any) => {
@@ -114,6 +146,23 @@ export async function fetchArkieContext(userId: string): Promise<{
 
   const challenges: ChallengeContext = { recent, active };
 
+  const weeklyRow = (weeklyRes.data ?? [])[0] as any;
+  const fourRow = (fourWeeklyRes.data ?? [])[0] as any;
+  const reviews: ReviewsCtx = {
+    weekly: weeklyRow
+      ? {
+          label: `Woche (${formatShort(weeklyRow.period_start)}–${formatShort(weeklyRow.period_end)})`,
+          excerpt: String(weeklyRow.llm_narrative ?? "").slice(0, 400),
+        }
+      : null,
+    fourWeekly: fourRow
+      ? {
+          label: `4-Wochen-Rückblick (${formatShort(fourRow.period_start)}–${formatShort(fourRow.period_end)})`,
+          excerpt: String(fourRow.llm_narrative ?? "").slice(0, 400),
+        }
+      : null,
+  };
+
   // Token budget check (~2000 tokens for moods+journals; challenge block ≤400)
   const combined =
     JSON.stringify(moods) + JSON.stringify(journals) + JSON.stringify(challenges);
@@ -121,5 +170,5 @@ export async function fetchArkieContext(userId: string): Promise<{
     journals = journals.slice(0, 5);
   }
 
-  return { moods, journals, challenges };
+  return { moods, journals, challenges, reviews };
 }
