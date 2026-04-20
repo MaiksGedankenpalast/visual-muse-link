@@ -24,6 +24,16 @@ export interface ChallengeContext {
   active: string[]; // active challenge titles
 }
 
+export interface ReviewCtx {
+  label: string; // e.g. "Woche 4 (14.04.–20.04.)"
+  excerpt: string; // truncated to 400 chars
+}
+
+export interface ReviewsCtx {
+  weekly: ReviewCtx | null;
+  fourWeekly: ReviewCtx | null;
+}
+
 const SLIDER_KEYS = [
   "happy_sad",
   "calm_anxious",
