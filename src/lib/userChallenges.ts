@@ -162,7 +162,20 @@ export async function autoLogMissedYesterday(userId: string): Promise<void> {
 }
 
 /**
- * Upserts today's log for a challenge with the given status.
+ * Derives a ChallengeStatus from a logged value vs. target.
+ */
+export function deriveStatus(loggedValue: number | null | undefined, targetValue: number | null | undefined): ChallengeStatus {
+  const logged = Number(loggedValue ?? 0);
+  const target = Number(targetValue ?? 0);
+  if (!logged || logged <= 0) return "missed";
+  if (target > 0 && logged >= target) return "completed";
+  if (target > 0 && logged < target) return "partial";
+  // No target defined → any positive logged counts as completed
+  return "completed";
+}
+
+/**
+ * Upserts today's log for a challenge with the given status (binary / manual).
  */
 export async function setChallengeStatus(
   userId: string,
@@ -181,6 +194,35 @@ export async function setChallengeStatus(
     },
     { onConflict: "user_id,challenge_id,date" }
   );
+}
+
+/**
+ * Upserts today's log for a quantifiable challenge. Status is auto-derived
+ * from the logged value vs. the target.
+ */
+export async function setChallengeQuantity(
+  userId: string,
+  challengeId: string,
+  loggedValue: number,
+  targetValue: number | null,
+  notes?: string
+): Promise<ChallengeStatus> {
+  const safeLogged = Math.max(0, Number.isFinite(loggedValue) ? loggedValue : 0);
+  const status = deriveStatus(safeLogged, targetValue);
+  await supabase.from("daily_completions").upsert(
+    {
+      user_id: userId,
+      challenge_id: challengeId,
+      date: todayStr(),
+      status,
+      completed: status === "completed",
+      logged_value: safeLogged,
+      target_value: targetValue,
+      notes: notes ?? null,
+    },
+    { onConflict: "user_id,challenge_id,date" }
+  );
+  return status;
 }
 
 /**
