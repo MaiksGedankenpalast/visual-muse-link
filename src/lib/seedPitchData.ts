@@ -277,6 +277,9 @@ export async function resetPitchData(userId: string) {
     supabase.from("journal_entries").delete().eq("user_id", userId),
     supabase.from("daily_completions").delete().eq("user_id", userId),
     supabase.from("vibe_items").delete().eq("user_id", userId),
+    supabase.from("user_challenges").delete().eq("user_id", userId),
+    supabase.from("chat_messages").delete().eq("user_id", userId),
+    supabase.from("chat_sessions").delete().eq("user_id", userId),
     supabase.from("challenges").delete().eq("user_id", userId).eq("is_preset", false),
   ]);
   await supabase
