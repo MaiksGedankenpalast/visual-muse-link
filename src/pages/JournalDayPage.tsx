@@ -33,6 +33,13 @@ interface MoodData {
   tags: string[] | null;
 }
 
+interface DayChallenge {
+  challenge_id: string;
+  title: string;
+  icon: string | null;
+  status: "completed" | "partial" | "missed" | "pending";
+}
+
 const JournalDayPage = () => {
   const { date } = useParams<{ date: string }>();
   const navigate = useNavigate();
@@ -46,18 +53,31 @@ const JournalDayPage = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [dayChallenges, setDayChallenges] = useState<DayChallenge[]>([]);
 
   useEffect(() => {
     if (!user || !date) return;
     (async () => {
-      const [{ data: entryData }, { data: moodData }] = await Promise.all([
+      const [{ data: entryData }, { data: moodData }, { data: logData }] = await Promise.all([
         supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }),
         supabase.from("mood_entries")
           .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
           .eq("user_id", user.id).eq("date", date).maybeSingle(),
+        supabase
+          .from("daily_completions")
+          .select("challenge_id, status, challenges!inner(title, icon)")
+          .eq("user_id", user.id)
+          .eq("date", date),
       ]);
       setEntries((entryData ?? []) as JournalEntry[]);
       if (moodData) setMood(moodData as MoodData);
+      const dc: DayChallenge[] = (logData ?? []).map((l: any) => ({
+        challenge_id: l.challenge_id,
+        title: l.challenges?.title ?? "Challenge",
+        icon: l.challenges?.icon ?? null,
+        status: l.status,
+      }));
+      setDayChallenges(dc);
       setLoading(false);
     })();
   }, [user, date]);
