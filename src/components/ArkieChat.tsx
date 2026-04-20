@@ -213,7 +213,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
             ];
           });
         },
-        { moods, journals, challenges },
+        { moods, journals, challenges, reviews },
         crossMemory ? { role: "system", content: crossMemory } : null
       );
 
