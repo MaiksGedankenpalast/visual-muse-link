@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, CircleDashed, CircleSlash, Minus, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, CircleDashed, CircleSlash, Minus, Plus, Trash2, ChevronDown } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -12,7 +12,9 @@ import {
 import {
   ChallengeStatus,
   daysAgoStr,
+  deriveStatus,
   removeUserChallenge,
+  setChallengeQuantity,
   setChallengeStatus,
   todayStr,
 } from "@/lib/userChallenges";
@@ -23,11 +25,14 @@ interface ChallengeDetail {
   description: string | null;
   category: string | null;
   icon: string | null;
+  default_target: number | null;
+  unit: string | null;
+  is_quantifiable: boolean;
 }
 
 interface LogDot {
   date: string;
-  status: ChallengeStatus | null; // null = before added or no record
+  status: ChallengeStatus | null;
 }
 
 const STATUS_COLORS: Record<ChallengeStatus, string> = {
@@ -35,6 +40,13 @@ const STATUS_COLORS: Record<ChallengeStatus, string> = {
   partial: "#f59e0b",
   missed: "rgba(255,255,255,0.18)",
   pending: "rgba(255,255,255,0.08)",
+};
+
+const STATUS_LABEL: Record<ChallengeStatus, string> = {
+  pending: "⬜ Noch offen",
+  completed: "✅ Abgeschlossen",
+  partial: "🔶 Teilweise",
+  missed: "❌ Verpasst",
 };
 
 const ChallengeDetailPage = () => {
@@ -45,20 +57,26 @@ const ChallengeDetailPage = () => {
   const [loading, setLoading] = useState(true);
   const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
   const [todayStatus, setTodayStatus] = useState<ChallengeStatus>("pending");
+  const [loggedValue, setLoggedValue] = useState<number>(0);
   const [history, setHistory] = useState<LogDot[]>([]);
-  const [addedAt, setAddedAt] = useState<string | null>(null);
   const [isActive, setIsActive] = useState(true);
-  const [savingStatus, setSavingStatus] = useState<ChallengeStatus | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [noteOpen, setNoteOpen] = useState(false);
+  const [note, setNote] = useState("");
 
   const fetchAll = useCallback(async () => {
     if (!user || !id) return;
     setLoading(true);
     const fourteenAgo = daysAgoStr(13);
     const [{ data: chData }, { data: logs }, { data: uc }] = await Promise.all([
-      supabase.from("challenges").select("id,title,description,category,icon").eq("id", id).maybeSingle(),
+      supabase
+        .from("challenges")
+        .select("id,title,description,category,icon,default_target,unit,is_quantifiable")
+        .eq("id", id)
+        .maybeSingle(),
       supabase
         .from("daily_completions")
-        .select("date,status")
+        .select("date,status,logged_value,notes")
         .eq("user_id", user.id)
         .eq("challenge_id", id)
         .gte("date", fourteenAgo)
@@ -71,33 +89,54 @@ const ChallengeDetailPage = () => {
         .maybeSingle(),
     ]);
 
-    setChallenge((chData as ChallengeDetail) ?? null);
-    setAddedAt((uc?.added_at as string | null) ?? null);
+    const ch = (chData as ChallengeDetail) ?? null;
+    setChallenge(ch);
     setIsActive((uc?.is_active as boolean | null) ?? false);
 
-    const byDate = new Map<string, ChallengeStatus>();
-    (logs ?? []).forEach((l: any) => byDate.set(l.date, l.status as ChallengeStatus));
-    setTodayStatus((byDate.get(todayStr()) as ChallengeStatus) ?? "pending");
+    const byDate = new Map<string, { status: ChallengeStatus; logged_value: number | null; notes: string | null }>();
+    (logs ?? []).forEach((l: any) =>
+      byDate.set(l.date, { status: l.status as ChallengeStatus, logged_value: l.logged_value, notes: l.notes }),
+    );
+    const todayLog = byDate.get(todayStr());
+    setTodayStatus(todayLog?.status ?? "pending");
+    setLoggedValue(Number(todayLog?.logged_value ?? 0));
+    setNote(todayLog?.notes ?? "");
+    if (todayLog?.notes) setNoteOpen(true);
 
     const dots: LogDot[] = [];
     for (let i = 13; i >= 0; i--) {
       const d = daysAgoStr(i);
       const beforeAdd = uc?.added_at && d < (uc.added_at as string).slice(0, 10);
-      dots.push({ date: d, status: beforeAdd ? null : byDate.get(d) ?? null });
+      dots.push({ date: d, status: beforeAdd ? null : byDate.get(d)?.status ?? null });
     }
     setHistory(dots);
     setLoading(false);
   }, [user, id]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => {
+    fetchAll();
+  }, [fetchAll]);
 
-  const handleSetStatus = async (status: ChallengeStatus) => {
+  const target = challenge?.default_target ?? null;
+  const unit = challenge?.unit ?? "";
+
+  const handleSaveQuantity = async () => {
     if (!user || !id) return;
-    setSavingStatus(status);
-    await setChallengeStatus(user.id, id, status);
+    setSaving(true);
+    const status = await setChallengeQuantity(user.id, id, loggedValue, target, note.trim() || undefined);
     setTodayStatus(status);
     setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
-    setSavingStatus(null);
+    setSaving(false);
+    toast({ title: "Gespeichert 💜" });
+  };
+
+  const handleBinaryStatus = async (status: ChallengeStatus) => {
+    if (!user || !id) return;
+    setSaving(true);
+    await setChallengeStatus(user.id, id, status, note.trim() || undefined);
+    setTodayStatus(status);
+    setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
+    setSaving(false);
     toast({ title: "Status aktualisiert 💜" });
   };
 
@@ -129,12 +168,13 @@ const ChallengeDetailPage = () => {
     );
   }
 
-  const statusLabel: Record<ChallengeStatus, string> = {
-    pending: "Noch offen",
-    completed: "Abgeschlossen ✅",
-    partial: "Teilweise 🔶",
-    missed: "Verpasst",
-  };
+  const warnTooHigh =
+    challenge.is_quantifiable && target !== null && target > 0 && loggedValue > target * 3;
+
+  // Preview status as user edits (before save)
+  const previewStatus: ChallengeStatus = challenge.is_quantifiable
+    ? deriveStatus(loggedValue, target)
+    : todayStatus;
 
   return (
     <div className="px-4 pt-6 pb-32 min-h-screen onboarding-slide">
@@ -202,48 +242,129 @@ const ChallengeDetailPage = () => {
       <div className="mb-5">
         <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Heute</p>
         <div
-          className="rounded-[16px] p-4 flex items-center gap-3"
+          className="rounded-[16px] p-4 flex items-center gap-3 mb-3"
           style={{ background: "rgba(255,255,255,0.05)" }}
         >
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center shrink-0"
-            style={{ background: STATUS_COLORS[todayStatus] }}
+            style={{ background: STATUS_COLORS[previewStatus] }}
           >
-            {todayStatus === "completed" && <Check className="w-5 h-5 text-white" />}
-            {todayStatus === "partial" && <Minus className="w-5 h-5 text-white" />}
-            {todayStatus === "missed" && <CircleSlash className="w-5 h-5 text-foreground/60" />}
-            {todayStatus === "pending" && <CircleDashed className="w-5 h-5 text-foreground/60" />}
+            {previewStatus === "completed" && <Check className="w-5 h-5 text-white" />}
+            {previewStatus === "partial" && <Minus className="w-5 h-5 text-white" />}
+            {previewStatus === "missed" && <CircleSlash className="w-5 h-5 text-foreground/60" />}
+            {previewStatus === "pending" && <CircleDashed className="w-5 h-5 text-foreground/60" />}
           </div>
-          <p className="text-foreground font-medium">{statusLabel[todayStatus]}</p>
+          <p className="text-foreground font-medium">{STATUS_LABEL[previewStatus]}</p>
         </div>
 
+        {isActive && challenge.is_quantifiable && (
+          <>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setLoggedValue((v) => Math.max(0, Number(v) - 1))}
+                className="w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+                aria-label="Verringern"
+              >
+                <Minus className="w-4 h-4 text-foreground" />
+              </button>
+              <div
+                className="flex-1 flex items-center gap-2 rounded-[12px] px-3 h-11"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+              >
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  value={loggedValue}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    setLoggedValue(Number.isFinite(n) && n >= 0 ? n : 0);
+                  }}
+                  className="flex-1 bg-transparent text-foreground text-[16px] font-semibold outline-none"
+                />
+                {unit && <span className="text-muted-foreground text-sm">{unit}</span>}
+              </div>
+              <button
+                onClick={() => setLoggedValue((v) => Math.max(0, Number(v) + 1))}
+                className="w-11 h-11 rounded-[12px] flex items-center justify-center shrink-0"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
+                aria-label="Erhöhen"
+              >
+                <Plus className="w-4 h-4 text-foreground" />
+              </button>
+            </div>
+            {target !== null && (
+              <p className="text-muted-foreground text-xs mt-2">
+                Ziel: {target}{unit ? ` ${unit}` : ""}
+              </p>
+            )}
+            {warnTooHigh && (
+              <p className="text-[12px] mt-2" style={{ color: "#f59e0b" }}>
+                Das scheint höher als üblich – bist du sicher?
+              </p>
+            )}
+
+            <button
+              onClick={handleSaveQuantity}
+              disabled={saving}
+              className="w-full mt-3 rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
+              style={{
+                background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
+              }}
+            >
+              {saving ? "Speichern..." : "Speichern"}
+            </button>
+          </>
+        )}
+
+        {isActive && !challenge.is_quantifiable && (
+          <>
+            <button
+              onClick={() => handleBinaryStatus("completed")}
+              disabled={saving}
+              className="w-full rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
+              style={{
+                background:
+                  todayStatus === "completed"
+                    ? "linear-gradient(135deg, #22c55e, #16a34a)"
+                    : "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
+              }}
+            >
+              Als erledigt markieren
+            </button>
+            <button
+              onClick={() => handleBinaryStatus("missed")}
+              disabled={saving}
+              className="w-full mt-2 text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+            >
+              Heute nicht geschafft
+            </button>
+          </>
+        )}
+
+        {/* Collapsible note */}
         {isActive && (
-          <div className="mt-3 grid grid-cols-2 gap-2">
+          <div className="mt-3">
             <button
-              onClick={() => handleSetStatus("completed")}
-              disabled={savingStatus !== null}
-              className="rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
-              style={{
-                background: todayStatus === "completed"
-                  ? "linear-gradient(135deg, #22c55e, #16a34a)"
-                  : "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
-              }}
+              onClick={() => setNoteOpen((o) => !o)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              Abschließen
+              <ChevronDown
+                className={`w-3 h-3 transition-transform ${noteOpen ? "rotate-180" : ""}`}
+              />
+              Notiz hinzufügen
             </button>
-            <button
-              onClick={() => handleSetStatus("partial")}
-              disabled={savingStatus !== null}
-              className="rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
-              style={{
-                background: todayStatus === "partial"
-                  ? "rgba(245,158,11,0.35)"
-                  : "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.1)",
-              }}
-            >
-              Teilweise
-            </button>
+            {noteOpen && (
+              <input
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Wie lief es? (optional)"
+                className="w-full mt-2 rounded-[10px] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+                style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+              />
+            )}
           </div>
         )}
       </div>
