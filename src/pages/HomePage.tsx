@@ -5,7 +5,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw, Settings as SettingsIcon } from "lucide-react";
+import AddChallengeSheet from "@/components/AddChallengeSheet";
+import {
+  ChallengeStatus,
+  autoLogMissedYesterday,
+  ensureUserChallengesSeeded,
+  todayStr as todayStrFn,
+} from "@/lib/userChallenges";
+import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw, Settings as SettingsIcon, CircleDashed, CircleSlash, Minus, Sparkles } from "lucide-react";
 
 /* ── helpers ── */
 const germanDate = () => {
@@ -24,18 +31,12 @@ interface MoodEntry {
   tags: string[] | null;
 }
 
-interface Challenge {
-  id: string;
+interface ActiveChallenge {
+  id: string;          // challenge id
   title: string;
   icon: string | null;
-  description: string | null;
   category: string | null;
-}
-
-interface DailyCompletion {
-  id: string;
-  challenge_id: string;
-  completed: boolean;
+  status: ChallengeStatus; // status for TODAY
 }
 
 interface VibeItem {
@@ -44,20 +45,18 @@ interface VibeItem {
   completed: boolean;
 }
 
-const GOAL_CATEGORIES: Record<string, string[]> = {
-  "Stress reduzieren": ["mindfulness", "bewegung", "atmung"],
-  "Dankbarkeit üben": ["dankbarkeit", "journaling"],
-  "Persönlich wachsen": ["reflexion", "lernen"],
-  "Kreativität entfalten": ["kreativität", "schreiben"],
-  "Besser schlafen": ["schlaf", "abendroutine"],
-  "Gefühle verarbeiten": ["emotionen", "journaling"],
-};
-
 const today = () => new Date().toISOString().slice(0, 10);
 const yesterday = () => {
   const d = new Date();
   d.setDate(d.getDate() - 1);
   return d.toISOString().slice(0, 10);
+};
+
+const STATUS_COLORS: Record<ChallengeStatus, string> = {
+  completed: "#22c55e",
+  partial: "#f59e0b",
+  missed: "rgba(255,255,255,0.2)",
+  pending: "rgba(255,255,255,0.08)",
 };
 
 const HomePage = () => {
@@ -67,13 +66,12 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [todayMood, setTodayMood] = useState<MoodEntry | null>(null);
   const [yesterdayMood, setYesterdayMood] = useState<MoodEntry | null>(null);
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [completions, setCompletions] = useState<DailyCompletion[]>([]);
+  const [activeChallenges, setActiveChallenges] = useState<ActiveChallenge[]>([]);
   const [vibeItems, setVibeItems] = useState<VibeItem[]>([]);
   const [streak, setStreak] = useState(0);
-  const [goals, setGoals] = useState<string[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [quickVibeText, setQuickVibeText] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
 
   /* pull-to-refresh */
   const [pullStart, setPullStart] = useState<number | null>(null);
@@ -100,30 +98,50 @@ const HomePage = () => {
     const todayStr = today();
     const yesterdayStr = yesterday();
 
+    // 1. Seed challenges if none + auto-log yesterday misses (run in order)
+    await ensureUserChallengesSeeded(user.id);
+    await autoLogMissedYesterday(user.id);
+
     const [
       { data: todayMoodData },
       { data: yesterdayMoodData },
-      { data: challengesData },
-      { data: completionsData },
       { data: vibeData },
       { data: moodDates },
-      { data: profileData },
+      { data: activeUC },
+      { data: todayLogs },
     ] = await Promise.all([
       supabase.from("mood_entries").select("happy_sad,calm_anxious,confident_insecure,excited_bored,rested_tired,tags").eq("user_id", user.id).eq("date", todayStr).maybeSingle(),
       supabase.from("mood_entries").select("happy_sad,calm_anxious,confident_insecure,excited_bored,rested_tired,tags").eq("user_id", user.id).eq("date", yesterdayStr).maybeSingle(),
-      supabase.from("challenges").select("id,title,icon,description,category").or(`is_preset.eq.true,user_id.eq.${user.id}`).limit(20),
-      supabase.from("daily_completions").select("id,challenge_id,completed").eq("user_id", user.id).eq("date", todayStr),
       supabase.from("vibe_items").select("id,text,completed").eq("user_id", user.id).eq("date", todayStr).order("created_at", { ascending: true }),
       supabase.from("mood_entries").select("date").eq("user_id", user.id).order("date", { ascending: false }).limit(100),
-      supabase.from("profiles").select("onboarding_goals").eq("id", user.id).single(),
+      supabase
+        .from("user_challenges")
+        .select("challenge_id, added_at, challenges!inner(id,title,icon,category)")
+        .eq("user_id", user.id)
+        .eq("is_active", true)
+        .order("added_at", { ascending: true }),
+      supabase
+        .from("daily_completions")
+        .select("challenge_id, status")
+        .eq("user_id", user.id)
+        .eq("date", todayStr),
     ]);
 
     setTodayMood(todayMoodData as MoodEntry | null);
     setYesterdayMood(yesterdayMoodData as MoodEntry | null);
-    setChallenges((challengesData as Challenge[]) ?? []);
-    setCompletions((completionsData as DailyCompletion[]) ?? []);
     setVibeItems((vibeData as VibeItem[]) ?? []);
-    setGoals((profileData?.onboarding_goals as string[]) ?? []);
+
+    const statusByChallenge = new Map<string, ChallengeStatus>();
+    (todayLogs ?? []).forEach((l: any) => statusByChallenge.set(l.challenge_id, l.status));
+
+    const active: ActiveChallenge[] = (activeUC ?? []).map((uc: any) => ({
+      id: uc.challenges.id,
+      title: uc.challenges.title,
+      icon: uc.challenges.icon,
+      category: uc.challenges.category,
+      status: statusByChallenge.get(uc.challenges.id) ?? "pending",
+    }));
+    setActiveChallenges(active);
 
     // Streak calculation
     if (moodDates && moodDates.length > 0) {
@@ -152,20 +170,6 @@ const HomePage = () => {
   }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll, refreshKey]);
-
-  /* ── toggle challenge completion ── */
-  const toggleChallenge = async (challengeId: string) => {
-    if (!user) return;
-    const existing = completions.find((c) => c.challenge_id === challengeId);
-    if (existing) {
-      const newVal = !existing.completed;
-      await supabase.from("daily_completions").update({ completed: newVal }).eq("id", existing.id);
-      setCompletions((prev) => prev.map((c) => c.id === existing.id ? { ...c, completed: newVal } : c));
-    } else {
-      const { data } = await supabase.from("daily_completions").insert({ user_id: user.id, challenge_id: challengeId, completed: true, date: today() }).select().single();
-      if (data) setCompletions((prev) => [...prev, data as DailyCompletion]);
-    }
-  };
 
   /* ── quick add vibe ── */
   const addQuickVibe = async () => {
@@ -201,17 +205,15 @@ const HomePage = () => {
   const vibeCompleted = vibeItems.filter((v) => v.completed).length;
   const vibeTotal = vibeItems.length;
 
-  // prioritise challenges by goals
-  const priorityCategories = goals.flatMap((g) => GOAL_CATEGORIES[g] ?? []);
-  const sortedChallenges = [...challenges].sort((a, b) => {
-    const aMatch = priorityCategories.includes(a.category ?? "");
-    const bMatch = priorityCategories.includes(b.category ?? "");
-    if (aMatch && !bMatch) return -1;
-    if (!aMatch && bMatch) return 1;
-    return 0;
-  });
-
   const name = profileName || "du";
+
+  const renderStatusIcon = (status: ChallengeStatus) => {
+    const common = "w-4 h-4";
+    if (status === "completed") return <Check className={`${common} text-white`} />;
+    if (status === "partial") return <Minus className={`${common} text-white`} />;
+    if (status === "missed") return <CircleSlash className={`${common} text-foreground/60`} />;
+    return <CircleDashed className={`${common} text-foreground/50`} />;
+  };
 
   return (
     <div
@@ -381,35 +383,84 @@ const HomePage = () => {
               )}
             </div>
 
-            {/* CARD 3 — Daily Challenges */}
+            {/* CARD 3 — Daily Challenges (dynamic) */}
             <div className="glass-card p-[18px]">
               <div className="flex items-center justify-between mb-3">
                 <p className="font-bold text-foreground text-[16px]">Daily Challenges</p>
                 <button onClick={() => navigate("/challenges")}
                   className="text-xs px-3 py-1 rounded-full"
                   style={{ background: "rgba(180,127,232,0.25)", color: "var(--mindark-accent-start)" }}>
-                  Mehr
+                  Browse
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-2">
-                {sortedChallenges.slice(0, 4).map((ch, i) => (
-                  <div key={ch.id}
-                    className="rounded-[14px] p-3 text-center"
+
+              {activeChallenges.length === 0 ? (
+                <div className="text-center py-6">
+                  <Sparkles className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Du hast heute noch keine aktiven Challenges.
+                  </p>
+                  <button
+                    onClick={() => setAddOpen(true)}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-foreground"
                     style={{
-                      background: "rgba(255,255,255,0.08)",
-                      opacity: i >= 2 ? 0.6 : 1,
-                      filter: i >= 2 ? "blur(0.5px)" : "none",
-                    }}>
-                    <span className="text-[28px] block mb-1">{ch.icon || "✨"}</span>
-                    <p className="font-bold text-foreground text-[13px]">{ch.title}</p>
-                    <p className="text-muted-foreground text-[11px] mt-0.5 line-clamp-2">{ch.description}</p>
+                      background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
+                    }}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Challenge hinzufügen
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {activeChallenges.map((ch) => (
+                      <button
+                        key={ch.id}
+                        onClick={() => navigate(`/challenges/${ch.id}`)}
+                        className="w-full flex items-center gap-3 p-3 rounded-[14px] text-left transition-colors hover:bg-white/5"
+                        style={{ background: "rgba(255,255,255,0.05)" }}
+                      >
+                        <span className="text-[22px] leading-none shrink-0">{ch.icon || "✨"}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-foreground text-[14px] truncate">{ch.title}</p>
+                          {ch.category && (
+                            <span
+                              className="inline-block mt-0.5 text-[10px] px-2 py-0.5 rounded-full"
+                              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}
+                            >
+                              {ch.category}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                          style={{ background: STATUS_COLORS[ch.status] }}
+                        >
+                          {renderStatusIcon(ch.status)}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
+                  <button
+                    onClick={() => setAddOpen(true)}
+                    className="w-full mt-3 text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
+                  >
+                    + Challenge hinzufügen
+                  </button>
+                </>
+              )}
             </div>
           </>
         )}
       </div>
+
+      <AddChallengeSheet
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onAdded={() => setRefreshKey((k) => k + 1)}
+      />
     </div>
   );
 };
