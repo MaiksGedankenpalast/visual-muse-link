@@ -3,6 +3,8 @@ import { X, Send } from "lucide-react";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import Arkie from "./Arkie";
 import { ChatMessage, sendMessageToArkie } from "@/lib/arkieChat";
+import { fetchArkieContext, MoodCtx, JournalCtx } from "@/lib/arkieContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface ArkieChatProps {
   open: boolean;
@@ -21,8 +23,23 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [moods, setMoods] = useState<MoodCtx[]>([]);
+  const [journals, setJournals] = useState<JournalCtx[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
+
+  const refreshContext = async () => {
+    if (!user) return { moods: [] as MoodCtx[], journals: [] as JournalCtx[] };
+    try {
+      const ctx = await fetchArkieContext(user.id);
+      setMoods(ctx.moods);
+      setJournals(ctx.journals);
+      return ctx;
+    } catch {
+      return { moods, journals };
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -33,8 +50,10 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
   useEffect(() => {
     if (open) {
       setTimeout(() => inputRef.current?.focus(), 300);
+      refreshContext();
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user?.id]);
 
   const handleSend = async () => {
     const text = input.trim();
@@ -55,22 +74,29 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
     let assistantContent = "";
 
     try {
-      await sendMessageToArkie(text, messages, userName, (chunk) => {
-        setIsLoading(false);
-        assistantContent += chunk;
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.id === assistantId) {
-            return prev.map((m) =>
-              m.id === assistantId ? { ...m, content: assistantContent } : m
-            );
-          }
-          return [
-            ...prev,
-            { id: assistantId, role: "assistant" as const, content: assistantContent, timestamp: new Date() },
-          ];
-        });
-      });
+      const ctx = await refreshContext();
+      await sendMessageToArkie(
+        text,
+        messages,
+        userName,
+        (chunk) => {
+          setIsLoading(false);
+          assistantContent += chunk;
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.id === assistantId) {
+              return prev.map((m) =>
+                m.id === assistantId ? { ...m, content: assistantContent } : m
+              );
+            }
+            return [
+              ...prev,
+              { id: assistantId, role: "assistant" as const, content: assistantContent, timestamp: new Date() },
+            ];
+          });
+        },
+        { moods: ctx.moods, journals: ctx.journals }
+      );
     } catch (err) {
       setMessages((prev) => [
         ...prev,

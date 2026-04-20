@@ -7,11 +7,17 @@ export interface ChatMessage {
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arkie-chat`;
 
+export interface ArkieContextPayload {
+  moods?: Array<{ date: string; label: string; score: number; notes?: string }>;
+  journals?: Array<{ date: string; excerpt: string }>;
+}
+
 export async function sendMessageToArkie(
   userMessage: string,
   conversationHistory: ChatMessage[],
   userName?: string,
-  onDelta?: (chunk: string) => void
+  onDelta?: (chunk: string) => void,
+  context?: ArkieContextPayload
 ): Promise<string> {
   const messages = [
     ...conversationHistory.map((m) => ({ role: m.role, content: m.content })),
@@ -24,7 +30,12 @@ export async function sendMessageToArkie(
       "Content-Type": "application/json",
       Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
     },
-    body: JSON.stringify({ messages, userName }),
+    body: JSON.stringify({
+      messages,
+      userName,
+      moods: context?.moods ?? [],
+      journals: context?.journals ?? [],
+    }),
   });
 
   if (!resp.ok) {
