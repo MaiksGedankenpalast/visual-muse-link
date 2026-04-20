@@ -75,22 +75,28 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
 
     try {
       const ctx = await refreshContext();
-      await sendMessageToArkie(text, messages, userName, (chunk) => {
-        setIsLoading(false);
-        assistantContent += chunk;
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (last?.id === assistantId) {
-            return prev.map((m) =>
-              m.id === assistantId ? { ...m, content: assistantContent } : m
-            );
-          }
-          return [
-            ...prev,
-            { id: assistantId, role: "assistant" as const, content: assistantContent, timestamp: new Date() },
-          ];
-        });
-      });
+      await sendMessageToArkie(
+        text,
+        messages,
+        userName,
+        (chunk) => {
+          setIsLoading(false);
+          assistantContent += chunk;
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last?.id === assistantId) {
+              return prev.map((m) =>
+                m.id === assistantId ? { ...m, content: assistantContent } : m
+              );
+            }
+            return [
+              ...prev,
+              { id: assistantId, role: "assistant" as const, content: assistantContent, timestamp: new Date() },
+            ];
+          });
+        },
+        { moods: ctx.moods, journals: ctx.journals }
+      );
     } catch (err) {
       setMessages((prev) => [
         ...prev,
