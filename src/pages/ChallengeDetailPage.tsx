@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass, GlassWater } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -61,6 +62,27 @@ function isStrengthChallenge(title: string | null | undefined, category: string 
   if (repKeywords.some((k) => t.includes(k))) return true;
   if (c.includes("kraft") || c.includes("strength")) return true;
   return false;
+}
+
+/** Detect quick-action challenges that must NOT use a timer (Template C), e.g. "Treppe nehmen". */
+function isQuickActionOverride(title: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  const keywords = ["treppe", "stairs", "fahrstuhl", "aufzug"];
+  return keywords.some((k) => t.includes(k));
+}
+
+/** Detect "letter / message" challenges → Template A with a single big textarea + journal mirror. */
+function isLetterChallenge(title: string | null | undefined): "message" | "self_letter" | null {
+  const t = (title ?? "").toLowerCase();
+  if (t.includes("nette nachricht") || (t.includes("nachricht") && t.includes("schreib"))) return "message";
+  if (t.includes("brief an dich") || t.includes("brief an mich") || (t.includes("brief") && t.includes("selbst"))) return "self_letter";
+  return null;
+}
+
+/** Detect water-tracker challenge: "2 Liter Wasser trinken". */
+function isWaterChallenge(title: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  return t.includes("wasser") && (t.includes("liter") || t.includes("trinke"));
 }
 
 /** Parse a default duration in seconds from a challenge title like "10 Min spazieren" or "2 Min atmen". */
