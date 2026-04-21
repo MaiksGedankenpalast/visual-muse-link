@@ -314,6 +314,158 @@ const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
     return best;
   }, [chats]);
 
+  // ── Build snap cards ──
+  const cards: InsightCard[] = useMemo(() => {
+    const out: InsightCard[] = [];
+
+    correlations.forEach((c) => {
+      const label = c.category.charAt(0).toUpperCase() + c.category.slice(1);
+      out.push({
+        id: `cat-${c.category}`,
+        tier: "free",
+        icon: <Sparkles className="w-4 h-4" style={{ color: "#c4b5fd" }} />,
+        title: `${label}-Challenges`,
+        body: (
+          <>
+            korrelieren mit{" "}
+            <span className="font-bold" style={{ color: "#c4b5fd" }}>{c.deltaPct}%</span>{" "}
+            besserer Laune ✨
+          </>
+        ),
+      });
+    });
+
+    if (weekdayInsight) {
+      out.push({
+        id: "weekday",
+        tier: "free",
+        icon: <CalendarDays className="w-4 h-4" style={{ color: "#c4b5fd" }} />,
+        title: "Bester Wochentag",
+        body: (
+          <>
+            Dein <span className="font-semibold">{weekdayInsight.weekday}</span> ist statistisch dein glücklichster Tag.
+          </>
+        ),
+      });
+    }
+
+    if (extremaInsight) {
+      out.push({
+        id: "extrema",
+        tier: "free",
+        icon: <TrendingUp className="w-4 h-4" style={{ color: "#c4b5fd" }} />,
+        title: "Wochen-Highlights",
+        body: (
+          <>
+            <TrendingUp className="inline w-3 h-3 mr-0.5" /> {extremaInsight.highDay} ({extremaInsight.highDate}) ·{" "}
+            <TrendingDown className="inline w-3 h-3 mx-0.5" /> {extremaInsight.lowDay} ({extremaInsight.lowDate})
+          </>
+        ),
+      });
+    }
+
+    if (pairingInsight) {
+      out.push({
+        id: "pairing",
+        tier: "free",
+        icon: <Link2 className="w-4 h-4" style={{ color: "#c4b5fd" }} />,
+        title: "Schlaf × Ruhe",
+        body: (
+          <>
+            Guter Schlaf korreliert bei dir mit{" "}
+            <span className="font-bold" style={{ color: "#c4b5fd" }}>{pairingInsight.pct}%</span>{" "}
+            ruhigeren Tagen.
+          </>
+        ),
+      });
+    }
+
+    if (journalInsight) {
+      out.push({
+        id: "journal-kw",
+        tier: "premium",
+        icon: <BookOpen className="w-4 h-4" style={{ color: "#e9d5ff" }} />,
+        title: "Tagebuch-Muster",
+        body: (
+          <>
+            Das Thema <span className="font-semibold">„{journalInsight.keyword}"</span> beeinflusst deinen Mood meist{" "}
+            <span className="font-semibold">{journalInsight.direction}</span>.
+          </>
+        ),
+      });
+    }
+
+    if (keywordInsight) {
+      out.push({
+        id: "challenge-kw",
+        tier: "premium",
+        icon: <Brain className="w-4 h-4" style={{ color: "#e9d5ff" }} />,
+        title: "Reflexions-Insight",
+        body: (
+          <>
+            Deine Einträge zu <span className="font-semibold">„{keywordInsight.keyword}"</span> stärken deinen{" "}
+            <span className="font-semibold">Selbstsicher</span>-Wert.
+          </>
+        ),
+      });
+    }
+
+    if (chatInsight) {
+      out.push({
+        id: "chat",
+        tier: "premium",
+        icon: <MessageCircle className="w-4 h-4" style={{ color: "#e9d5ff" }} />,
+        title: "Chat-Synthese",
+        body: (
+          <>
+            In unseren letzten Gesprächen wirktest du besonders{" "}
+            <span className="font-semibold">{chatInsight.emo}</span>. Das spiegelt sich in deinen Insights wider.
+          </>
+        ),
+      });
+    }
+
+    return out;
+  }, [correlations, weekdayInsight, extremaInsight, pairingInsight, journalInsight, keywordInsight, chatInsight]);
+
+  const freeCards = cards.filter((c) => c.tier === "free");
+  const premiumCards = cards.filter((c) => c.tier === "premium");
+
+  const renderCard = (c: InsightCard) => (
+    <div
+      key={c.id}
+      className="snap-start shrink-0 w-[240px] rounded-[12px] p-3 cursor-pointer transition-transform hover:scale-[1.02] active:scale-[0.98]"
+      style={{
+        background: "rgba(255,255,255,0.05)",
+        border: c.tier === "premium" ? "1px solid rgba(139,92,246,0.35)" : "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <div className="shrink-0">{c.icon}</div>
+        <p
+          className="text-[10px] font-semibold uppercase tracking-wider"
+          style={{ color: c.tier === "premium" ? "#e9d5ff" : "rgba(255,255,255,0.55)" }}
+        >
+          {c.title}
+        </p>
+        {c.tier === "premium" && (
+          <span
+            className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+            style={{
+              background: "rgba(139,92,246,0.25)",
+              border: "1px solid rgba(139,92,246,0.5)",
+              color: "#e9d5ff",
+              letterSpacing: "0.08em",
+            }}
+          >
+            Arkie AI
+          </span>
+        )}
+      </div>
+      <p className="text-foreground text-[12.5px] leading-snug">{c.body}</p>
+    </div>
+  );
+
   return (
     <div
       className="mb-4"
@@ -338,77 +490,51 @@ const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
         </p>
       </div>
 
-      {/* Body — Freemium correlations */}
-      <div className="space-y-2">
-        {correlations.length === 0 ? (
-          <p className="text-muted-foreground text-[13px] leading-relaxed">
-            Arkie sammelt noch Daten. Bei mindestens 3 abgeschlossenen Challenges einer
-            Kategorie zeige ich dir hier deine persönlichen Muster. ✨
-          </p>
-        ) : (
-          correlations.map((c) => {
-            const label = c.category.charAt(0).toUpperCase() + c.category.slice(1);
-            return (
-              <div
-                key={c.category}
-                className="flex items-start gap-2 rounded-[14px] p-3"
-                style={{ background: "rgba(139,92,246,0.12)" }}
-              >
-                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "#c4b5fd" }} />
-                <p className="text-foreground text-[13px] leading-relaxed">
-                  <span className="font-semibold">{label}</span>-Challenges korrelieren bei
-                  dir mit <span className="font-bold" style={{ color: "#c4b5fd" }}>{c.deltaPct}%</span>{" "}
-                  besserer Laune! ✨
-                </p>
-              </div>
-            );
-          })
-        )}
-      </div>
+      {/* Freemium snap-cards */}
+      {freeCards.length === 0 ? (
+        <p className="text-muted-foreground text-[13px] leading-relaxed">
+          Arkie sammelt noch Daten. Sobald du ein paar Mood-Einträge & Challenges hast,
+          erscheinen hier deine persönlichen Muster. ✨
+        </p>
+      ) : (
+        <div className="-mx-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
+          <div className="flex gap-2 px-1 pb-1">{freeCards.map(renderCard)}</div>
+        </div>
+      )}
 
-      {/* Premium deep-dive */}
+      {/* Premium AI snap-cards (unlocked for prototype, badged) */}
       <div
-        className="mt-4 pt-4 relative"
+        className="mt-4 pt-4"
         style={{ borderTop: "1px dashed rgba(139,92,246,0.25)" }}
       >
         <div className="flex items-center gap-2 mb-2">
-          <Lock className="w-3.5 h-3.5" style={{ color: "rgba(255,255,255,0.5)" }} />
+          <Brain className="w-3.5 h-3.5" style={{ color: "#e9d5ff" }} />
           <p
             className="text-[11px] font-semibold uppercase"
-            style={{ color: "rgba(255,255,255,0.5)", letterSpacing: "0.1em" }}
+            style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.1em" }}
           >
-            Arkies Deep-Dive · Premium
+            Arkies Deep-Dive
           </p>
-        </div>
-        <div className={isPremium ? "" : "select-none"} style={{ filter: isPremium ? "none" : "blur(3px)" }}>
-          {keywordInsight ? (
-            <p className="text-foreground text-[13px] leading-relaxed">
-              Deine Einträge zu <span className="font-semibold">„{keywordInsight.keyword}"</span> gehen
-              an Tagen mit höherem <span className="font-semibold">Selbstsicher</span>-Wert
-              einher.
-            </p>
-          ) : (
-            <p className="text-foreground text-[13px] leading-relaxed">
-              Schreibe in deinen Dankbarkeits- &amp; Reflexions-Challenges, um Muster zwischen
-              Themen und Stimmung zu entdecken.
-            </p>
-          )}
-        </div>
-        {!isPremium && (
-          <button
-            type="button"
-            onClick={() => {
-              /* Future: open paywall. Kept as a no-op to avoid scope creep. */
-            }}
-            className="mt-3 w-full text-[12px] font-medium py-2 rounded-[12px] transition-opacity hover:opacity-90"
+          <span
+            className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
             style={{
               background: "rgba(139,92,246,0.25)",
-              border: "1px solid rgba(139,92,246,0.4)",
-              color: "white",
+              border: "1px solid rgba(139,92,246,0.5)",
+              color: "#e9d5ff",
+              letterSpacing: "0.08em",
             }}
           >
-            🔮 Mit Premium freischalten
-          </button>
+            Premium
+          </span>
+        </div>
+        {premiumCards.length === 0 ? (
+          <p className="text-foreground text-[13px] leading-relaxed">
+            Schreibe in deinen Tagebüchern, Challenges &amp; Chats — Arkie verknüpft Themen mit deiner Stimmung.
+          </p>
+        ) : (
+          <div className="-mx-1 overflow-x-auto scrollbar-hide snap-x snap-mandatory">
+            <div className="flex gap-2 px-1 pb-1">{premiumCards.map(renderCard)}</div>
+          </div>
         )}
       </div>
     </div>
