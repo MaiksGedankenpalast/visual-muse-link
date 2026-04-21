@@ -14,6 +14,17 @@ import {
   todayStr as todayStrFn,
 } from "@/lib/userChallenges";
 import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw, Settings as SettingsIcon, CircleDashed, CircleSlash, Minus, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /* ── helpers ── */
 const germanDate = () => {
@@ -78,6 +89,8 @@ const HomePage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [quickVibeText, setQuickVibeText] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [dismissTarget, setDismissTarget] = useState<ActiveChallenge | null>(null);
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
 
   /* pull-to-refresh */
   const [pullStart, setPullStart] = useState<number | null>(null);
@@ -229,6 +242,32 @@ const HomePage = () => {
     if (status === "partial") return <Minus className={`${common} text-white`} />;
     if (status === "missed") return <CircleSlash className={`${common} text-foreground/60`} />;
     return <CircleDashed className={`${common} text-foreground/50`} />;
+  };
+
+  const confirmDismiss = async () => {
+    if (!user || !dismissTarget) return;
+    const target = dismissTarget;
+    setDismissTarget(null);
+    // Trigger slide-out animation
+    setDismissingIds((prev) => new Set(prev).add(target.id));
+    // Background log for Arkie context (best-effort, fire and forget)
+    try {
+      console.log(`[arkie-context] User dismissed challenge "${target.title}" today`);
+    } catch {}
+    // After animation, deactivate the user_challenge link (history preserved)
+    setTimeout(async () => {
+      await supabase
+        .from("user_challenges")
+        .update({ is_active: false })
+        .eq("user_id", user.id)
+        .eq("challenge_id", target.id);
+      setActiveChallenges((prev) => prev.filter((c) => c.id !== target.id));
+      setDismissingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
+    }, 280);
   };
 
   return (
@@ -433,12 +472,35 @@ const HomePage = () => {
                 <>
                   <div className="space-y-2">
                     {activeChallenges.map((ch) => (
-                      <button
+                      <div
                         key={ch.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => navigate(`/challenges/${ch.id}`)}
-                        className="w-full flex items-center gap-3 p-3 rounded-[14px] text-left transition-colors hover:bg-white/5"
-                        style={{ background: "rgba(255,255,255,0.05)" }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(`/challenges/${ch.id}`);
+                          }
+                        }}
+                        className={`group relative w-full flex items-center gap-3 p-3 pl-9 rounded-[14px] text-left transition-all hover:bg-white/5 cursor-pointer ${
+                          dismissingIds.has(ch.id)
+                            ? "opacity-0 -translate-x-4 scale-95"
+                            : "opacity-100 translate-x-0 scale-100"
+                        }`}
+                        style={{ background: "rgba(255,255,255,0.05)", transitionDuration: "260ms" }}
                       >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDismissTarget(ch);
+                          }}
+                          aria-label="Challenge entfernen"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-foreground/30 hover:text-foreground/80 hover:bg-white/10 focus:text-foreground/80 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                         <span className="text-[22px] leading-none shrink-0">{ch.icon || "✨"}</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-foreground text-[14px] truncate">{ch.title}</p>
@@ -463,7 +525,7 @@ const HomePage = () => {
                           {renderStatusIcon(ch.status)}
                         </div>
                         <ChevronRight className="w-4 h-4 text-muted-foreground/60 shrink-0" />
-                      </button>
+                      </div>
                     ))}
                   </div>
                   <button
@@ -484,6 +546,28 @@ const HomePage = () => {
         onOpenChange={setAddOpen}
         onAdded={() => setRefreshKey((k) => k + 1)}
       />
+
+      <AlertDialog open={!!dismissTarget} onOpenChange={(open) => !open && setDismissTarget(null)}>
+        <AlertDialogContent className="max-w-[340px] rounded-[20px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[16px]">
+              Diese Challenge für heute entfernen?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Sie verschwindet aus deiner heutigen Übersicht. Du kannst sie jederzeit wieder hinzufügen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:gap-2">
+            <AlertDialogCancel className="flex-1 mt-0">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDismiss}
+              className="flex-1 bg-red-500/80 hover:bg-red-500 text-white border-0"
+            >
+              Ja, entfernen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
