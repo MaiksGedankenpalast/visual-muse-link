@@ -686,7 +686,9 @@ const ChallengeDetailPage = () => {
           <p className="text-muted-foreground text-[13px] mb-2">
             {letterMode === "message"
               ? "Du kannst auch gerne dir selbst schreiben :)"
-              : "Sei lieb zu dir. Was möchtest du dir heute sagen?"}
+              : letterMode === "recipe"
+                ? "Notiere dein Rezept oder wie das Kocherlebnis war."
+                : "Sei lieb zu dir. Was möchtest du dir heute sagen?"}
           </p>
           <Textarea
             value={letterText}
@@ -700,7 +702,9 @@ const ChallengeDetailPage = () => {
             placeholder={
               letterMode === "message"
                 ? "Schreib eine warme Nachricht..."
-                : "Lieber/Liebe Ich, ..."
+                : letterMode === "recipe"
+                  ? "Zutaten, Schritte, Geschmack, Gefühl beim Kochen..."
+                  : "Lieber/Liebe Ich, ..."
             }
             className="w-full text-foreground placeholder:text-muted-foreground text-[15px] leading-relaxed min-h-[200px] resize-none"
             style={{
@@ -711,7 +715,9 @@ const ChallengeDetailPage = () => {
             }}
           />
           <p className="text-center text-[12px] mt-3" style={{ color: PURPLE }}>
-            Wird automatisch in deinem Journal als „Challenge-Brief" gespeichert ✉️
+            {letterMode === "recipe"
+              ? "Wird automatisch in deinem Journal als „Challenge: Neues Rezept" gespeichert 🍳"
+              : "Wird automatisch in deinem Journal als „Challenge-Brief" gespeichert ✉️"}
           </p>
           <button
             onClick={handleSaveLetter}
