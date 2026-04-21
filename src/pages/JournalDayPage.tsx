@@ -270,6 +270,34 @@ const JournalDayPage = () => {
         </div>
       )}
 
+      {/* SMART CHALLENGE FOR THIS DAY */}
+      {smartChallenge && (
+        <div className="mb-4">
+          <p className="text-[11px] font-bold tracking-[0.15em] text-[rgba(180,127,232,0.9)] uppercase mb-2">
+            ✨ Arkies Geheimtipp
+          </p>
+          <div
+            className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+            style={{
+              background: "rgba(180,127,232,0.12)",
+              border: "1px solid rgba(180,127,232,0.35)",
+            }}
+          >
+            <span className="text-lg">{smartChallenge.completed ? "✅" : "⬜"}</span>
+            <span
+              className={`flex-1 text-[14px] ${
+                smartChallenge.completed ? "text-foreground/50 line-through" : "text-foreground"
+              }`}
+            >
+              {smartChallenge.text}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {smartChallenge.completed ? "Erledigt" : "Offen"}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* CHALLENGES FOR THIS DAY */}
       {dayChallenges.length > 0 && (
         <div className="mb-6">
