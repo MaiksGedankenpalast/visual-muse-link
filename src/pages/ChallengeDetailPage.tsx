@@ -207,6 +207,19 @@ const ChallengeDetailPage = () => {
     const filled = responseInputs.filter((s) => s.trim().length > 0).length;
     const status: ChallengeStatus = filled >= 3 ? "completed" : filled > 0 ? "partial" : "missed";
     await persist({ status, notes: note.trim() || null, responseData: responseInputs });
+    // Also persist to dedicated challenge_responses table for the insights engine
+    await supabase.from("challenge_responses").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        response_text_1: responseInputs[0] || null,
+        response_text_2: responseInputs[1] || null,
+        response_text_3: responseInputs[2] || null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
     setTodayStatus(status);
     setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
     setSaving(false);
