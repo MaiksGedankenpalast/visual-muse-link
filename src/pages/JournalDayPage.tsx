@@ -357,11 +357,29 @@ const JournalDayPage = () => {
         <div className="space-y-4">
           {entries.map((entry) => {
             const time = new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+            const isLetter = entry.category === "Challenge-Brief";
             return (
               <button key={entry.id} onClick={() => setExpandedEntry(entry.id)}
                 className="w-full text-left">
-                <p className="text-[12px] text-muted-foreground mb-1">{time}</p>
-                <h2 className="font-bold text-foreground text-[18px] mb-1">{entry.title}</h2>
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-[12px] text-muted-foreground">{time}</p>
+                  {isLetter && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(139,92,246,0.18)",
+                        border: "1px solid rgba(139,92,246,0.35)",
+                        color: "rgba(216,180,254,0.95)",
+                      }}
+                    >
+                      <Mail className="w-3 h-3" /> Challenge-Brief
+                    </span>
+                  )}
+                </div>
+                <h2 className="font-bold text-foreground text-[18px] mb-1 flex items-center gap-2">
+                  {isLetter && <Mail className="w-4 h-4 opacity-70" />}
+                  {entry.title}
+                </h2>
                 <p className="text-foreground text-[14px] leading-relaxed line-clamp-3 opacity-50">
                   {entry.content || "Kein Inhalt."}
                 </p>
