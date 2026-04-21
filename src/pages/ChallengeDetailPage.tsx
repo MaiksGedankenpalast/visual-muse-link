@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass, GlassWater } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass, GlassWater, ChefHat } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
@@ -71,11 +71,25 @@ function isQuickActionOverride(title: string | null | undefined): boolean {
   return keywords.some((k) => t.includes(k));
 }
 
-/** Detect "letter / message" challenges → Template A with a single big textarea + journal mirror. */
-function isLetterChallenge(title: string | null | undefined): "message" | "self_letter" | null {
+/** Detect doodle/draw challenges → Template C (Quick-Action), no text input. */
+function isDoodleChallenge(title: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  return (
+    t.includes("kritzel") ||
+    t.includes("zeichne") ||
+    t.includes("doodle") ||
+    t.includes("malen")
+  );
+}
+
+/** Detect "letter / message / recipe" challenges → Template A with a single big textarea + journal mirror. */
+function isLetterChallenge(
+  title: string | null | undefined,
+): "message" | "self_letter" | "recipe" | null {
   const t = (title ?? "").toLowerCase();
   if (t.includes("nette nachricht") || (t.includes("nachricht") && t.includes("schreib"))) return "message";
   if (t.includes("brief an dich") || t.includes("brief an mich") || (t.includes("brief") && t.includes("selbst"))) return "self_letter";
+  if (t.includes("rezept")) return "recipe";
   return null;
 }
 
@@ -173,7 +187,7 @@ const ChallengeDetailPage = () => {
   // - letter challenges (e.g. "Brief an dich selbst") use Template A (single textarea)
   const template: TemplateKind =
     letterMode ? "A"
-      : (isStrengthChallenge(challenge?.title, challenge?.category) || isQuickActionOverride(challenge?.title))
+      : (isStrengthChallenge(challenge?.title, challenge?.category) || isQuickActionOverride(challenge?.title) || isDoodleChallenge(challenge?.title))
         ? "C"
         : baseTemplate;
 
@@ -390,14 +404,20 @@ const ChallengeDetailPage = () => {
     // Mirror into the journal: visible at the bottom of the day's entries, marked as "Challenge-Brief".
     if (text.length > 0) {
       const journalTitle =
-        letterMode === "self_letter" ? `Brief an mich selbst` : `Nette Nachricht`;
+        letterMode === "self_letter"
+          ? `Brief an mich selbst`
+          : letterMode === "recipe"
+            ? `Neues Rezept`
+            : `Nette Nachricht`;
+      const journalCategory =
+        letterMode === "recipe" ? "Challenge-Rezept" : "Challenge-Brief";
       // Upsert-by-hand: try to update an existing mirror for today, else insert.
       const { data: existing } = await supabase
         .from("journal_entries")
         .select("id")
         .eq("user_id", user.id)
         .eq("date", todayStr())
-        .eq("category", "Challenge-Brief")
+        .eq("category", journalCategory)
         .eq("title", journalTitle)
         .maybeSingle();
       if (existing?.id) {
@@ -411,7 +431,7 @@ const ChallengeDetailPage = () => {
           date: todayStr(),
           title: journalTitle,
           content: text,
-          category: "Challenge-Brief",
+          category: journalCategory,
         });
       }
     }
@@ -666,7 +686,9 @@ const ChallengeDetailPage = () => {
           <p className="text-muted-foreground text-[13px] mb-2">
             {letterMode === "message"
               ? "Du kannst auch gerne dir selbst schreiben :)"
-              : "Sei lieb zu dir. Was möchtest du dir heute sagen?"}
+              : letterMode === "recipe"
+                ? "Notiere dein Rezept oder wie das Kocherlebnis war."
+                : "Sei lieb zu dir. Was möchtest du dir heute sagen?"}
           </p>
           <Textarea
             value={letterText}
@@ -680,7 +702,9 @@ const ChallengeDetailPage = () => {
             placeholder={
               letterMode === "message"
                 ? "Schreib eine warme Nachricht..."
-                : "Lieber/Liebe Ich, ..."
+                : letterMode === "recipe"
+                  ? "Zutaten, Schritte, Geschmack, Gefühl beim Kochen..."
+                  : "Lieber/Liebe Ich, ..."
             }
             className="w-full text-foreground placeholder:text-muted-foreground text-[15px] leading-relaxed min-h-[200px] resize-none"
             style={{
@@ -691,7 +715,9 @@ const ChallengeDetailPage = () => {
             }}
           />
           <p className="text-center text-[12px] mt-3" style={{ color: PURPLE }}>
-            Wird automatisch in deinem Journal als „Challenge-Brief" gespeichert ✉️
+            {letterMode === "recipe"
+              ? "Wird automatisch in deinem Journal als „Challenge: Neues Rezept“ gespeichert 🍳"
+              : "Wird automatisch in deinem Journal als „Challenge-Brief“ gespeichert ✉️"}
           </p>
           <button
             onClick={handleSaveLetter}

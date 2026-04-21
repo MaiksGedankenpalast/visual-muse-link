@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Pencil, Trash2, X, Mail } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, X, Mail, ChefHat } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "@/components/Arkie";
@@ -79,13 +79,15 @@ const JournalDayPage = () => {
           .eq("date", date)
           .maybeSingle(),
       ]);
-      // Sort: regular entries first (newest → oldest), then Challenge-Briefe at the end (chronologically).
+      // Sort: regular entries first (newest → oldest), then Challenge-mirrors at the end (chronologically).
       const all = (entryData ?? []) as JournalEntry[];
-      const regular = all.filter((e) => e.category !== "Challenge-Brief");
-      const letters = all
-        .filter((e) => e.category === "Challenge-Brief")
+      const isChallengeMirror = (e: JournalEntry) =>
+        e.category === "Challenge-Brief" || e.category === "Challenge-Rezept";
+      const regular = all.filter((e) => !isChallengeMirror(e));
+      const challengeMirrors = all
+        .filter(isChallengeMirror)
         .sort((a, b) => a.created_at.localeCompare(b.created_at));
-      setEntries([...regular, ...letters]);
+      setEntries([...regular, ...challengeMirrors]);
       if (moodData) setMood(moodData as MoodData);
       const dc: DayChallenge[] = (logData ?? []).map((l: any) => ({
         challenge_id: l.challenge_id,
@@ -358,9 +360,21 @@ const JournalDayPage = () => {
           {entries.map((entry) => {
             const time = new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
             const isLetter = entry.category === "Challenge-Brief";
+            const isRecipe = entry.category === "Challenge-Rezept";
+            const isChallengeMirror = isLetter || isRecipe;
             return (
               <button key={entry.id} onClick={() => setExpandedEntry(entry.id)}
-                className="w-full text-left">
+                className="w-full text-left"
+                style={
+                  isChallengeMirror
+                    ? {
+                        border: "1px solid rgba(139,92,246,0.3)",
+                        borderRadius: 16,
+                        padding: 12,
+                        background: "rgba(139,92,246,0.04)",
+                      }
+                    : undefined
+                }>
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-[12px] text-muted-foreground">{time}</p>
                   {isLetter && (
@@ -375,9 +389,22 @@ const JournalDayPage = () => {
                       <Mail className="w-3 h-3" /> Challenge-Brief
                     </span>
                   )}
+                  {isRecipe && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(139,92,246,0.18)",
+                        border: "1px solid rgba(139,92,246,0.35)",
+                        color: "rgba(216,180,254,0.95)",
+                      }}
+                    >
+                      <ChefHat className="w-3 h-3" /> Challenge: Neues Rezept
+                    </span>
+                  )}
                 </div>
                 <h2 className="font-bold text-foreground text-[18px] mb-1 flex items-center gap-2">
                   {isLetter && <Mail className="w-4 h-4 opacity-70" />}
+                  {isRecipe && <ChefHat className="w-4 h-4 opacity-70" />}
                   {entry.title}
                 </h2>
                 <p className="text-foreground text-[14px] leading-relaxed line-clamp-3 opacity-50">
