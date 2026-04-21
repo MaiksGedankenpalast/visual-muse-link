@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -46,6 +46,47 @@ const STATUS_LABEL: Record<ChallengeStatus, string> = {
 };
 
 const PURPLE = "#8B5CF6";
+const MAX_TIMER_SECONDS = 60 * 60; // 60:00 cap
+
+/** Detect strength/reps challenges that must NOT use a timer (Template C). */
+function isStrengthChallenge(title: string | null | undefined, category: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  const c = (category ?? "").toLowerCase();
+  const repKeywords = [
+    "liegestütz", "liegestuetz", "pushup", "push-up", "push up",
+    "kniebeuge", "squat", "sit-up", "situp", "sit up",
+    "klimmzug", "pullup", "pull-up", "burpee", "plank",
+    "wiederholung", "reps",
+  ];
+  if (repKeywords.some((k) => t.includes(k))) return true;
+  if (c.includes("kraft") || c.includes("strength")) return true;
+  return false;
+}
+
+/** Parse a default duration in seconds from a challenge title like "10 Min spazieren" or "2 Min atmen". */
+function parseDurationFromTitle(title: string | null | undefined): number {
+  if (!title) return 5 * 60;
+  const t = title.toLowerCase();
+  // hours like "1 std" / "1h"
+  const hMatch = t.match(/(\d+)\s*(h|std|stunde)/);
+  if (hMatch) {
+    const h = parseInt(hMatch[1], 10);
+    if (!Number.isNaN(h) && h > 0) return Math.min(h * 3600, MAX_TIMER_SECONDS);
+  }
+  // minutes like "10 min", "5min", "2 minuten"
+  const mMatch = t.match(/(\d+)\s*(min|m\b|minute)/);
+  if (mMatch) {
+    const m = parseInt(mMatch[1], 10);
+    if (!Number.isNaN(m) && m > 0) return Math.min(m * 60, MAX_TIMER_SECONDS);
+  }
+  // seconds like "30 sek"
+  const sMatch = t.match(/(\d+)\s*(sek|sec|s\b)/);
+  if (sMatch) {
+    const s = parseInt(sMatch[1], 10);
+    if (!Number.isNaN(s) && s > 0) return Math.min(s, MAX_TIMER_SECONDS);
+  }
+  return 5 * 60; // fallback 05:00
+}
 
 /** Map a challenge category to one of the three UI templates. */
 function pickTemplate(category: string | null | undefined): TemplateKind {
@@ -81,16 +122,24 @@ const ChallengeDetailPage = () => {
   // Template A — three text inputs
   const [responseInputs, setResponseInputs] = useState<string[]>(["", "", ""]);
 
-  // Template B — countdown timer
-  const DEFAULT_DURATION = 180; // 3 min
-  const [timerRemaining, setTimerRemaining] = useState<number>(DEFAULT_DURATION);
+  // Template B — flexible timer / stopwatch
+  type TimerMode = "countdown" | "stopwatch";
+  const [timerMode, setTimerMode] = useState<TimerMode>("countdown");
+  const [timerDuration, setTimerDuration] = useState<number>(5 * 60); // configured target (countdown)
+  const [timerRemaining, setTimerRemaining] = useState<number>(5 * 60); // countdown current
+  const [stopwatchElapsed, setStopwatchElapsed] = useState<number>(0); // stopwatch current
   const [timerRunning, setTimerRunning] = useState(false);
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [earlyStopOpen, setEarlyStopOpen] = useState(false);
+  const [earlyStopSeconds, setEarlyStopSeconds] = useState(0);
   const timerRef = useRef<number | null>(null);
 
   // Confirmation flash for Template C
   const [confirmFlash, setConfirmFlash] = useState(false);
 
-  const template = pickTemplate(challenge?.category);
+  const baseTemplate = pickTemplate(challenge?.category);
+  // Override: strength/reps challenges (e.g. "20 Liegestütze machen") never use timer
+  const template: TemplateKind = isStrengthChallenge(challenge?.title, challenge?.category) ? "C" : baseTemplate;
 
   const fetchAll = useCallback(async () => {
     if (!user || !id) return;
@@ -141,6 +190,15 @@ const ChallengeDetailPage = () => {
       setResponseInputs(["", "", ""]);
     }
 
+    // Initialize timer duration from the challenge title
+    const initialDuration = parseDurationFromTitle((ch as ChallengeDetail | null)?.title);
+    setTimerDuration(initialDuration);
+    setTimerRemaining(initialDuration);
+    setStopwatchElapsed(0);
+    setTimerMode("countdown");
+    setTimerRunning(false);
+    setTimerStartedAt(null);
+
     const dots: LogDot[] = [];
     for (let i = 13; i >= 0; i--) {
       const d = daysAgoStr(i);
@@ -159,23 +217,33 @@ const ChallengeDetailPage = () => {
   useEffect(() => {
     if (!timerRunning) return;
     timerRef.current = window.setInterval(() => {
-      setTimerRemaining((s) => {
-        if (s <= 1) {
-          setTimerRunning(false);
-          return 0;
-        }
-        return s - 1;
-      });
+      if (timerMode === "countdown") {
+        setTimerRemaining((s) => {
+          if (s <= 1) {
+            setTimerRunning(false);
+            return 0;
+          }
+          return s - 1;
+        });
+      } else {
+        setStopwatchElapsed((s) => Math.min(s + 1, MAX_TIMER_SECONDS));
+      }
     }, 1000);
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [timerRunning]);
+  }, [timerRunning, timerMode]);
 
-  // Auto-complete Template B when timer hits 0
+  // Auto-complete Template B when countdown hits 0
   useEffect(() => {
-    if (template === "B" && timerRemaining === 0 && todayStatus !== "completed" && isActive) {
-      void handleQuickComplete(true);
+    if (
+      template === "B" &&
+      timerMode === "countdown" &&
+      timerRemaining === 0 &&
+      todayStatus !== "completed" &&
+      isActive
+    ) {
+      void handleTimerCompleted(timerDuration);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerRemaining]);
@@ -242,6 +310,35 @@ const ChallengeDetailPage = () => {
     if (!silent) toast({ title: "Stark gemacht 💜" });
   };
 
+  /** Mark template B as completed and log actually elapsed seconds to challenge_responses. */
+  const handleTimerCompleted = async (elapsedSeconds: number) => {
+    if (!user || !id) return;
+    setSaving(true);
+    await persist({ status: "completed", notes: note.trim() || null });
+    // Log actual practiced time so the insights engine can read it
+    await supabase.from("challenge_responses").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        response_text_1: `duration_seconds:${Math.max(0, Math.round(elapsedSeconds))}`,
+        response_text_2: timerMode === "stopwatch" ? "mode:stopwatch" : `mode:countdown;target:${timerDuration}`,
+        response_text_3: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
+    setTodayStatus("completed");
+    setHistory((prev) =>
+      prev.map((d) => (d.date === todayStr() ? { ...d, status: "completed" } : d)),
+    );
+    setSaving(false);
+    setTimerRunning(false);
+    setConfirmFlash(true);
+    window.setTimeout(() => setConfirmFlash(false), 1500);
+    toast({ title: "Stark gemacht 💜" });
+  };
+
   const handleRemove = async () => {
     if (!user || !id) return;
     await removeUserChallenge(user.id, id);
@@ -274,11 +371,65 @@ const ChallengeDetailPage = () => {
   const arkieBubble = isCompleted ? "Das hast du gut gemacht!" : "Ich bin bei dir 💜";
 
   // Timer derived values
-  const mm = String(Math.floor(timerRemaining / 60)).padStart(2, "0");
-  const ss = String(timerRemaining % 60).padStart(2, "0");
-  const timerProgress = 1 - timerRemaining / DEFAULT_DURATION;
+  const displaySeconds = timerMode === "countdown" ? timerRemaining : stopwatchElapsed;
+  const mm = String(Math.floor(displaySeconds / 60)).padStart(2, "0");
+  const ss = String(displaySeconds % 60).padStart(2, "0");
+  const timerProgress =
+    timerMode === "countdown"
+      ? (timerDuration > 0 ? 1 - timerRemaining / timerDuration : 0)
+      : Math.min(stopwatchElapsed / MAX_TIMER_SECONDS, 1);
   const r = 70;
   const c = 2 * Math.PI * r;
+
+  const adjustDuration = (deltaSeconds: number) => {
+    if (timerRunning) return;
+    setTimerDuration((d) => {
+      const next = Math.max(30, Math.min(MAX_TIMER_SECONDS, d + deltaSeconds));
+      setTimerRemaining(next);
+      return next;
+    });
+  };
+
+  const onToggleTimer = () => {
+    if (!timerRunning) {
+      setTimerStartedAt(Date.now());
+    }
+    setTimerRunning((v) => !v);
+  };
+
+  const onResetTimer = () => {
+    setTimerRunning(false);
+    setTimerStartedAt(null);
+    if (timerMode === "countdown") setTimerRemaining(timerDuration);
+    else setStopwatchElapsed(0);
+  };
+
+  const onSwitchMode = (mode: TimerMode) => {
+    if (timerRunning) return;
+    setTimerMode(mode);
+    setTimerStartedAt(null);
+    if (mode === "countdown") setTimerRemaining(timerDuration);
+    else setStopwatchElapsed(0);
+  };
+
+  const onManualComplete = () => {
+    // Ask for confirmation when stopping early on a countdown
+    if (timerMode === "countdown" && timerRemaining > 0 && timerRunning) {
+      setTimerRunning(false);
+      const elapsed = Math.max(0, timerDuration - timerRemaining);
+      setEarlyStopSeconds(elapsed);
+      setEarlyStopOpen(true);
+      return;
+    }
+    if (timerMode === "countdown" && timerRemaining > 0 && timerRemaining < timerDuration) {
+      const elapsed = Math.max(0, timerDuration - timerRemaining);
+      setEarlyStopSeconds(elapsed);
+      setEarlyStopOpen(true);
+      return;
+    }
+    const elapsed = timerMode === "countdown" ? timerDuration : stopwatchElapsed;
+    void handleTimerCompleted(elapsed);
+  };
 
   return (
     <div className="px-4 pt-6 pb-32 min-h-screen onboarding-slide">
@@ -407,6 +558,35 @@ const ChallengeDetailPage = () => {
       {isActive && template === "B" && (
         <div className="mb-5">
           <div className="flex flex-col items-center">
+            {/* Mode switch: Countdown vs. Stopwatch */}
+            <div
+              className="flex items-center gap-1 p-1 rounded-full mb-4"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <button
+                onClick={() => onSwitchMode("countdown")}
+                disabled={timerRunning}
+                className="px-3 py-1.5 rounded-full text-[12px] flex items-center gap-1.5 transition-colors disabled:opacity-60"
+                style={{
+                  background: timerMode === "countdown" ? "rgba(139,92,246,0.25)" : "transparent",
+                  color: timerMode === "countdown" ? "#fff" : "rgba(255,255,255,0.6)",
+                }}
+              >
+                <Hourglass className="w-3 h-3" /> Timer
+              </button>
+              <button
+                onClick={() => onSwitchMode("stopwatch")}
+                disabled={timerRunning}
+                className="px-3 py-1.5 rounded-full text-[12px] flex items-center gap-1.5 transition-colors disabled:opacity-60"
+                style={{
+                  background: timerMode === "stopwatch" ? "rgba(139,92,246,0.25)" : "transparent",
+                  color: timerMode === "stopwatch" ? "#fff" : "rgba(255,255,255,0.6)",
+                }}
+              >
+                <TimerIcon className="w-3 h-3" /> Stoppuhr
+              </button>
+            </div>
+
             <div className="relative" style={{ width: 180, height: 180 }}>
               <svg width={180} height={180} viewBox="0 0 180 180">
                 <circle cx={90} cy={90} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={6} fill="none" />
@@ -426,13 +606,42 @@ const ChallengeDetailPage = () => {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-foreground text-[34px] font-bold tabular-nums">{mm}:{ss}</span>
-                <span className="text-muted-foreground text-[11px] uppercase tracking-wider mt-1">Atme</span>
+                <span className="text-muted-foreground text-[11px] uppercase tracking-wider mt-1">
+                  {timerMode === "countdown" ? "Übrig" : "Läuft"}
+                </span>
               </div>
             </div>
 
+            {/* +/- adjustment (countdown only, before start) */}
+            {timerMode === "countdown" && (
+              <div className="flex items-center gap-2 mt-4">
+                <button
+                  onClick={() => adjustDuration(-60)}
+                  disabled={timerRunning || timerDuration <= 60}
+                  aria-label="Minute weniger"
+                  className="w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <Minus className="w-4 h-4 text-foreground" />
+                </button>
+                <span className="text-muted-foreground text-[11px] uppercase tracking-wider min-w-[110px] text-center">
+                  {Math.floor(timerDuration / 60)} Min einstellen
+                </span>
+                <button
+                  onClick={() => adjustDuration(60)}
+                  disabled={timerRunning || timerDuration >= MAX_TIMER_SECONDS}
+                  aria-label="Minute mehr"
+                  className="w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <Plus className="w-4 h-4 text-foreground" />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 mt-5">
               <button
-                onClick={() => setTimerRunning((r) => !r)}
+                onClick={onToggleTimer}
                 className="px-6 py-3 rounded-[14px] flex items-center gap-2 text-foreground font-medium text-sm"
                 style={{
                   background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
@@ -442,10 +651,7 @@ const ChallengeDetailPage = () => {
                 {timerRunning ? "Pause" : "Start"}
               </button>
               <button
-                onClick={() => {
-                  setTimerRunning(false);
-                  setTimerRemaining(DEFAULT_DURATION);
-                }}
+                onClick={onResetTimer}
                 aria-label="Zurücksetzen"
                 className="w-11 h-11 rounded-[12px] flex items-center justify-center"
                 style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
@@ -467,7 +673,7 @@ const ChallengeDetailPage = () => {
             </div>
 
             <button
-              onClick={() => handleQuickComplete()}
+              onClick={onManualComplete}
               disabled={saving}
               className="w-full mt-4 rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
@@ -475,6 +681,32 @@ const ChallengeDetailPage = () => {
               Manuell als erledigt markieren
             </button>
           </div>
+
+          {/* Early-stop confirmation */}
+          <AlertDialog open={earlyStopOpen} onOpenChange={setEarlyStopOpen}>
+            <AlertDialogContent style={{ background: "#0D0B14", borderColor: "rgba(255,255,255,0.1)" }}>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-foreground">Challenge trotzdem als erledigt markieren?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Du hast {Math.floor(earlyStopSeconds / 60)}:
+                  {String(earlyStopSeconds % 60).padStart(2, "0")} Min absolviert
+                  (Ziel: {Math.floor(timerDuration / 60)} Min). Arkie loggt deine tatsächliche Zeit.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="text-foreground">Weiter üben</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setEarlyStopOpen(false);
+                    void handleTimerCompleted(earlyStopSeconds);
+                  }}
+                  style={{ background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))" }}
+                >
+                  Ja, erledigt
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 
