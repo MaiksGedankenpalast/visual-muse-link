@@ -404,14 +404,20 @@ const ChallengeDetailPage = () => {
     // Mirror into the journal: visible at the bottom of the day's entries, marked as "Challenge-Brief".
     if (text.length > 0) {
       const journalTitle =
-        letterMode === "self_letter" ? `Brief an mich selbst` : `Nette Nachricht`;
+        letterMode === "self_letter"
+          ? `Brief an mich selbst`
+          : letterMode === "recipe"
+            ? `Neues Rezept`
+            : `Nette Nachricht`;
+      const journalCategory =
+        letterMode === "recipe" ? "Challenge-Rezept" : "Challenge-Brief";
       // Upsert-by-hand: try to update an existing mirror for today, else insert.
       const { data: existing } = await supabase
         .from("journal_entries")
         .select("id")
         .eq("user_id", user.id)
         .eq("date", todayStr())
-        .eq("category", "Challenge-Brief")
+        .eq("category", journalCategory)
         .eq("title", journalTitle)
         .maybeSingle();
       if (existing?.id) {
@@ -425,7 +431,7 @@ const ChallengeDetailPage = () => {
           date: todayStr(),
           title: journalTitle,
           content: text,
-          category: "Challenge-Brief",
+          category: journalCategory,
         });
       }
     }
