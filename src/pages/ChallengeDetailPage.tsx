@@ -471,7 +471,7 @@ const ChallengeDetailPage = () => {
             onClick={() => handleQuickComplete()}
             disabled={saving || isCompleted}
             className={`w-full rounded-[18px] py-5 text-foreground font-semibold text-base transition-transform ${
-              isCompleted ? "opacity-90" : "challenge-pulse"
+              isCompleted ? "opacity-90" : "arkie-pulse"
             }`}
             style={{
               background: isCompleted
