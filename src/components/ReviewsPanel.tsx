@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, ChevronRight, Hourglass } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "@/components/Arkie";
 import {
@@ -27,6 +27,13 @@ function formatDe(iso: string): string {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
 }
 
+const WEEKDAYS_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+function formatLongDe(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return `${WEEKDAYS_DE[d.getDay()]}, ${d.getDate()}. ${MONTHS_DE[d.getMonth()]}`;
+}
+
 function trendArrow(trend: "improving" | "declining" | "stable" | undefined): string {
   if (trend === "improving") return "↑";
   if (trend === "declining") return "↓";
@@ -41,6 +48,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [briefExpanded, setBriefExpanded] = useState(false);
 
   const sizeLabel = type === "weekly" ? "Woche" : "4-Wochen-Zyklus";
   const periodCountLabel = type === "weekly" ? "Woche" : "4 Wochen";
@@ -117,57 +125,84 @@ const ReviewsPanel = ({ userId, type }: Props) => {
 
   const currentReview = reviews[0]; // most recent
   const nextDue = firstSeenAt ? nextDueDate(firstSeenAt, type, todayLocal()) : null;
+  const today = todayLocal();
+  const isReady = missing.length > 0;
+  const isReadyToday = isReady && missing[missing.length - 1].end < today;
+  const briefDate = isReady ? today : (nextDue ?? today);
+  const isWeekly = type === "weekly";
+
+  const briefLabel = isWeekly ? "ARKIES WOCHENBRIEF" : "ARKIES MONATSBRIEF";
+  const briefMidReady = isWeekly
+    ? "Arkies Wochenbrief wartet auf dich ✨"
+    : "Dein Monatsbrief ist angekommen 💜";
+  const briefSubReady = isWeekly
+    ? "Tippe um zu lesen"
+    : "28 Tage — Arkie hat alles gesehen";
+  const briefMidPending = isWeekly
+    ? "Arkie hat bald einen Brief für dich 💌"
+    : "Arkie schreibt deinen Monatsbrief 🔮";
+  const briefSubPending = isWeekly
+    ? `Dein nächster Wochenrückblick ist bereit am ${formatLongDe(briefDate)}`
+    : `Bereit am ${formatLongDe(briefDate)}`;
 
   return (
     <div className="space-y-4">
-      {/* CURRENT / LATEST REVIEW PANEL */}
-      <div className="glass-card p-5">
-        {missing.length > 0 && (!currentReview || currentReview.period_start !== missing[missing.length - 1].start) && (
-          <div className="mb-4 rounded-[14px] p-4" style={{ background: "rgba(139,92,246,0.15)", border: "1px solid rgba(139,92,246,0.3)" }}>
-            <p className="text-foreground text-sm mb-3">
-              {missing.length === 1
-                ? `Ein neuer Rückblick ist bereit: ${formatDe(missing[missing.length - 1].start)} – ${formatDe(missing[missing.length - 1].end)}`
-                : `${missing.length} Rückblicke ausstehend. Der neueste wird zuerst erstellt.`}
-            </p>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className="w-full py-2.5 rounded-full text-sm font-medium text-foreground disabled:opacity-50"
-              style={{ background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))" }}
-            >
-              {generating ? "Wird geschrieben..." : "Jetzt generieren"}
-            </button>
-          </div>
-        )}
+      {/* ARKIE BRIEF CARD */}
+      <button
+        type="button"
+        onClick={() => {
+          if (isReady && !generating) {
+            handleGenerate();
+            setBriefExpanded(true);
+          } else if (currentReview) {
+            setBriefExpanded((v) => !v);
+          }
+        }}
+        className="w-full text-left flex items-center gap-3 transition-transform active:scale-[0.99]"
+        style={{
+          background: "rgba(139,92,246,0.12)",
+          border: `1px solid ${isReady ? "rgba(139,92,246,0.6)" : "rgba(139,92,246,0.3)"}`,
+          borderRadius: 20,
+          padding: 16,
+          boxShadow: isReady ? "0 0 24px rgba(139,92,246,0.25)" : "none",
+        }}
+      >
+        <div className="relative shrink-0" style={{ width: 40, height: 40 }}>
+          <Arkie size={40} />
+          <span className="absolute -bottom-1 -right-1 text-[14px] leading-none">💌</span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-[10px] font-semibold uppercase mb-0.5"
+            style={{ letterSpacing: "0.12em", color: "rgba(255,255,255,0.5)" }}
+          >
+            {briefLabel}
+          </p>
+          <p className="text-foreground font-bold" style={{ fontSize: 16, lineHeight: 1.3 }}>
+            {isReady ? briefMidReady : briefMidPending}
+          </p>
+          <p className="text-muted-foreground mt-0.5" style={{ fontSize: 13 }}>
+            {generating ? "Dein Brief wird geschrieben..." : (isReady ? briefSubReady : briefSubPending)}
+          </p>
+        </div>
+        <div className="shrink-0 text-muted-foreground">
+          {isReady ? <ChevronRight className="w-5 h-5" /> : <Hourglass className="w-4 h-4" />}
+        </div>
+      </button>
 
-        {generating && (
-          <div className="flex items-center gap-3 mb-4">
-            <div className="arkie-float"><Arkie size="small" /></div>
-            <p className="text-muted-foreground text-sm">Dein Rückblick wird geschrieben...</p>
-          </div>
-        )}
+      {error && (
+        <p className="text-sm" style={{ color: "#ef4444" }}>{error}</p>
+      )}
 
-        {!currentReview && missing.length === 0 && nextDue && (
-          <div className="text-center py-6">
-            <div className="arkie-float inline-block mb-3"><Arkie size="small" /></div>
-            <p className="text-foreground text-sm">
-              Dein nächster {sizeLabel}-Rückblick ist bereit am
-            </p>
-            <p className="text-foreground font-bold mt-1">{formatDe(nextDue)}</p>
-          </div>
-        )}
-
-        {currentReview && (
+      {/* CURRENT REVIEW NARRATIVE (only shown after expansion / after generation) */}
+      {currentReview && (briefExpanded || (!isReady && currentReview.status === "complete")) && (
+        <div className="glass-card p-5">
           <ReviewContent review={currentReview} onRetry={() => handleRetry(currentReview)} generating={generating} />
-        )}
-
-        {error && (
-          <p className="text-sm mt-3" style={{ color: "#ef4444" }}>{error}</p>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* STATS SNAPSHOT */}
-      {currentReview?.stats_snapshot && (
+      {currentReview?.stats_snapshot && (briefExpanded || (!isReady && currentReview.status === "complete")) && (
         <div className="grid grid-cols-2 gap-2">
           <div className="glass-card p-3 text-center">
             <p className="text-[11px] text-muted-foreground mb-1">Mood-Ø</p>

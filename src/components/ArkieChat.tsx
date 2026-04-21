@@ -19,6 +19,7 @@ import {
   buildSessionHistoryPayload,
 } from "@/lib/chatSessions";
 import { useAuth } from "@/hooks/useAuth";
+import { detectSafetyMatch, logSafetyEvent, diagnoseHint } from "@/lib/arkieSafety";
 
 interface ArkieChatProps {
   open: boolean;
@@ -159,6 +160,33 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       /* non-fatal: continue conversation */
     }
 
+    // ─── Safety guardrails (client-side pre-check) ───
+    const safety = detectSafetyMatch(text);
+    if (safety) {
+      // Fire-and-forget log; never blocks the UI
+      void logSafetyEvent({
+        userId: user.id,
+        rule: safety.rule,
+        userMessage: text,
+        sessionId: activeSession.id,
+      });
+    }
+
+    if (safety?.blockSend && safety.reply) {
+      const safeMsg: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        content: safety.reply,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, safeMsg]);
+      setIsLoading(false);
+      try {
+        await saveMessage(activeSession.id, user.id, "assistant", safety.reply);
+      } catch { /* ignore */ }
+      return;
+    }
+
     // Fetch context (mood + journals + challenges) and cross-session memory in parallel
     let moods: MoodCtx[] = [];
     let journals: JournalCtx[] = [];
@@ -214,7 +242,13 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
           });
         },
         { moods, journals, challenges, reviews },
-        crossMemory ? { role: "system", content: crossMemory } : null
+        // Combine cross-session memory + diagnosis hint into one optional system message
+        ((): { role: "system"; content: string } | null => {
+          const parts: string[] = [];
+          if (crossMemory) parts.push(crossMemory);
+          if (safety?.rule === "REGEL_2_DIAGNOSE") parts.push(diagnoseHint());
+          return parts.length ? { role: "system", content: parts.join("\n\n") } : null;
+        })()
       );
 
       // Persist assistant reply
@@ -498,6 +532,12 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                   <Send className="w-4 h-4 text-foreground" />
                 </button>
               </div>
+              <p
+                className="text-center mt-2 text-muted-foreground"
+                style={{ fontSize: 10, lineHeight: 1.4 }}
+              >
+                Arkie ersetzt keine professionelle Beratung. Bei Krisen: 📞 0800 111 0 111 (kostenlos, 24/7)
+              </p>
             </div>
           </>
         )}
