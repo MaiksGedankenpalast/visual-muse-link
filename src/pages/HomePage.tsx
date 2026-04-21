@@ -472,12 +472,35 @@ const HomePage = () => {
                 <>
                   <div className="space-y-2">
                     {activeChallenges.map((ch) => (
-                      <button
+                      <div
                         key={ch.id}
+                        role="button"
+                        tabIndex={0}
                         onClick={() => navigate(`/challenges/${ch.id}`)}
-                        className="w-full flex items-center gap-3 p-3 rounded-[14px] text-left transition-colors hover:bg-white/5"
-                        style={{ background: "rgba(255,255,255,0.05)" }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            navigate(`/challenges/${ch.id}`);
+                          }
+                        }}
+                        className={`group relative w-full flex items-center gap-3 p-3 pl-9 rounded-[14px] text-left transition-all hover:bg-white/5 cursor-pointer ${
+                          dismissingIds.has(ch.id)
+                            ? "opacity-0 -translate-x-4 scale-95"
+                            : "opacity-100 translate-x-0 scale-100"
+                        }`}
+                        style={{ background: "rgba(255,255,255,0.05)", transitionDuration: "260ms" }}
                       >
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDismissTarget(ch);
+                          }}
+                          aria-label="Challenge entfernen"
+                          className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-foreground/30 hover:text-foreground/80 hover:bg-white/10 focus:text-foreground/80 transition-colors"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
                         <span className="text-[22px] leading-none shrink-0">{ch.icon || "✨"}</span>
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-foreground text-[14px] truncate">{ch.title}</p>
@@ -502,7 +525,7 @@ const HomePage = () => {
                           {renderStatusIcon(ch.status)}
                         </div>
                         <ChevronRight className="w-4 h-4 text-muted-foreground/60 shrink-0" />
-                      </button>
+                      </div>
                     ))}
                   </div>
                   <button
