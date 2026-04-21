@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass, GlassWater } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -63,6 +64,27 @@ function isStrengthChallenge(title: string | null | undefined, category: string 
   return false;
 }
 
+/** Detect quick-action challenges that must NOT use a timer (Template C), e.g. "Treppe nehmen". */
+function isQuickActionOverride(title: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  const keywords = ["treppe", "stairs", "fahrstuhl", "aufzug"];
+  return keywords.some((k) => t.includes(k));
+}
+
+/** Detect "letter / message" challenges → Template A with a single big textarea + journal mirror. */
+function isLetterChallenge(title: string | null | undefined): "message" | "self_letter" | null {
+  const t = (title ?? "").toLowerCase();
+  if (t.includes("nette nachricht") || (t.includes("nachricht") && t.includes("schreib"))) return "message";
+  if (t.includes("brief an dich") || t.includes("brief an mich") || (t.includes("brief") && t.includes("selbst"))) return "self_letter";
+  return null;
+}
+
+/** Detect water-tracker challenge: "2 Liter Wasser trinken". */
+function isWaterChallenge(title: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  return t.includes("wasser") && (t.includes("liter") || t.includes("trinke"));
+}
+
 /** Parse a default duration in seconds from a challenge title like "10 Min spazieren" or "2 Min atmen". */
 function parseDurationFromTitle(title: string | null | undefined): number {
   if (!title) return 5 * 60;
@@ -121,6 +143,11 @@ const ChallengeDetailPage = () => {
 
   // Template A — three text inputs
   const [responseInputs, setResponseInputs] = useState<string[]>(["", "", ""]);
+  // Template A (letter mode) — single big textarea
+  const [letterText, setLetterText] = useState<string>("");
+
+  // Water-tracker state — 8 glasses (250ml each)
+  const [glasses, setGlasses] = useState<boolean[]>(Array(8).fill(false));
 
   // Template B — flexible timer / stopwatch
   type TimerMode = "countdown" | "stopwatch";
@@ -138,8 +165,17 @@ const ChallengeDetailPage = () => {
   const [confirmFlash, setConfirmFlash] = useState(false);
 
   const baseTemplate = pickTemplate(challenge?.category);
-  // Override: strength/reps challenges (e.g. "20 Liegestütze machen") never use timer
-  const template: TemplateKind = isStrengthChallenge(challenge?.title, challenge?.category) ? "C" : baseTemplate;
+  const letterMode = isLetterChallenge(challenge?.title);
+  const waterMode = isWaterChallenge(challenge?.title);
+  // Override:
+  // - strength/reps challenges (e.g. "20 Liegestütze") never use timer → C
+  // - quick-action challenges (e.g. "Treppe nehmen") never use timer → C
+  // - letter challenges (e.g. "Brief an dich selbst") use Template A (single textarea)
+  const template: TemplateKind =
+    letterMode ? "A"
+      : (isStrengthChallenge(challenge?.title, challenge?.category) || isQuickActionOverride(challenge?.title))
+        ? "C"
+        : baseTemplate;
 
   const fetchAll = useCallback(async () => {
     if (!user || !id) return;
@@ -186,8 +222,25 @@ const ChallengeDetailPage = () => {
     if (todayLog?.response_data && Array.isArray(todayLog.response_data)) {
       const arr = todayLog.response_data as string[];
       setResponseInputs([arr[0] ?? "", arr[1] ?? "", arr[2] ?? ""]);
+      setLetterText(arr[0] ?? "");
     } else {
       setResponseInputs(["", "", ""]);
+      setLetterText("");
+    }
+
+    // Load glass state for water tracker from response_data when stored as object
+    if (
+      todayLog?.response_data &&
+      typeof todayLog.response_data === "object" &&
+      !Array.isArray(todayLog.response_data) &&
+      Array.isArray((todayLog.response_data as any).glasses)
+    ) {
+      const g = (todayLog.response_data as any).glasses as boolean[];
+      setGlasses(Array.from({ length: 8 }, (_, i) => Boolean(g[i])));
+    } else if (todayLog?.status === "completed" && isWaterChallenge((ch as ChallengeDetail | null)?.title)) {
+      setGlasses(Array(8).fill(true));
+    } else {
+      setGlasses(Array(8).fill(false));
     }
 
     // Initialize timer duration from the challenge title
@@ -308,6 +361,96 @@ const ChallengeDetailPage = () => {
     setConfirmFlash(true);
     window.setTimeout(() => setConfirmFlash(false), 1500);
     if (!silent) toast({ title: "Stark gemacht 💜" });
+  };
+
+  /** Save Template A in letter mode → single textarea + mirror into journal_entries. */
+  const handleSaveLetter = async () => {
+    if (!user || !id || !challenge) return;
+    const text = letterText.trim();
+    setSaving(true);
+    const status: ChallengeStatus = text.length > 0 ? "completed" : "missed";
+    await persist({
+      status,
+      notes: note.trim() || null,
+      responseData: [text, "", ""],
+    });
+    await supabase.from("challenge_responses").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        response_text_1: text || null,
+        response_text_2: null,
+        response_text_3: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
+
+    // Mirror into the journal: visible at the bottom of the day's entries, marked as "Challenge-Brief".
+    if (text.length > 0) {
+      const journalTitle =
+        letterMode === "self_letter" ? `Brief an mich selbst` : `Nette Nachricht`;
+      // Upsert-by-hand: try to update an existing mirror for today, else insert.
+      const { data: existing } = await supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", todayStr())
+        .eq("category", "Challenge-Brief")
+        .eq("title", journalTitle)
+        .maybeSingle();
+      if (existing?.id) {
+        await supabase
+          .from("journal_entries")
+          .update({ content: text })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("journal_entries").insert({
+          user_id: user.id,
+          date: todayStr(),
+          title: journalTitle,
+          content: text,
+          category: "Challenge-Brief",
+        });
+      }
+    }
+
+    setTodayStatus(status);
+    setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
+    setSaving(false);
+    setConfirmFlash(true);
+    window.setTimeout(() => setConfirmFlash(false), 1200);
+    toast({ title: "Im Journal gespeichert 💜" });
+  };
+
+  /** Toggle a single water glass; auto-completes when all 8 are full. */
+  const toggleGlass = async (index: number) => {
+    if (!user || !id) return;
+    const next = glasses.map((g, i) => (i === index ? !g : g));
+    setGlasses(next);
+    const filled = next.filter(Boolean).length;
+    const allFull = filled === 8;
+    const status: ChallengeStatus = allFull ? "completed" : filled > 0 ? "partial" : "pending";
+    await supabase.from("daily_completions").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        status,
+        completed: allFull,
+        notes: note.trim() || null,
+        response_data: { glasses: next, ml: filled * 250 } as any,
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
+    setTodayStatus(status);
+    setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
+    if (allFull) {
+      setConfirmFlash(true);
+      window.setTimeout(() => setConfirmFlash(false), 1500);
+      toast({ title: "2 Liter geschafft 💧" });
+    }
   };
 
   /** Mark template B as completed and log actually elapsed seconds to challenge_responses. */
@@ -518,7 +661,52 @@ const ChallengeDetailPage = () => {
       </div>
 
       {/* TEMPLATE BODY */}
-      {isActive && template === "A" && (
+      {isActive && template === "A" && letterMode && (
+        <div className="mb-5">
+          <p className="text-muted-foreground text-[13px] mb-2">
+            {letterMode === "message"
+              ? "Du kannst auch gerne dir selbst schreiben :)"
+              : "Sei lieb zu dir. Was möchtest du dir heute sagen?"}
+          </p>
+          <Textarea
+            value={letterText}
+            onChange={(e) => {
+              const el = e.target as HTMLTextAreaElement;
+              setLetterText(el.value);
+              // Auto-resize
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 600)}px`;
+            }}
+            placeholder={
+              letterMode === "message"
+                ? "Schreib eine warme Nachricht..."
+                : "Lieber/Liebe Ich, ..."
+            }
+            className="w-full text-foreground placeholder:text-muted-foreground text-[15px] leading-relaxed min-h-[200px] resize-none"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.1)",
+              padding: "14px 14px",
+            }}
+          />
+          <p className="text-center text-[12px] mt-3" style={{ color: PURPLE }}>
+            Wird automatisch in deinem Journal als „Challenge-Brief" gespeichert ✉️
+          </p>
+          <button
+            onClick={handleSaveLetter}
+            disabled={saving}
+            className="w-full mt-4 rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
+            }}
+          >
+            {saving ? "Speichern..." : "Speichern & ins Journal legen"}
+          </button>
+        </div>
+      )}
+
+      {isActive && template === "A" && !letterMode && (
         <div className="mb-5">
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
@@ -712,6 +900,50 @@ const ChallengeDetailPage = () => {
 
       {isActive && template === "C" && (
         <div className="mb-5 flex flex-col items-center">
+          {waterMode && (
+            <div className="w-full mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">
+                  Wasser-Tracker
+                </p>
+                <p className="text-foreground text-[13px] font-medium tabular-nums">
+                  {glasses.filter(Boolean).length * 250} / 2000 ml
+                </p>
+              </div>
+              <div className="grid grid-cols-8 gap-2">
+                {glasses.map((filled, i) => (
+                  <button
+                    key={i}
+                    onClick={() => toggleGlass(i)}
+                    aria-label={`Glas ${i + 1} ${filled ? "leeren" : "füllen"}`}
+                    className="aspect-[3/4] rounded-[10px] flex items-center justify-center transition-all"
+                    style={{
+                      background: filled
+                        ? "linear-gradient(180deg, rgba(96,165,250,0.25), rgba(59,130,246,0.45))"
+                        : "rgba(255,255,255,0.05)",
+                      border: filled
+                        ? "1px solid rgba(96,165,250,0.6)"
+                        : "1px solid rgba(255,255,255,0.12)",
+                      boxShadow: filled
+                        ? "0 0 14px rgba(96,165,250,0.55), inset 0 -8px 12px rgba(59,130,246,0.35)"
+                        : "none",
+                    }}
+                  >
+                    <GlassWater
+                      className="w-5 h-5"
+                      style={{
+                        color: filled ? "#bfdbfe" : "rgba(255,255,255,0.35)",
+                        filter: filled ? "drop-shadow(0 0 4px rgba(96,165,250,0.7))" : "none",
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                Tippe auf ein Glas (250 ml). Bei 8 Gläsern wird die Challenge automatisch abgeschlossen.
+              </p>
+            </div>
+          )}
           <button
             onClick={() => handleQuickComplete()}
             disabled={saving || isCompleted}
