@@ -360,9 +360,21 @@ const JournalDayPage = () => {
           {entries.map((entry) => {
             const time = new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
             const isLetter = entry.category === "Challenge-Brief";
+            const isRecipe = entry.category === "Challenge-Rezept";
+            const isChallengeMirror = isLetter || isRecipe;
             return (
               <button key={entry.id} onClick={() => setExpandedEntry(entry.id)}
-                className="w-full text-left">
+                className="w-full text-left"
+                style={
+                  isChallengeMirror
+                    ? {
+                        border: "1px solid rgba(139,92,246,0.3)",
+                        borderRadius: 16,
+                        padding: 12,
+                        background: "rgba(139,92,246,0.04)",
+                      }
+                    : undefined
+                }>
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-[12px] text-muted-foreground">{time}</p>
                   {isLetter && (
@@ -377,9 +389,22 @@ const JournalDayPage = () => {
                       <Mail className="w-3 h-3" /> Challenge-Brief
                     </span>
                   )}
+                  {isRecipe && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
+                      style={{
+                        background: "rgba(139,92,246,0.18)",
+                        border: "1px solid rgba(139,92,246,0.35)",
+                        color: "rgba(216,180,254,0.95)",
+                      }}
+                    >
+                      <ChefHat className="w-3 h-3" /> Challenge: Neues Rezept
+                    </span>
+                  )}
                 </div>
                 <h2 className="font-bold text-foreground text-[18px] mb-1 flex items-center gap-2">
                   {isLetter && <Mail className="w-4 h-4 opacity-70" />}
+                  {isRecipe && <ChefHat className="w-4 h-4 opacity-70" />}
                   {entry.title}
                 </h2>
                 <p className="text-foreground text-[14px] leading-relaxed line-clamp-3 opacity-50">
