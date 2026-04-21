@@ -122,16 +122,24 @@ const ChallengeDetailPage = () => {
   // Template A — three text inputs
   const [responseInputs, setResponseInputs] = useState<string[]>(["", "", ""]);
 
-  // Template B — countdown timer
-  const DEFAULT_DURATION = 180; // 3 min
-  const [timerRemaining, setTimerRemaining] = useState<number>(DEFAULT_DURATION);
+  // Template B — flexible timer / stopwatch
+  type TimerMode = "countdown" | "stopwatch";
+  const [timerMode, setTimerMode] = useState<TimerMode>("countdown");
+  const [timerDuration, setTimerDuration] = useState<number>(5 * 60); // configured target (countdown)
+  const [timerRemaining, setTimerRemaining] = useState<number>(5 * 60); // countdown current
+  const [stopwatchElapsed, setStopwatchElapsed] = useState<number>(0); // stopwatch current
   const [timerRunning, setTimerRunning] = useState(false);
+  const [timerStartedAt, setTimerStartedAt] = useState<number | null>(null);
+  const [earlyStopOpen, setEarlyStopOpen] = useState(false);
+  const [earlyStopSeconds, setEarlyStopSeconds] = useState(0);
   const timerRef = useRef<number | null>(null);
 
   // Confirmation flash for Template C
   const [confirmFlash, setConfirmFlash] = useState(false);
 
-  const template = pickTemplate(challenge?.category);
+  const baseTemplate = pickTemplate(challenge?.category);
+  // Override: strength/reps challenges (e.g. "20 Liegestütze machen") never use timer
+  const template: TemplateKind = isStrengthChallenge(challenge?.title, challenge?.category) ? "C" : baseTemplate;
 
   const fetchAll = useCallback(async () => {
     if (!user || !id) return;
@@ -181,6 +189,15 @@ const ChallengeDetailPage = () => {
     } else {
       setResponseInputs(["", "", ""]);
     }
+
+    // Initialize timer duration from the challenge title
+    const initialDuration = parseDurationFromTitle((ch as ChallengeDetail | null)?.title);
+    setTimerDuration(initialDuration);
+    setTimerRemaining(initialDuration);
+    setStopwatchElapsed(0);
+    setTimerMode("countdown");
+    setTimerRunning(false);
+    setTimerStartedAt(null);
 
     const dots: LogDot[] = [];
     for (let i = 13; i >= 0; i--) {
