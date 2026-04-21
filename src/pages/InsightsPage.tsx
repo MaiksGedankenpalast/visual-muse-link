@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import ReviewsPanel from "@/components/ReviewsPanel";
+import ArkieInsightsRadar from "@/components/ArkieInsightsRadar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
@@ -319,22 +320,29 @@ const InsightsPage = () => {
           {weekCapsules && (
             <div className="glass-card p-4 mb-4">
               <p className="font-bold text-foreground text-sm mb-3">Deine Woche im Überblick</p>
-              <div className="flex justify-between gap-2">
+              <div className="flex justify-between gap-1">
                 {weekCapsules.map((pct, i) => (
                   <div key={i} className="flex flex-col items-center flex-1">
                     <div className="relative w-full rounded-full overflow-hidden"
-                      style={{ height: 100, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
+                      style={{ height: 70, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
                       <div className="absolute bottom-0 left-0 right-0 gradient-primary flex items-center justify-center"
                         style={{ height: `${pct}%`, borderRadius: "0 0 22px 22px" }}>
                         <span className="text-foreground font-bold text-[10px]">{pct}%</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-muted-foreground mt-1 text-center">{SLIDER_LABELS[i]}</span>
+                    <span className="text-[10px] text-muted-foreground mt-0.5 text-center">{SLIDER_LABELS[i]}</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
+
+          {/* ARKIE'S INSIGHTS RADAR */}
+          <ArkieInsightsRadar
+            moods={moods}
+            completions={completions}
+            userId={user?.id}
+          />
 
           {/* PATTERN INSIGHTS */}
           <div className="mb-4">

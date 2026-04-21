@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      challenge_responses: {
+        Row: {
+          challenge_id: string
+          created_at: string
+          date: string
+          id: string
+          response_text_1: string | null
+          response_text_2: string | null
+          response_text_3: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          created_at?: string
+          date?: string
+          id?: string
+          response_text_1?: string | null
+          response_text_2?: string | null
+          response_text_3?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          challenge_id?: string
+          created_at?: string
+          date?: string
+          id?: string
+          response_text_1?: string | null
+          response_text_2?: string | null
+          response_text_3?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       challenges: {
         Row: {
           category: string | null
