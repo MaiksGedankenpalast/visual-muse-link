@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Check, Plus } from "lucide-react";
@@ -35,11 +35,18 @@ interface Challenge {
 const ChallengesPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [todayIds, setTodayIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("Alle");
+  const initialFilter = (() => {
+    const k = searchParams.get("kategorie");
+    if (!k) return "Alle";
+    const match = CATEGORIES.find((c) => c.toLowerCase() === k.toLowerCase());
+    return match ?? "Alle";
+  })();
+  const [filter, setFilter] = useState(initialFilter);
   const [goals, setGoals] = useState<string[]>([]);
 
   // create challenge state
