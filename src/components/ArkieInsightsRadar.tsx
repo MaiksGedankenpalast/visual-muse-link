@@ -102,18 +102,38 @@ type InsightCard = {
 
 const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
   const [responses, setResponses] = useState<ChallengeResponse[]>([]);
-  const [isPremium] = useState(false); // Premium gate — flip when subscriptions land
+  const [journals, setJournals] = useState<JournalEntry[]>([]);
+  const [chats, setChats] = useState<ChatMsg[]>([]);
+  // Prototype: premium features are unlocked but visually badged.
+  const isPremium = true;
 
   useEffect(() => {
     if (!userId) return;
     void (async () => {
-      const { data } = await supabase
-        .from("challenge_responses")
-        .select("date,response_text_1,response_text_2,response_text_3")
-        .eq("user_id", userId)
-        .order("date", { ascending: false })
-        .limit(60);
-      setResponses((data ?? []) as ChallengeResponse[]);
+      const [{ data: resp }, { data: jrn }, { data: chat }] = await Promise.all([
+        supabase
+          .from("challenge_responses")
+          .select("date,response_text_1,response_text_2,response_text_3")
+          .eq("user_id", userId)
+          .order("date", { ascending: false })
+          .limit(60),
+        supabase
+          .from("journal_entries")
+          .select("date,title,content,mood_snapshot")
+          .eq("user_id", userId)
+          .order("date", { ascending: false })
+          .limit(60),
+        supabase
+          .from("chat_messages")
+          .select("content,created_at")
+          .eq("user_id", userId)
+          .eq("role", "user")
+          .order("created_at", { ascending: false })
+          .limit(40),
+      ]);
+      setResponses((resp ?? []) as ChallengeResponse[]);
+      setJournals((jrn ?? []) as JournalEntry[]);
+      setChats((chat ?? []) as ChatMsg[]);
     })();
   }, [userId]);
 
