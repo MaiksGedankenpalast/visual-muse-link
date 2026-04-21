@@ -168,11 +168,69 @@ const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
     return out.sort((a, b) => b.deltaPct - a.deltaPct).slice(0, 3);
   }, [moods, completions]);
 
-  // ── Premium-style preview: keyword × mood (always computed, gated visually) ──
+  // ── Weekday analysis (Freemium) ──
+  const weekdayInsight = useMemo(() => {
+    if (moods.length < 4) return null;
+    const buckets: number[][] = Array.from({ length: 7 }, () => []);
+    moods.forEach((m) => {
+      const d = new Date(m.date);
+      buckets[d.getDay()].push(toScore(m));
+    });
+    let bestIdx = -1;
+    let bestAvg = -Infinity;
+    buckets.forEach((arr, i) => {
+      if (arr.length < 1) return;
+      const a = arr.reduce((s, v) => s + v, 0) / arr.length;
+      if (a > bestAvg) {
+        bestAvg = a;
+        bestIdx = i;
+      }
+    });
+    if (bestIdx < 0) return null;
+    return { weekday: WEEKDAYS_DE[bestIdx] };
+  }, [moods]);
+
+  // ── Last 7 days extrema (Freemium) ──
+  const extremaInsight = useMemo(() => {
+    if (moods.length < 2) return null;
+    const sorted = [...moods].sort((a, b) => a.date.localeCompare(b.date));
+    const last7 = sorted.slice(-7);
+    if (last7.length < 2) return null;
+    let high = last7[0];
+    let low = last7[0];
+    last7.forEach((m) => {
+      if (toScore(m) > toScore(high)) high = m;
+      if (toScore(m) < toScore(low)) low = m;
+    });
+    if (high.date === low.date) return null;
+    return {
+      highDay: WEEKDAYS_DE[new Date(high.date).getDay()],
+      lowDay: WEEKDAYS_DE[new Date(low.date).getDay()],
+      highDate: formatShortDate(high.date),
+      lowDate: formatShortDate(low.date),
+    };
+  }, [moods]);
+
+  // ── Sleep × calm-morning pairing (Freemium) ──
+  const pairingInsight = useMemo(() => {
+    if (moods.length < 4) return null;
+    // rested_tired and calm_anxious: lower = better. Compare days where rested<=40 (well rested)
+    // vs others, look at calm_anxious avg.
+    const rested = moods.filter((m) => m.rested_tired <= 40);
+    const others = moods.filter((m) => m.rested_tired > 40);
+    if (rested.length < 2 || others.length < 2) return null;
+    const avgCalmRested = rested.reduce((s, m) => s + (100 - m.calm_anxious), 0) / rested.length;
+    const avgCalmOthers = others.reduce((s, m) => s + (100 - m.calm_anxious), 0) / others.length;
+    if (avgCalmRested <= avgCalmOthers) return null;
+    const pct = Math.round(((avgCalmRested - avgCalmOthers) / Math.max(1, avgCalmOthers)) * 100);
+    if (pct < 5) return null;
+    return { pct };
+  }, [moods]);
+
+  // ── Premium: keyword × mood from challenge responses ──
   const keywordInsight = useMemo(() => {
     if (responses.length < 3 || moods.length < 3) return null;
     const moodMap = new Map(moods.map((m) => [m.date, m.confident_insecure]));
-    // Lower confident_insecure = more confident
     const byKeyword: Record<string, { withScores: number[]; withoutScores: number[] }> = {};
 
     const allKeywords = new Set<string>();
@@ -197,7 +255,6 @@ const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
       if (withScores.length < 2 || withoutScores.length < 2) continue;
       const a = withScores.reduce((s, v) => s + v, 0) / withScores.length;
       const b = withoutScores.reduce((s, v) => s + v, 0) / withoutScores.length;
-      // Better = lower confident_insecure → invert
       const delta = b - a;
       if (delta > 8 && (!best || delta > best.delta)) {
         best = { keyword: kw, delta };
@@ -205,6 +262,57 @@ const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
     }
     return best;
   }, [responses, moods]);
+
+  // ── Premium: journal keywords × overall mood ──
+  const journalInsight = useMemo(() => {
+    if (journals.length < 3 || moods.length < 3) return null;
+    const moodMap = new Map(moods.map((m) => [m.date, toScore(m)]));
+    const overallAvg = [...moodMap.values()].reduce((a, b) => a + b, 0) / moodMap.size;
+
+    const allKeywords = new Set<string>();
+    journals.forEach((j) => {
+      const kws = extractKeywords([j.title ?? "", j.content ?? ""]);
+      kws.forEach((_, k) => allKeywords.add(k));
+    });
+
+    let best: { keyword: string; delta: number; direction: "positiv" | "negativ" } | null = null;
+    allKeywords.forEach((kw) => {
+      const withScores: number[] = [];
+      journals.forEach((j) => {
+        const s = moodMap.get(j.date);
+        if (s === undefined) return;
+        const text = `${j.title ?? ""} ${j.content ?? ""}`.toLowerCase();
+        if (text.includes(kw)) withScores.push(s);
+      });
+      if (withScores.length < 2) return;
+      const a = withScores.reduce((s, v) => s + v, 0) / withScores.length;
+      const delta = a - overallAvg;
+      if (Math.abs(delta) < 6) return;
+      if (!best || Math.abs(delta) > Math.abs(best.delta)) {
+        best = { keyword: kw, delta, direction: delta > 0 ? "positiv" : "negativ" };
+      }
+    });
+    return best;
+  }, [journals, moods]);
+
+  // ── Premium: chat sentiment synthesis ──
+  const chatInsight = useMemo(() => {
+    if (chats.length < 3) return null;
+    const recent = chats.slice(0, 15).map((c) => c.content.toLowerCase()).join(" ");
+    const lex: Array<{ emo: string; words: string[] }> = [
+      { emo: "nachdenklich", words: ["warum", "frage", "vielleicht", "denke", "verstehe", "grund"] },
+      { emo: "gestresst", words: ["stress", "druck", "müde", "muede", "viel zu", "überfordert", "ueberfordert", "anstrengend"] },
+      { emo: "hoffnungsvoll", words: ["hoffe", "freue", "vorfreude", "möchte", "moechte", "ziel", "endlich"] },
+      { emo: "dankbar", words: ["danke", "schön", "schoen", "glücklich", "gluecklich", "froh", "dankbar"] },
+      { emo: "unsicher", words: ["unsicher", "weiß nicht", "weiss nicht", "irgendwie", "komisch", "seltsam"] },
+    ];
+    let best: { emo: string; count: number } | null = null;
+    lex.forEach(({ emo, words }) => {
+      const count = words.reduce((s, w) => s + (recent.split(w).length - 1), 0);
+      if (count > 0 && (!best || count > best.count)) best = { emo, count };
+    });
+    return best;
+  }, [chats]);
 
   return (
     <div
