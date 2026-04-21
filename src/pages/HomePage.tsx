@@ -89,6 +89,8 @@ const HomePage = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [quickVibeText, setQuickVibeText] = useState("");
   const [addOpen, setAddOpen] = useState(false);
+  const [dismissTarget, setDismissTarget] = useState<ActiveChallenge | null>(null);
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
 
   /* pull-to-refresh */
   const [pullStart, setPullStart] = useState<number | null>(null);
