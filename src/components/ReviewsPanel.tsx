@@ -48,6 +48,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [briefExpanded, setBriefExpanded] = useState(false);
 
   const sizeLabel = type === "weekly" ? "Woche" : "4-Wochen-Zyklus";
   const periodCountLabel = type === "weekly" ? "Woche" : "4 Wochen";
@@ -143,10 +144,6 @@ const ReviewsPanel = ({ userId, type }: Props) => {
   const briefSubPending = isWeekly
     ? `Dein nächster Wochenrückblick ist bereit am ${formatLongDe(briefDate)}`
     : `Bereit am ${formatLongDe(briefDate)}`;
-
-  const [briefExpanded, setBriefExpanded] = useState(false);
-  // When a brief is ready and gets generated successfully, auto-expand to show narrative.
-  // When it's not ready yet, keep collapsed (show only the card).
 
   return (
     <div className="space-y-4">
