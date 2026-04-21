@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -46,6 +46,47 @@ const STATUS_LABEL: Record<ChallengeStatus, string> = {
 };
 
 const PURPLE = "#8B5CF6";
+const MAX_TIMER_SECONDS = 60 * 60; // 60:00 cap
+
+/** Detect strength/reps challenges that must NOT use a timer (Template C). */
+function isStrengthChallenge(title: string | null | undefined, category: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  const c = (category ?? "").toLowerCase();
+  const repKeywords = [
+    "liegestütz", "liegestuetz", "pushup", "push-up", "push up",
+    "kniebeuge", "squat", "sit-up", "situp", "sit up",
+    "klimmzug", "pullup", "pull-up", "burpee", "plank",
+    "wiederholung", "reps",
+  ];
+  if (repKeywords.some((k) => t.includes(k))) return true;
+  if (c.includes("kraft") || c.includes("strength")) return true;
+  return false;
+}
+
+/** Parse a default duration in seconds from a challenge title like "10 Min spazieren" or "2 Min atmen". */
+function parseDurationFromTitle(title: string | null | undefined): number {
+  if (!title) return 5 * 60;
+  const t = title.toLowerCase();
+  // hours like "1 std" / "1h"
+  const hMatch = t.match(/(\d+)\s*(h|std|stunde)/);
+  if (hMatch) {
+    const h = parseInt(hMatch[1], 10);
+    if (!Number.isNaN(h) && h > 0) return Math.min(h * 3600, MAX_TIMER_SECONDS);
+  }
+  // minutes like "10 min", "5min", "2 minuten"
+  const mMatch = t.match(/(\d+)\s*(min|m\b|minute)/);
+  if (mMatch) {
+    const m = parseInt(mMatch[1], 10);
+    if (!Number.isNaN(m) && m > 0) return Math.min(m * 60, MAX_TIMER_SECONDS);
+  }
+  // seconds like "30 sek"
+  const sMatch = t.match(/(\d+)\s*(sek|sec|s\b)/);
+  if (sMatch) {
+    const s = parseInt(sMatch[1], 10);
+    if (!Number.isNaN(s) && s > 0) return Math.min(s, MAX_TIMER_SECONDS);
+  }
+  return 5 * 60; // fallback 05:00
+}
 
 /** Map a challenge category to one of the three UI templates. */
 function pickTemplate(category: string | null | undefined): TemplateKind {
