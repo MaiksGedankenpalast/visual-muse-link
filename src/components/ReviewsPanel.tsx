@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
-import { ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, RefreshCw, ChevronRight, Hourglass } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "@/components/Arkie";
 import {
@@ -25,6 +25,13 @@ interface Props {
 function formatDe(iso: string): string {
   const d = new Date(iso + "T00:00:00");
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}.${d.getFullYear()}`;
+}
+
+const WEEKDAYS_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+function formatLongDe(iso: string): string {
+  const d = new Date(iso + "T00:00:00");
+  return `${WEEKDAYS_DE[d.getDay()]}, ${d.getDate()}. ${MONTHS_DE[d.getMonth()]}`;
 }
 
 function trendArrow(trend: "improving" | "declining" | "stable" | undefined): string {
