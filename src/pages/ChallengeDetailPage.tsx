@@ -310,6 +310,35 @@ const ChallengeDetailPage = () => {
     if (!silent) toast({ title: "Stark gemacht 💜" });
   };
 
+  /** Mark template B as completed and log actually elapsed seconds to challenge_responses. */
+  const handleTimerCompleted = async (elapsedSeconds: number) => {
+    if (!user || !id) return;
+    setSaving(true);
+    await persist({ status: "completed", notes: note.trim() || null });
+    // Log actual practiced time so the insights engine can read it
+    await supabase.from("challenge_responses").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        response_text_1: `duration_seconds:${Math.max(0, Math.round(elapsedSeconds))}`,
+        response_text_2: timerMode === "stopwatch" ? "mode:stopwatch" : `mode:countdown;target:${timerDuration}`,
+        response_text_3: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
+    setTodayStatus("completed");
+    setHistory((prev) =>
+      prev.map((d) => (d.date === todayStr() ? { ...d, status: "completed" } : d)),
+    );
+    setSaving(false);
+    setTimerRunning(false);
+    setConfirmFlash(true);
+    window.setTimeout(() => setConfirmFlash(false), 1500);
+    toast({ title: "Stark gemacht 💜" });
+  };
+
   const handleRemove = async () => {
     if (!user || !id) return;
     await removeUserChallenge(user.id, id);
