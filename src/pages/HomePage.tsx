@@ -14,6 +14,17 @@ import {
   todayStr as todayStrFn,
 } from "@/lib/userChallenges";
 import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw, Settings as SettingsIcon, CircleDashed, CircleSlash, Minus, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 /* ── helpers ── */
 const germanDate = () => {
