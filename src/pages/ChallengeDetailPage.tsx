@@ -558,6 +558,35 @@ const ChallengeDetailPage = () => {
       {isActive && template === "B" && (
         <div className="mb-5">
           <div className="flex flex-col items-center">
+            {/* Mode switch: Countdown vs. Stopwatch */}
+            <div
+              className="flex items-center gap-1 p-1 rounded-full mb-4"
+              style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
+            >
+              <button
+                onClick={() => onSwitchMode("countdown")}
+                disabled={timerRunning}
+                className="px-3 py-1.5 rounded-full text-[12px] flex items-center gap-1.5 transition-colors disabled:opacity-60"
+                style={{
+                  background: timerMode === "countdown" ? "rgba(139,92,246,0.25)" : "transparent",
+                  color: timerMode === "countdown" ? "#fff" : "rgba(255,255,255,0.6)",
+                }}
+              >
+                <Hourglass className="w-3 h-3" /> Timer
+              </button>
+              <button
+                onClick={() => onSwitchMode("stopwatch")}
+                disabled={timerRunning}
+                className="px-3 py-1.5 rounded-full text-[12px] flex items-center gap-1.5 transition-colors disabled:opacity-60"
+                style={{
+                  background: timerMode === "stopwatch" ? "rgba(139,92,246,0.25)" : "transparent",
+                  color: timerMode === "stopwatch" ? "#fff" : "rgba(255,255,255,0.6)",
+                }}
+              >
+                <TimerIcon className="w-3 h-3" /> Stoppuhr
+              </button>
+            </div>
+
             <div className="relative" style={{ width: 180, height: 180 }}>
               <svg width={180} height={180} viewBox="0 0 180 180">
                 <circle cx={90} cy={90} r={r} stroke="rgba(255,255,255,0.08)" strokeWidth={6} fill="none" />
@@ -577,13 +606,42 @@ const ChallengeDetailPage = () => {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-foreground text-[34px] font-bold tabular-nums">{mm}:{ss}</span>
-                <span className="text-muted-foreground text-[11px] uppercase tracking-wider mt-1">Atme</span>
+                <span className="text-muted-foreground text-[11px] uppercase tracking-wider mt-1">
+                  {timerMode === "countdown" ? "Übrig" : "Läuft"}
+                </span>
               </div>
             </div>
 
+            {/* +/- adjustment (countdown only, before start) */}
+            {timerMode === "countdown" && (
+              <div className="flex items-center gap-2 mt-4">
+                <button
+                  onClick={() => adjustDuration(-60)}
+                  disabled={timerRunning || timerDuration <= 60}
+                  aria-label="Minute weniger"
+                  className="w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <Minus className="w-4 h-4 text-foreground" />
+                </button>
+                <span className="text-muted-foreground text-[11px] uppercase tracking-wider min-w-[110px] text-center">
+                  {Math.floor(timerDuration / 60)} Min einstellen
+                </span>
+                <button
+                  onClick={() => adjustDuration(60)}
+                  disabled={timerRunning || timerDuration >= MAX_TIMER_SECONDS}
+                  aria-label="Minute mehr"
+                  className="w-9 h-9 rounded-full flex items-center justify-center disabled:opacity-40"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                >
+                  <Plus className="w-4 h-4 text-foreground" />
+                </button>
+              </div>
+            )}
+
             <div className="flex items-center gap-2 mt-5">
               <button
-                onClick={() => setTimerRunning((r) => !r)}
+                onClick={onToggleTimer}
                 className="px-6 py-3 rounded-[14px] flex items-center gap-2 text-foreground font-medium text-sm"
                 style={{
                   background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
@@ -593,10 +651,7 @@ const ChallengeDetailPage = () => {
                 {timerRunning ? "Pause" : "Start"}
               </button>
               <button
-                onClick={() => {
-                  setTimerRunning(false);
-                  setTimerRemaining(DEFAULT_DURATION);
-                }}
+                onClick={onResetTimer}
                 aria-label="Zurücksetzen"
                 className="w-11 h-11 rounded-[12px] flex items-center justify-center"
                 style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
@@ -618,7 +673,7 @@ const ChallengeDetailPage = () => {
             </div>
 
             <button
-              onClick={() => handleQuickComplete()}
+              onClick={onManualComplete}
               disabled={saving}
               className="w-full mt-4 rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
@@ -626,6 +681,32 @@ const ChallengeDetailPage = () => {
               Manuell als erledigt markieren
             </button>
           </div>
+
+          {/* Early-stop confirmation */}
+          <AlertDialog open={earlyStopOpen} onOpenChange={setEarlyStopOpen}>
+            <AlertDialogContent style={{ background: "#0D0B14", borderColor: "rgba(255,255,255,0.1)" }}>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-foreground">Challenge trotzdem als erledigt markieren?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Du hast {Math.floor(earlyStopSeconds / 60)}:
+                  {String(earlyStopSeconds % 60).padStart(2, "0")} Min absolviert
+                  (Ziel: {Math.floor(timerDuration / 60)} Min). Arkie loggt deine tatsächliche Zeit.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="text-foreground">Weiter üben</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    setEarlyStopOpen(false);
+                    void handleTimerCompleted(earlyStopSeconds);
+                  }}
+                  style={{ background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))" }}
+                >
+                  Ja, erledigt
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </div>
       )}
 
