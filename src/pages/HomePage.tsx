@@ -244,6 +244,32 @@ const HomePage = () => {
     return <CircleDashed className={`${common} text-foreground/50`} />;
   };
 
+  const confirmDismiss = async () => {
+    if (!user || !dismissTarget) return;
+    const target = dismissTarget;
+    setDismissTarget(null);
+    // Trigger slide-out animation
+    setDismissingIds((prev) => new Set(prev).add(target.id));
+    // Background log for Arkie context (best-effort, fire and forget)
+    try {
+      console.log(`[arkie-context] User dismissed challenge "${target.title}" today`);
+    } catch {}
+    // After animation, deactivate the user_challenge link (history preserved)
+    setTimeout(async () => {
+      await supabase
+        .from("user_challenges")
+        .update({ is_active: false })
+        .eq("user_id", user.id)
+        .eq("challenge_id", target.id);
+      setActiveChallenges((prev) => prev.filter((c) => c.id !== target.id));
+      setDismissingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(target.id);
+        return next;
+      });
+    }, 280);
+  };
+
   return (
     <div
       className="pb-4 space-y-5 onboarding-slide"
