@@ -143,6 +143,11 @@ const ChallengeDetailPage = () => {
 
   // Template A — three text inputs
   const [responseInputs, setResponseInputs] = useState<string[]>(["", "", ""]);
+  // Template A (letter mode) — single big textarea
+  const [letterText, setLetterText] = useState<string>("");
+
+  // Water-tracker state — 8 glasses (250ml each)
+  const [glasses, setGlasses] = useState<boolean[]>(Array(8).fill(false));
 
   // Template B — flexible timer / stopwatch
   type TimerMode = "countdown" | "stopwatch";
@@ -160,8 +165,17 @@ const ChallengeDetailPage = () => {
   const [confirmFlash, setConfirmFlash] = useState(false);
 
   const baseTemplate = pickTemplate(challenge?.category);
-  // Override: strength/reps challenges (e.g. "20 Liegestütze machen") never use timer
-  const template: TemplateKind = isStrengthChallenge(challenge?.title, challenge?.category) ? "C" : baseTemplate;
+  const letterMode = isLetterChallenge(challenge?.title);
+  const waterMode = isWaterChallenge(challenge?.title);
+  // Override:
+  // - strength/reps challenges (e.g. "20 Liegestütze") never use timer → C
+  // - quick-action challenges (e.g. "Treppe nehmen") never use timer → C
+  // - letter challenges (e.g. "Brief an dich selbst") use Template A (single textarea)
+  const template: TemplateKind =
+    letterMode ? "A"
+      : (isStrengthChallenge(challenge?.title, challenge?.category) || isQuickActionOverride(challenge?.title))
+        ? "C"
+        : baseTemplate;
 
   const fetchAll = useCallback(async () => {
     if (!user || !id) return;
