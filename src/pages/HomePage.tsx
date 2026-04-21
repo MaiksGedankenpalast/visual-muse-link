@@ -6,6 +6,7 @@ import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
 import { Skeleton } from "@/components/ui/skeleton";
 import AddChallengeSheet from "@/components/AddChallengeSheet";
+import SmartChallengeWidget from "@/components/SmartChallengeWidget";
 import {
   ChallengeStatus,
   autoLogMissedYesterday,
@@ -408,6 +409,8 @@ const HomePage = () => {
                   Browse
                 </button>
               </div>
+
+              <SmartChallengeWidget />
 
               {activeChallenges.length === 0 ? (
                 <div className="text-center py-6">
