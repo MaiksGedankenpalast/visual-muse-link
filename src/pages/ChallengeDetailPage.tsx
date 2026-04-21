@@ -661,7 +661,52 @@ const ChallengeDetailPage = () => {
       </div>
 
       {/* TEMPLATE BODY */}
-      {isActive && template === "A" && (
+      {isActive && template === "A" && letterMode && (
+        <div className="mb-5">
+          <p className="text-muted-foreground text-[13px] mb-2">
+            {letterMode === "message"
+              ? "Du kannst auch gerne dir selbst schreiben :)"
+              : "Sei lieb zu dir. Was möchtest du dir heute sagen?"}
+          </p>
+          <Textarea
+            value={letterText}
+            onChange={(e) => {
+              const el = e.target as HTMLTextAreaElement;
+              setLetterText(el.value);
+              // Auto-resize
+              el.style.height = "auto";
+              el.style.height = `${Math.min(el.scrollHeight, 600)}px`;
+            }}
+            placeholder={
+              letterMode === "message"
+                ? "Schreib eine warme Nachricht..."
+                : "Lieber/Liebe Ich, ..."
+            }
+            className="w-full text-foreground placeholder:text-muted-foreground text-[15px] leading-relaxed min-h-[200px] resize-none"
+            style={{
+              background: "rgba(255,255,255,0.05)",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.1)",
+              padding: "14px 14px",
+            }}
+          />
+          <p className="text-center text-[12px] mt-3" style={{ color: PURPLE }}>
+            Wird automatisch in deinem Journal als „Challenge-Brief" gespeichert ✉️
+          </p>
+          <button
+            onClick={handleSaveLetter}
+            disabled={saving}
+            className="w-full mt-4 rounded-[14px] py-3 text-foreground font-medium text-sm transition-opacity disabled:opacity-50"
+            style={{
+              background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
+            }}
+          >
+            {saving ? "Speichern..." : "Speichern & ins Journal legen"}
+          </button>
+        </div>
+      )}
+
+      {isActive && template === "A" && !letterMode && (
         <div className="mb-5">
           <div className="space-y-2">
             {[0, 1, 2].map((i) => (
