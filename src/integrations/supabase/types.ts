@@ -124,6 +124,7 @@ export type Database = {
           id: string
           logged_value: number | null
           notes: string | null
+          response_data: Json | null
           status: string
           target_value: number | null
           user_id: string
@@ -136,6 +137,7 @@ export type Database = {
           id?: string
           logged_value?: number | null
           notes?: string | null
+          response_data?: Json | null
           status?: string
           target_value?: number | null
           user_id: string
@@ -148,6 +150,7 @@ export type Database = {
           id?: string
           logged_value?: number | null
           notes?: string | null
+          response_data?: Json | null
           status?: string
           target_value?: number | null
           user_id?: string
