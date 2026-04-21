@@ -217,23 +217,33 @@ const ChallengeDetailPage = () => {
   useEffect(() => {
     if (!timerRunning) return;
     timerRef.current = window.setInterval(() => {
-      setTimerRemaining((s) => {
-        if (s <= 1) {
-          setTimerRunning(false);
-          return 0;
-        }
-        return s - 1;
-      });
+      if (timerMode === "countdown") {
+        setTimerRemaining((s) => {
+          if (s <= 1) {
+            setTimerRunning(false);
+            return 0;
+          }
+          return s - 1;
+        });
+      } else {
+        setStopwatchElapsed((s) => Math.min(s + 1, MAX_TIMER_SECONDS));
+      }
     }, 1000);
     return () => {
       if (timerRef.current) window.clearInterval(timerRef.current);
     };
-  }, [timerRunning]);
+  }, [timerRunning, timerMode]);
 
-  // Auto-complete Template B when timer hits 0
+  // Auto-complete Template B when countdown hits 0
   useEffect(() => {
-    if (template === "B" && timerRemaining === 0 && todayStatus !== "completed" && isActive) {
-      void handleQuickComplete(true);
+    if (
+      template === "B" &&
+      timerMode === "countdown" &&
+      timerRemaining === 0 &&
+      todayStatus !== "completed" &&
+      isActive
+    ) {
+      void handleTimerCompleted(timerDuration);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerRemaining]);
