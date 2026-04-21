@@ -222,8 +222,25 @@ const ChallengeDetailPage = () => {
     if (todayLog?.response_data && Array.isArray(todayLog.response_data)) {
       const arr = todayLog.response_data as string[];
       setResponseInputs([arr[0] ?? "", arr[1] ?? "", arr[2] ?? ""]);
+      setLetterText(arr[0] ?? "");
     } else {
       setResponseInputs(["", "", ""]);
+      setLetterText("");
+    }
+
+    // Load glass state for water tracker from response_data when stored as object
+    if (
+      todayLog?.response_data &&
+      typeof todayLog.response_data === "object" &&
+      !Array.isArray(todayLog.response_data) &&
+      Array.isArray((todayLog.response_data as any).glasses)
+    ) {
+      const g = (todayLog.response_data as any).glasses as boolean[];
+      setGlasses(Array.from({ length: 8 }, (_, i) => Boolean(g[i])));
+    } else if (todayLog?.status === "completed" && isWaterChallenge((ch as ChallengeDetail | null)?.title)) {
+      setGlasses(Array(8).fill(true));
+    } else {
+      setGlasses(Array(8).fill(false));
     }
 
     // Initialize timer duration from the challenge title
