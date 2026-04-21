@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Lock, Sparkles } from "lucide-react";
+import {
+  Sparkles,
+  CalendarDays,
+  TrendingUp,
+  TrendingDown,
+  Link2,
+  Brain,
+  BookOpen,
+  MessageCircle,
+} from "lucide-react";
 import Arkie from "@/components/Arkie";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,6 +36,18 @@ interface ChallengeResponse {
   response_text_3: string | null;
 }
 
+interface JournalEntry {
+  date: string;
+  title: string;
+  content: string | null;
+  mood_snapshot: number | null;
+}
+
+interface ChatMsg {
+  content: string;
+  created_at: string;
+}
+
 interface Props {
   moods: MoodEntry[];
   completions: Completion[];
@@ -50,6 +71,14 @@ const STOPWORDS = new Set([
   "the", "a", "an", "and", "or", "but", "of", "to", "for",
 ]);
 
+const WEEKDAYS_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const MONTHS_DE_SHORT = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+
+const formatShortDate = (iso: string) => {
+  const d = new Date(iso);
+  return `${d.getDate()}. ${MONTHS_DE_SHORT[d.getMonth()]}.`;
+};
+
 function extractKeywords(texts: string[]): Map<string, number> {
   const counts = new Map<string, number>();
   texts.forEach((t) => {
@@ -62,6 +91,14 @@ function extractKeywords(texts: string[]): Map<string, number> {
   });
   return counts;
 }
+
+type InsightCard = {
+  id: string;
+  tier: "free" | "premium";
+  icon: React.ReactNode;
+  title: string;
+  body: React.ReactNode;
+};
 
 const ArkieInsightsRadar = ({ moods, completions, userId }: Props) => {
   const [responses, setResponses] = useState<ChallengeResponse[]>([]);
