@@ -363,6 +363,96 @@ const ChallengeDetailPage = () => {
     if (!silent) toast({ title: "Stark gemacht 💜" });
   };
 
+  /** Save Template A in letter mode → single textarea + mirror into journal_entries. */
+  const handleSaveLetter = async () => {
+    if (!user || !id || !challenge) return;
+    const text = letterText.trim();
+    setSaving(true);
+    const status: ChallengeStatus = text.length > 0 ? "completed" : "missed";
+    await persist({
+      status,
+      notes: note.trim() || null,
+      responseData: [text, "", ""],
+    });
+    await supabase.from("challenge_responses").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        response_text_1: text || null,
+        response_text_2: null,
+        response_text_3: null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
+
+    // Mirror into the journal: visible at the bottom of the day's entries, marked as "Challenge-Brief".
+    if (text.length > 0) {
+      const journalTitle =
+        letterMode === "self_letter" ? `Brief an mich selbst` : `Nette Nachricht`;
+      // Upsert-by-hand: try to update an existing mirror for today, else insert.
+      const { data: existing } = await supabase
+        .from("journal_entries")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("date", todayStr())
+        .eq("category", "Challenge-Brief")
+        .eq("title", journalTitle)
+        .maybeSingle();
+      if (existing?.id) {
+        await supabase
+          .from("journal_entries")
+          .update({ content: text })
+          .eq("id", existing.id);
+      } else {
+        await supabase.from("journal_entries").insert({
+          user_id: user.id,
+          date: todayStr(),
+          title: journalTitle,
+          content: text,
+          category: "Challenge-Brief",
+        });
+      }
+    }
+
+    setTodayStatus(status);
+    setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
+    setSaving(false);
+    setConfirmFlash(true);
+    window.setTimeout(() => setConfirmFlash(false), 1200);
+    toast({ title: "Im Journal gespeichert 💜" });
+  };
+
+  /** Toggle a single water glass; auto-completes when all 8 are full. */
+  const toggleGlass = async (index: number) => {
+    if (!user || !id) return;
+    const next = glasses.map((g, i) => (i === index ? !g : g));
+    setGlasses(next);
+    const filled = next.filter(Boolean).length;
+    const allFull = filled === 8;
+    const status: ChallengeStatus = allFull ? "completed" : filled > 0 ? "partial" : "pending";
+    await supabase.from("daily_completions").upsert(
+      {
+        user_id: user.id,
+        challenge_id: id,
+        date: todayStr(),
+        status,
+        completed: allFull,
+        notes: note.trim() || null,
+        response_data: { glasses: next, ml: filled * 250 } as any,
+      },
+      { onConflict: "user_id,challenge_id,date" },
+    );
+    setTodayStatus(status);
+    setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
+    if (allFull) {
+      setConfirmFlash(true);
+      window.setTimeout(() => setConfirmFlash(false), 1500);
+      toast({ title: "2 Liter geschafft 💧" });
+    }
+  };
+
   /** Mark template B as completed and log actually elapsed seconds to challenge_responses. */
   const handleTimerCompleted = async (elapsedSeconds: number) => {
     if (!user || !id) return;
