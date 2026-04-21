@@ -297,6 +297,33 @@ export type Database = {
         }
         Relationships: []
       }
+      safety_logs: {
+        Row: {
+          created_at: string
+          id: string
+          session_id: string | null
+          triggered_rule: string
+          user_id: string
+          user_message: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          triggered_rule: string
+          user_id: string
+          user_message?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_id?: string | null
+          triggered_rule?: string
+          user_id?: string
+          user_message?: string | null
+        }
+        Relationships: []
+      }
       user_app_start: {
         Row: {
           created_at: string
