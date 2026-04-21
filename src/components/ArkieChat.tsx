@@ -532,6 +532,12 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                   <Send className="w-4 h-4 text-foreground" />
                 </button>
               </div>
+              <p
+                className="text-center mt-2 text-muted-foreground"
+                style={{ fontSize: 10, lineHeight: 1.4 }}
+              >
+                Arkie ersetzt keine professionelle Beratung. Bei Krisen: 📞 0800 111 0 111 (kostenlos, 24/7)
+              </p>
             </div>
           </>
         )}
