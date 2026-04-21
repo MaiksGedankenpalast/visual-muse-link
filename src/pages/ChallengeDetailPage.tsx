@@ -371,11 +371,65 @@ const ChallengeDetailPage = () => {
   const arkieBubble = isCompleted ? "Das hast du gut gemacht!" : "Ich bin bei dir 💜";
 
   // Timer derived values
-  const mm = String(Math.floor(timerRemaining / 60)).padStart(2, "0");
-  const ss = String(timerRemaining % 60).padStart(2, "0");
-  const timerProgress = 1 - timerRemaining / DEFAULT_DURATION;
+  const displaySeconds = timerMode === "countdown" ? timerRemaining : stopwatchElapsed;
+  const mm = String(Math.floor(displaySeconds / 60)).padStart(2, "0");
+  const ss = String(displaySeconds % 60).padStart(2, "0");
+  const timerProgress =
+    timerMode === "countdown"
+      ? (timerDuration > 0 ? 1 - timerRemaining / timerDuration : 0)
+      : Math.min(stopwatchElapsed / MAX_TIMER_SECONDS, 1);
   const r = 70;
   const c = 2 * Math.PI * r;
+
+  const adjustDuration = (deltaSeconds: number) => {
+    if (timerRunning) return;
+    setTimerDuration((d) => {
+      const next = Math.max(30, Math.min(MAX_TIMER_SECONDS, d + deltaSeconds));
+      setTimerRemaining(next);
+      return next;
+    });
+  };
+
+  const onToggleTimer = () => {
+    if (!timerRunning) {
+      setTimerStartedAt(Date.now());
+    }
+    setTimerRunning((v) => !v);
+  };
+
+  const onResetTimer = () => {
+    setTimerRunning(false);
+    setTimerStartedAt(null);
+    if (timerMode === "countdown") setTimerRemaining(timerDuration);
+    else setStopwatchElapsed(0);
+  };
+
+  const onSwitchMode = (mode: TimerMode) => {
+    if (timerRunning) return;
+    setTimerMode(mode);
+    setTimerStartedAt(null);
+    if (mode === "countdown") setTimerRemaining(timerDuration);
+    else setStopwatchElapsed(0);
+  };
+
+  const onManualComplete = () => {
+    // Ask for confirmation when stopping early on a countdown
+    if (timerMode === "countdown" && timerRemaining > 0 && timerRunning) {
+      setTimerRunning(false);
+      const elapsed = Math.max(0, timerDuration - timerRemaining);
+      setEarlyStopSeconds(elapsed);
+      setEarlyStopOpen(true);
+      return;
+    }
+    if (timerMode === "countdown" && timerRemaining > 0 && timerRemaining < timerDuration) {
+      const elapsed = Math.max(0, timerDuration - timerRemaining);
+      setEarlyStopSeconds(elapsed);
+      setEarlyStopOpen(true);
+      return;
+    }
+    const elapsed = timerMode === "countdown" ? timerDuration : stopwatchElapsed;
+    void handleTimerCompleted(elapsed);
+  };
 
   return (
     <div className="px-4 pt-6 pb-32 min-h-screen onboarding-slide">
