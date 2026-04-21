@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass, GlassWater } from "lucide-react";
+import { ArrowLeft, Check, Trash2, ChevronDown, Play, Pause, RotateCcw, Sparkles, Minus, Plus, Timer as TimerIcon, Hourglass, GlassWater, ChefHat } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/hooks/use-toast";
@@ -71,11 +71,25 @@ function isQuickActionOverride(title: string | null | undefined): boolean {
   return keywords.some((k) => t.includes(k));
 }
 
-/** Detect "letter / message" challenges → Template A with a single big textarea + journal mirror. */
-function isLetterChallenge(title: string | null | undefined): "message" | "self_letter" | null {
+/** Detect doodle/draw challenges → Template C (Quick-Action), no text input. */
+function isDoodleChallenge(title: string | null | undefined): boolean {
+  const t = (title ?? "").toLowerCase();
+  return (
+    t.includes("kritzel") ||
+    t.includes("zeichne") ||
+    t.includes("doodle") ||
+    t.includes("malen")
+  );
+}
+
+/** Detect "letter / message / recipe" challenges → Template A with a single big textarea + journal mirror. */
+function isLetterChallenge(
+  title: string | null | undefined,
+): "message" | "self_letter" | "recipe" | null {
   const t = (title ?? "").toLowerCase();
   if (t.includes("nette nachricht") || (t.includes("nachricht") && t.includes("schreib"))) return "message";
   if (t.includes("brief an dich") || t.includes("brief an mich") || (t.includes("brief") && t.includes("selbst"))) return "self_letter";
+  if (t.includes("rezept")) return "recipe";
   return null;
 }
 
