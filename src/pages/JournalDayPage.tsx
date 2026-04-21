@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Pencil, Trash2, X } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, X, Mail } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "@/components/Arkie";
@@ -79,7 +79,13 @@ const JournalDayPage = () => {
           .eq("date", date)
           .maybeSingle(),
       ]);
-      setEntries((entryData ?? []) as JournalEntry[]);
+      // Sort: regular entries first (newest → oldest), then Challenge-Briefe at the end (chronologically).
+      const all = (entryData ?? []) as JournalEntry[];
+      const regular = all.filter((e) => e.category !== "Challenge-Brief");
+      const letters = all
+        .filter((e) => e.category === "Challenge-Brief")
+        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      setEntries([...regular, ...letters]);
       if (moodData) setMood(moodData as MoodData);
       const dc: DayChallenge[] = (logData ?? []).map((l: any) => ({
         challenge_id: l.challenge_id,
