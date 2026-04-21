@@ -187,7 +187,7 @@ const ChallengeDetailPage = () => {
   // - letter challenges (e.g. "Brief an dich selbst") use Template A (single textarea)
   const template: TemplateKind =
     letterMode ? "A"
-      : (isStrengthChallenge(challenge?.title, challenge?.category) || isQuickActionOverride(challenge?.title))
+      : (isStrengthChallenge(challenge?.title, challenge?.category) || isQuickActionOverride(challenge?.title) || isDoodleChallenge(challenge?.title))
         ? "C"
         : baseTemplate;
 
