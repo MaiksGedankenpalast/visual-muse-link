@@ -546,6 +546,28 @@ const HomePage = () => {
         onOpenChange={setAddOpen}
         onAdded={() => setRefreshKey((k) => k + 1)}
       />
+
+      <AlertDialog open={!!dismissTarget} onOpenChange={(open) => !open && setDismissTarget(null)}>
+        <AlertDialogContent className="max-w-[340px] rounded-[20px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[16px]">
+              Diese Challenge für heute entfernen?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs text-muted-foreground">
+              Sie verschwindet aus deiner heutigen Übersicht. Du kannst sie jederzeit wieder hinzufügen.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row gap-2 sm:gap-2">
+            <AlertDialogCancel className="flex-1 mt-0">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDismiss}
+              className="flex-1 bg-red-500/80 hover:bg-red-500 text-white border-0"
+            >
+              Ja, entfernen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
