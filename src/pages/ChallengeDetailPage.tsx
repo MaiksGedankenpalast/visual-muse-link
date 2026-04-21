@@ -900,6 +900,50 @@ const ChallengeDetailPage = () => {
 
       {isActive && template === "C" && (
         <div className="mb-5 flex flex-col items-center">
+          {waterMode && (
+            <div className="w-full mb-5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-muted-foreground text-xs uppercase tracking-wider">
+                  Wasser-Tracker
+                </p>
+                <p className="text-foreground text-[13px] font-medium tabular-nums">
+                  {glasses.filter(Boolean).length * 250} / 2000 ml
+                </p>
+              </div>
+              <div className="grid grid-cols-8 gap-2">
+                {glasses.map((filled, i) => (
+                  <button
+                    key={i}
+                    onClick={() => toggleGlass(i)}
+                    aria-label={`Glas ${i + 1} ${filled ? "leeren" : "füllen"}`}
+                    className="aspect-[3/4] rounded-[10px] flex items-center justify-center transition-all"
+                    style={{
+                      background: filled
+                        ? "linear-gradient(180deg, rgba(96,165,250,0.25), rgba(59,130,246,0.45))"
+                        : "rgba(255,255,255,0.05)",
+                      border: filled
+                        ? "1px solid rgba(96,165,250,0.6)"
+                        : "1px solid rgba(255,255,255,0.12)",
+                      boxShadow: filled
+                        ? "0 0 14px rgba(96,165,250,0.55), inset 0 -8px 12px rgba(59,130,246,0.35)"
+                        : "none",
+                    }}
+                  >
+                    <GlassWater
+                      className="w-5 h-5"
+                      style={{
+                        color: filled ? "#bfdbfe" : "rgba(255,255,255,0.35)",
+                        filter: filled ? "drop-shadow(0 0 4px rgba(96,165,250,0.7))" : "none",
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-2 text-center">
+                Tippe auf ein Glas (250 ml). Bei 8 Gläsern wird die Challenge automatisch abgeschlossen.
+              </p>
+            </div>
+          )}
           <button
             onClick={() => handleQuickComplete()}
             disabled={saving || isCompleted}
