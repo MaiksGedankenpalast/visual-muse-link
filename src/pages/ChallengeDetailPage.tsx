@@ -716,8 +716,8 @@ const ChallengeDetailPage = () => {
           />
           <p className="text-center text-[12px] mt-3" style={{ color: PURPLE }}>
             {letterMode === "recipe"
-              ? "Wird automatisch in deinem Journal als „Challenge: Neues Rezept" gespeichert 🍳"
-              : "Wird automatisch in deinem Journal als „Challenge-Brief" gespeichert ✉️"}
+              ? "Wird automatisch in deinem Journal als „Challenge: Neues Rezept“ gespeichert 🍳"
+              : "Wird automatisch in deinem Journal als „Challenge-Brief“ gespeichert ✉️"}
           </p>
           <button
             onClick={handleSaveLetter}
