@@ -288,3 +288,77 @@
 .arkie-glow-strong {
   filter: drop-shadow(0 0 20px rgba(180, 127, 232, 0.7));
 }
+
+/* ── Arkies Geheimtipp animated glow border ── */
+.smart-glow-wrap {
+  position: relative;
+  border-radius: 20px;
+  padding: 1.5px;
+  background:
+    conic-gradient(
+      from var(--smart-angle, 0deg),
+      rgba(180, 127, 232, 0.0) 0deg,
+      rgba(180, 127, 232, 0.55) 60deg,
+      rgba(255, 255, 255, 0.9) 90deg,
+      rgba(122, 168, 255, 0.65) 140deg,
+      rgba(180, 127, 232, 0.0) 220deg,
+      rgba(255, 255, 255, 0.9) 260deg,
+      rgba(180, 127, 232, 0.55) 310deg,
+      rgba(180, 127, 232, 0.0) 360deg
+    );
+  animation: smart-glow-spin 7s linear infinite;
+  box-shadow: 0 0 24px -6px rgba(180, 127, 232, 0.45);
+}
+
+@property --smart-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes smart-glow-spin {
+  to {
+    --smart-angle: 360deg;
+  }
+}
+
+/* Fallback for browsers without @property: rotate a pseudo-gradient layer */
+@supports not (background: conic-gradient(from var(--smart-angle))) {
+  .smart-glow-wrap { animation: none; }
+  .smart-glow-wrap::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      rgba(180,127,232,0) 0deg,
+      rgba(180,127,232,0.55) 60deg,
+      rgba(255,255,255,0.9) 90deg,
+      rgba(122,168,255,0.65) 140deg,
+      rgba(180,127,232,0) 220deg,
+      rgba(255,255,255,0.9) 260deg,
+      rgba(180,127,232,0.55) 310deg,
+      rgba(180,127,232,0) 360deg
+    );
+    animation: spin-fallback 7s linear infinite;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+  }
+}
+@keyframes spin-fallback { to { transform: rotate(360deg); } }
+
+.smart-glow-inner {
+  position: relative;
+  border-radius: 18.5px;
+  padding: 16px;
+  background: linear-gradient(
+      180deg,
+      rgba(26, 22, 44, 0.92) 0%,
+      rgba(18, 16, 32, 0.92) 100%
+    );
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}

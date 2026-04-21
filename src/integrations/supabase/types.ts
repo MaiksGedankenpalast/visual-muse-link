@@ -324,6 +324,42 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_challenges: {
+        Row: {
+          challenge_text: string
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          date: string
+          id: string
+          prompt_context: string | null
+          rationale: string | null
+          user_id: string
+        }
+        Insert: {
+          challenge_text: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          prompt_context?: string | null
+          rationale?: string | null
+          user_id: string
+        }
+        Update: {
+          challenge_text?: string
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          prompt_context?: string | null
+          rationale?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_app_start: {
         Row: {
           created_at: string

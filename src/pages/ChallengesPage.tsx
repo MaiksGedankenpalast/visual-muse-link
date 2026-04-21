@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose,
 } from "@/components/ui/drawer";
+import SmartChallengeWidget from "@/components/SmartChallengeWidget";
 
 /* ── goal → category mapping ── */
 const GOAL_CATEGORIES: Record<string, string[]> = {
@@ -138,6 +139,8 @@ const ChallengesPage = () => {
       </div>
 
       {/* CATEGORY FILTER */}
+      <SmartChallengeWidget />
+
       <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
         {CATEGORIES.map((c) => (
           <button key={c} onClick={() => setFilter(c)}

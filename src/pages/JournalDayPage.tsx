@@ -54,11 +54,15 @@ const JournalDayPage = () => {
   const [editContent, setEditContent] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [dayChallenges, setDayChallenges] = useState<DayChallenge[]>([]);
+  const [smartChallenge, setSmartChallenge] = useState<{
+    text: string;
+    completed: boolean;
+  } | null>(null);
 
   useEffect(() => {
     if (!user || !date) return;
     (async () => {
-      const [{ data: entryData }, { data: moodData }, { data: logData }] = await Promise.all([
+      const [{ data: entryData }, { data: moodData }, { data: logData }, { data: smartData }] = await Promise.all([
         supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }),
         supabase.from("mood_entries")
           .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
@@ -68,6 +72,12 @@ const JournalDayPage = () => {
           .select("challenge_id, status, challenges!inner(title, icon)")
           .eq("user_id", user.id)
           .eq("date", date),
+        supabase
+          .from("smart_challenges")
+          .select("challenge_text, completed")
+          .eq("user_id", user.id)
+          .eq("date", date)
+          .maybeSingle(),
       ]);
       setEntries((entryData ?? []) as JournalEntry[]);
       if (moodData) setMood(moodData as MoodData);
@@ -78,6 +88,12 @@ const JournalDayPage = () => {
         status: l.status,
       }));
       setDayChallenges(dc);
+      if (smartData) {
+        setSmartChallenge({
+          text: (smartData as any).challenge_text,
+          completed: (smartData as any).completed,
+        });
+      }
       setLoading(false);
     })();
   }, [user, date]);
@@ -251,6 +267,34 @@ const JournalDayPage = () => {
               {t}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* SMART CHALLENGE FOR THIS DAY */}
+      {smartChallenge && (
+        <div className="mb-4">
+          <p className="text-[11px] font-bold tracking-[0.15em] text-[rgba(180,127,232,0.9)] uppercase mb-2">
+            ✨ Arkies Geheimtipp
+          </p>
+          <div
+            className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
+            style={{
+              background: "rgba(180,127,232,0.12)",
+              border: "1px solid rgba(180,127,232,0.35)",
+            }}
+          >
+            <span className="text-lg">{smartChallenge.completed ? "✅" : "⬜"}</span>
+            <span
+              className={`flex-1 text-[14px] ${
+                smartChallenge.completed ? "text-foreground/50 line-through" : "text-foreground"
+              }`}
+            >
+              {smartChallenge.text}
+            </span>
+            <span className="text-[11px] text-muted-foreground">
+              {smartChallenge.completed ? "Erledigt" : "Offen"}
+            </span>
+          </div>
         </div>
       )}
 
