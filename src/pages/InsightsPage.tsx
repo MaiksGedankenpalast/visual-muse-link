@@ -25,6 +25,18 @@ interface Completion {
   challenges: { category: string | null } | null;
 }
 
+interface JournalSnippet {
+  date: string;
+  title: string;
+  content: string | null;
+}
+
+interface CompletionWithTitle {
+  date: string;
+  completed: boolean;
+  title: string | null;
+}
+
 const InsightsPage = () => {
   const { user, profileName } = useAuth();
   const name = profileName || "du";
@@ -34,6 +46,8 @@ const InsightsPage = () => {
   const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [journalCount, setJournalCount] = useState(0);
+  const [journalSnippets, setJournalSnippets] = useState<JournalSnippet[]>([]);
+  const [completionTitles, setCompletionTitles] = useState<CompletionWithTitle[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
@@ -41,14 +55,27 @@ const InsightsPage = () => {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: moodData }, { data: compData }, { count }] = await Promise.all([
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenAgoStr = sevenDaysAgo.toISOString().slice(0, 10);
+    const [{ data: moodData }, { data: compData }, { count }, { data: journalData }, { data: compTitleData }] = await Promise.all([
       supabase.from("mood_entries").select("*").eq("user_id", user.id).order("date", { ascending: true }),
       supabase.from("daily_completions").select("date, completed, challenge_id, challenges(category)").eq("user_id", user.id),
       supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("journal_entries").select("date, title, content").eq("user_id", user.id).gte("date", sevenAgoStr),
+      supabase.from("daily_completions").select("date, completed, challenges(title)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
     ]);
     setMoods((moodData ?? []) as MoodEntry[]);
     setCompletions((compData ?? []) as any[]);
     setJournalCount(count ?? 0);
+    setJournalSnippets((journalData ?? []) as JournalSnippet[]);
+    setCompletionTitles(
+      ((compTitleData ?? []) as any[]).map((c) => ({
+        date: c.date,
+        completed: c.completed,
+        title: c.challenges?.title ?? null,
+      })),
+    );
     setLoading(false);
   }, [user]);
 
