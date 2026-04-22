@@ -13,8 +13,12 @@ import tree2 from "@/assets/tree-phase-2.png";
 import tree3 from "@/assets/tree-phase-3.png";
 import tree4 from "@/assets/tree-phase-4.png";
 import tree5 from "@/assets/tree-phase-5.png";
+import moonImg from "@/assets/sanctuary-moon.png";
 
 const TREE_ASSETS = [tree1, tree2, tree3, tree4, tree5];
+
+// Floor height in viewport units — single source of truth for stacking
+const FLOOR_VH = 22;
 
 const SanctuaryPage = () => {
   const { user } = useAuth();
@@ -100,8 +104,38 @@ const SanctuaryPage = () => {
 
       {/* Stage container */}
       <div className="relative w-full h-[100dvh] flex items-end justify-center">
-        {/* Tree — verankert: Stängel beginnt leicht innerhalb der Moos-Ebene */}
-        <div className="absolute left-1/2 -translate-x-1/2 z-20" style={{ bottom: "16vh" }}>
+        {/* Mond oben rechts — sanftes Leuchten + Strahlen */}
+        <div
+          className="absolute z-10 pointer-events-none"
+          style={{ top: "5vh", right: "6vw" }}
+          aria-hidden
+        >
+          {/* Mondstrahlen */}
+          <motion.div
+            className="absolute inset-0 -z-10 rounded-full"
+            style={{
+              background:
+                "radial-gradient(circle, rgba(254,243,199,0.45) 0%, rgba(254,243,199,0.18) 35%, transparent 70%)",
+              filter: "blur(20px)",
+              transform: "scale(2.2)",
+            }}
+            animate={{ opacity: [0.6, 0.9, 0.6], scale: [2.1, 2.3, 2.1] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          />
+          <motion.img
+            src={moonImg}
+            alt="Mond"
+            width={120}
+            height={120}
+            loading="lazy"
+            className="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] object-contain drop-shadow-[0_0_18px_rgba(254,243,199,0.55)]"
+            animate={{ y: [0, -2, 0] }}
+            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+          />
+        </div>
+
+        {/* Tree — Stängel sitzt exakt auf der Moos-Oberfläche auf */}
+        <div className="absolute left-1/2 -translate-x-1/2 z-20" style={{ bottom: `${FLOOR_VH}vh` }}>
           {loading ? (
             <div className="w-[280px] h-[280px] rounded-full bg-white/5 animate-pulse" />
           ) : (
@@ -113,6 +147,7 @@ const SanctuaryPage = () => {
                 exit={{ opacity: 0, scale: 1.1, filter: "blur(8px)" }}
                 transition={{ duration: 1.2, ease: [0.25, 0.46, 0.45, 0.94] }}
                 className="relative cursor-pointer"
+                style={{ transformOrigin: "bottom center" }}
                 onClick={handleWaterTree}
               >
                 {/* Glow halo */}
@@ -138,45 +173,23 @@ const SanctuaryPage = () => {
                   width={320}
                   height={320}
                   loading="eager"
-                  className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]"
+                  className="block w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain object-bottom drop-shadow-[0_0_30px_rgba(168,85,247,0.4)]"
                   animate={watering ? { scale: [1, 1.04, 1] } : {}}
                   transition={{ duration: 1.2, ease: "easeInOut" }}
                 />
-                {/* Weicher Bodenschatten direkt unter dem Keimling */}
+                {/* Weicher Bodenschatten direkt unter dem Keimling, auf der Moos-Oberfläche */}
                 <div
                   className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
                   style={{
-                    bottom: "8%",
+                    bottom: "-6px",
                     width: "60%",
-                    height: "18px",
-                    background: "radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 40%, transparent 75%)",
-                    filter: "blur(6px)",
+                    height: "16px",
+                    background:
+                      "radial-gradient(ellipse at center, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.22) 45%, transparent 78%)",
+                    filter: "blur(5px)",
                   }}
                   aria-hidden
                 />
-                {/* Subtile leuchtende Wurzeln, die durch das Moos wachsen */}
-                <svg
-                  className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
-                  style={{ bottom: "-28px", opacity: 0.55, mixBlendMode: "screen" }}
-                  width="140"
-                  height="70"
-                  viewBox="0 0 140 70"
-                  fill="none"
-                  aria-hidden
-                >
-                  <defs>
-                    <linearGradient id="rootGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#a5f3fc" stopOpacity="0.9" />
-                      <stop offset="60%" stopColor="#67e8f9" stopOpacity="0.4" />
-                      <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path d="M70 0 C 68 18, 50 30, 38 58" stroke="url(#rootGrad)" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M70 0 C 72 18, 90 30, 102 58" stroke="url(#rootGrad)" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M70 0 C 70 22, 70 40, 70 64" stroke="url(#rootGrad)" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M70 4 C 64 20, 58 34, 54 56" stroke="url(#rootGrad)" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
-                  <path d="M70 4 C 76 20, 82 34, 86 56" stroke="url(#rootGrad)" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
-                </svg>
                 {/* Watering droplets */}
                 <AnimatePresence>
                   {watering && (
@@ -200,56 +213,147 @@ const SanctuaryPage = () => {
           )}
         </div>
 
-        {/* Kosmischer Moos-Teppich — solide, undurchsichtige Bodenmasse */}
+        {/* Wurzeln — sitzen direkt unter der Moos-Oberfläche, am Stängel-Fuß */}
+        {!loading && (
+          <svg
+            className="absolute left-1/2 -translate-x-1/2 pointer-events-none z-[15]"
+            style={{ bottom: `calc(${FLOOR_VH}vh - 56px)`, opacity: 0.45, mixBlendMode: "screen" }}
+            width="140"
+            height="70"
+            viewBox="0 0 140 70"
+            fill="none"
+            aria-hidden
+          >
+            <defs>
+              <linearGradient id="rootGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#a5f3fc" stopOpacity="0.95" />
+                <stop offset="55%" stopColor="#67e8f9" stopOpacity="0.45" />
+                <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <path d="M70 0 C 68 18, 50 30, 38 58" stroke="url(#rootGrad)" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M70 0 C 72 18, 90 30, 102 58" stroke="url(#rootGrad)" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M70 0 C 70 22, 70 40, 70 64" stroke="url(#rootGrad)" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M70 4 C 64 20, 58 34, 54 56" stroke="url(#rootGrad)" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
+            <path d="M70 4 C 76 20, 82 34, 86 56" stroke="url(#rootGrad)" strokeWidth="1" strokeLinecap="round" opacity="0.7" />
+          </svg>
+        )}
+
+        {/* Kosmische Glühwürmchen — schweben über der Moos-Ebene */}
+        <div
+          className="absolute left-0 right-0 pointer-events-none z-[18]"
+          style={{ bottom: `${FLOOR_VH}vh`, height: "45vh" }}
+          aria-hidden
+        >
+          {Array.from({ length: 14 }).map((_, i) => {
+            const isCyan = i % 2 === 0;
+            const startX = (i * 41) % 100;
+            const drift = 30 + ((i * 17) % 60);
+            const dur = 14 + (i % 5) * 3;
+            return (
+              <motion.div
+                key={i}
+                className="absolute rounded-full"
+                style={{
+                  width: 4,
+                  height: 4,
+                  left: `${startX}%`,
+                  bottom: `${10 + ((i * 13) % 70)}%`,
+                  background: isCyan ? "#a5f3fc" : "#c4b5fd",
+                  boxShadow: isCyan
+                    ? "0 0 8px 2px rgba(165,243,252,0.85), 0 0 16px 4px rgba(103,232,249,0.4)"
+                    : "0 0 8px 2px rgba(196,181,253,0.85), 0 0 16px 4px rgba(167,139,250,0.4)",
+                }}
+                animate={{
+                  x: [0, drift, -drift / 2, drift / 3, 0],
+                  y: [0, -20, -8, -28, 0],
+                  opacity: [0.2, 1, 0.5, 1, 0.2],
+                  scale: [0.7, 1.1, 0.9, 1.2, 0.7],
+                }}
+                transition={{
+                  duration: dur,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: (i % 6) * 0.7,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Kosmischer Moos-Teppich — solide Masse mit Puschel-Textur und Tiefen-Gradient */}
         <div
           className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none"
-          style={{ height: "20vh" }}
+          style={{ height: `${FLOOR_VH}vh` }}
         >
-          {/* Solide Basis: tiefes Violett-Indigo, undurchsichtig */}
+          {/* Solide Basis: oben helleres Cyan-Moos, nach unten tiefes Violett-Indigo */}
           <div
             className="absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, #1a1530 0%, #14102a 35%, #0d0a20 100%)",
+                "linear-gradient(180deg, #1f3a4a 0%, #1a2540 22%, #161236 55%, #0d0a20 100%)",
             }}
           />
-          {/* Klarer flacher Horizont mit weichem Moos-Saum */}
+          {/* Klarer flacher Horizont mit weichem Cyan-Moos-Saum */}
           <div
             className="absolute top-0 left-0 right-0"
             style={{
-              height: "14px",
+              height: "10px",
               background:
-                "linear-gradient(180deg, transparent 0%, rgba(94,72,140,0.45) 40%, rgba(60,45,100,0.85) 100%)",
-              filter: "blur(1px)",
+                "linear-gradient(180deg, rgba(165,243,252,0.55) 0%, rgba(103,232,249,0.35) 50%, transparent 100%)",
+              filter: "blur(0.5px)",
             }}
           />
-          {/* Dichte Moos-Textur: weiche, gepunktete Oberfläche */}
+          {/* Puschel-Textur: dichte runde Moos-Hügel mit Licht & Schatten */}
           <div
-            className="absolute inset-0 opacity-80"
+            className="absolute inset-0 opacity-90"
             style={{
               backgroundImage: [
-                "radial-gradient(circle at 12% 22%, rgba(94,234,212,0.18) 0px, transparent 4px)",
-                "radial-gradient(circle at 28% 48%, rgba(167,139,250,0.22) 0px, transparent 5px)",
-                "radial-gradient(circle at 47% 18%, rgba(94,234,212,0.16) 0px, transparent 3px)",
-                "radial-gradient(circle at 62% 55%, rgba(129,140,248,0.2) 0px, transparent 4px)",
-                "radial-gradient(circle at 78% 30%, rgba(94,234,212,0.18) 0px, transparent 4px)",
-                "radial-gradient(circle at 88% 62%, rgba(167,139,250,0.18) 0px, transparent 5px)",
-                "radial-gradient(circle at 18% 72%, rgba(94,234,212,0.14) 0px, transparent 3px)",
-                "radial-gradient(circle at 55% 85%, rgba(129,140,248,0.18) 0px, transparent 4px)",
-                "radial-gradient(circle at 92% 88%, rgba(94,234,212,0.14) 0px, transparent 3px)",
-                "radial-gradient(circle at 38% 92%, rgba(167,139,250,0.16) 0px, transparent 4px)",
+                // Helle Highlights (oben links) — geben den Puscheln Volumen
+                "radial-gradient(circle at 10% 20%, rgba(165,243,252,0.55) 0px, rgba(103,232,249,0.18) 6px, transparent 11px)",
+                "radial-gradient(circle at 26% 32%, rgba(165,243,252,0.5) 0px, rgba(103,232,249,0.15) 7px, transparent 13px)",
+                "radial-gradient(circle at 44% 24%, rgba(165,243,252,0.55) 0px, rgba(103,232,249,0.18) 6px, transparent 11px)",
+                "radial-gradient(circle at 60% 35%, rgba(196,181,253,0.5) 0px, rgba(167,139,250,0.18) 7px, transparent 13px)",
+                "radial-gradient(circle at 76% 22%, rgba(165,243,252,0.55) 0px, rgba(103,232,249,0.18) 6px, transparent 12px)",
+                "radial-gradient(circle at 90% 30%, rgba(196,181,253,0.5) 0px, rgba(167,139,250,0.18) 7px, transparent 13px)",
+                "radial-gradient(circle at 18% 55%, rgba(165,243,252,0.45) 0px, rgba(103,232,249,0.14) 6px, transparent 11px)",
+                "radial-gradient(circle at 38% 62%, rgba(196,181,253,0.42) 0px, rgba(167,139,250,0.14) 7px, transparent 13px)",
+                "radial-gradient(circle at 58% 58%, rgba(165,243,252,0.4) 0px, rgba(103,232,249,0.12) 6px, transparent 11px)",
+                "radial-gradient(circle at 80% 64%, rgba(196,181,253,0.42) 0px, rgba(167,139,250,0.14) 7px, transparent 13px)",
+                "radial-gradient(circle at 25% 82%, rgba(165,243,252,0.32) 0px, rgba(103,232,249,0.1) 6px, transparent 11px)",
+                "radial-gradient(circle at 55% 88%, rgba(196,181,253,0.32) 0px, rgba(167,139,250,0.1) 7px, transparent 13px)",
+                "radial-gradient(circle at 88% 86%, rgba(165,243,252,0.3) 0px, rgba(103,232,249,0.1) 6px, transparent 11px)",
               ].join(", "),
-              backgroundSize: "180px 180px",
+              backgroundSize: "220px 200px",
+            }}
+          />
+          {/* Schatten unter den Puscheln (untere Hälfte jedes Hügels) */}
+          <div
+            className="absolute inset-0 opacity-70 mix-blend-multiply"
+            style={{
+              backgroundImage: [
+                "radial-gradient(circle at 14% 26%, rgba(8,4,20,0.55) 0px, transparent 9px)",
+                "radial-gradient(circle at 30% 38%, rgba(8,4,20,0.5) 0px, transparent 10px)",
+                "radial-gradient(circle at 48% 30%, rgba(8,4,20,0.55) 0px, transparent 9px)",
+                "radial-gradient(circle at 64% 41%, rgba(8,4,20,0.5) 0px, transparent 10px)",
+                "radial-gradient(circle at 80% 28%, rgba(8,4,20,0.55) 0px, transparent 9px)",
+                "radial-gradient(circle at 94% 36%, rgba(8,4,20,0.5) 0px, transparent 10px)",
+                "radial-gradient(circle at 22% 60%, rgba(8,4,20,0.45) 0px, transparent 9px)",
+                "radial-gradient(circle at 42% 67%, rgba(8,4,20,0.45) 0px, transparent 10px)",
+                "radial-gradient(circle at 62% 63%, rgba(8,4,20,0.45) 0px, transparent 9px)",
+                "radial-gradient(circle at 84% 69%, rgba(8,4,20,0.45) 0px, transparent 10px)",
+              ].join(", "),
+              backgroundSize: "220px 200px",
             }}
           />
           {/* Sekundäre Cyan-Beleuchtung: sanfter Glow nach oben (auf Arkies Füße & Stängel) */}
           <div
             className="absolute top-0 left-0 right-0"
             style={{
-              height: "60px",
+              height: "70px",
               background:
-                "radial-gradient(ellipse at 50% 0%, rgba(103,232,249,0.18) 0%, rgba(103,232,249,0.08) 40%, transparent 80%)",
-              transform: "translateY(-30px)",
+                "radial-gradient(ellipse at 50% 0%, rgba(103,232,249,0.22) 0%, rgba(103,232,249,0.1) 40%, transparent 80%)",
+              transform: "translateY(-35px)",
               filter: "blur(8px)",
             }}
           />
@@ -272,10 +376,10 @@ const SanctuaryPage = () => {
           ))}
         </div>
 
-        {/* Arkie walking on the ground */}
+        {/* Arkie — Füße sitzen exakt auf der Moos-Oberfläche */}
         <motion.div
           className="absolute z-20"
-          style={{ bottom: "13vh" }}
+          style={{ bottom: `${FLOOR_VH}vh` }}
           initial={{ x: -100 }}
           animate={watering ? { x: 0 } : { x: [-110, 110, -110] }}
           transition={watering ? { duration: 0.6 } : { duration: 14, repeat: Infinity, ease: "easeInOut" }}
@@ -285,13 +389,13 @@ const SanctuaryPage = () => {
             transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
             className="relative"
           >
-            {/* Weicher Bodenschatten unter Arkie */}
+            {/* Weicher Bodenschatten unter Arkie auf der Moos-Oberfläche */}
             <div
               className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
               style={{
-                bottom: "-8px",
+                bottom: "-4px",
                 width: "70%",
-                height: "10px",
+                height: "9px",
                 background: "radial-gradient(ellipse at center, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.2) 50%, transparent 80%)",
                 filter: "blur(4px)",
               }}
@@ -316,8 +420,11 @@ const SanctuaryPage = () => {
           </motion.div>
         </motion.div>
 
-        {/* Subtle phase hint at bottom */}
-        <div className="absolute bottom-3 left-0 right-0 text-center z-30 pointer-events-none">
+        {/* Subtle phase hint — schwebt unter der Moos-Ebene am unteren Rand, klar sichtbar */}
+        <div
+          className="absolute left-0 right-0 text-center z-30 pointer-events-none"
+          style={{ bottom: "8px" }}
+        >
           <p className="text-[11px] text-muted-foreground/60 tracking-widest uppercase">
             {PHASE_RANGES[phase - 1]?.label}
           </p>
