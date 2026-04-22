@@ -552,6 +552,61 @@
   animation: nav-aura-pulse 2.4s ease-in-out infinite;
 }
 
+/* Sliding 1px indicator above the active nav icon */
+.nav-indicator {
+  position: absolute;
+  top: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--mindark-accent-start), var(--mindark-accent-end));
+  box-shadow: 0 0 8px rgba(180, 127, 232, 0.85), 0 0 16px rgba(180, 127, 232, 0.55);
+  transition: left 0.42s cubic-bezier(0.22, 1, 0.36, 1), width 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  will-change: left, width;
+}
+
+/* ── Mood chart custom tooltip ── */
+.mood-tooltip {
+  background: linear-gradient(180deg, rgba(26, 22, 44, 0.96), rgba(18, 16, 32, 0.96));
+  border: 1px solid rgba(180, 127, 232, 0.35);
+  border-radius: 14px;
+  padding: 10px 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5), 0 0 18px -4px rgba(180, 127, 232, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  min-width: 110px;
+  animation: fade-in 0.18s ease-out;
+}
+.mood-tooltip-value {
+  font-weight: 700;
+  font-size: 18px;
+  background: linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 14px rgba(180, 127, 232, 0.4);
+  line-height: 1.1;
+}
+.mood-tooltip-keyword {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.78);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.mood-tooltip-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 4px;
+}
+
+/* Glow filter for the mood line */
+.mood-line-glow {
+  filter: drop-shadow(0 0 6px rgba(180, 127, 232, 0.55))
+          drop-shadow(0 0 12px rgba(180, 127, 232, 0.3));
+}
+
 /* ── Native-feel page transitions ── */
 @keyframes page-slide-in {
   from { opacity: 0; transform: translateX(16px); }

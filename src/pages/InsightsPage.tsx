@@ -25,6 +25,18 @@ interface Completion {
   challenges: { category: string | null } | null;
 }
 
+interface JournalSnippet {
+  date: string;
+  title: string;
+  content: string | null;
+}
+
+interface CompletionWithTitle {
+  date: string;
+  completed: boolean;
+  title: string | null;
+}
+
 const InsightsPage = () => {
   const { user, profileName } = useAuth();
   const name = profileName || "du";
@@ -34,6 +46,8 @@ const InsightsPage = () => {
   const [moods, setMoods] = useState<MoodEntry[]>([]);
   const [completions, setCompletions] = useState<Completion[]>([]);
   const [journalCount, setJournalCount] = useState(0);
+  const [journalSnippets, setJournalSnippets] = useState<JournalSnippet[]>([]);
+  const [completionTitles, setCompletionTitles] = useState<CompletionWithTitle[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
@@ -41,14 +55,27 @@ const InsightsPage = () => {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: moodData }, { data: compData }, { count }] = await Promise.all([
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const sevenAgoStr = sevenDaysAgo.toISOString().slice(0, 10);
+    const [{ data: moodData }, { data: compData }, { count }, { data: journalData }, { data: compTitleData }] = await Promise.all([
       supabase.from("mood_entries").select("*").eq("user_id", user.id).order("date", { ascending: true }),
       supabase.from("daily_completions").select("date, completed, challenge_id, challenges(category)").eq("user_id", user.id),
       supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase.from("journal_entries").select("date, title, content").eq("user_id", user.id).gte("date", sevenAgoStr),
+      supabase.from("daily_completions").select("date, completed, challenges(title)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
     ]);
     setMoods((moodData ?? []) as MoodEntry[]);
     setCompletions((compData ?? []) as any[]);
     setJournalCount(count ?? 0);
+    setJournalSnippets((journalData ?? []) as JournalSnippet[]);
+    setCompletionTitles(
+      ((compTitleData ?? []) as any[]).map((c) => ({
+        date: c.date,
+        completed: c.completed,
+        title: c.challenges?.title ?? null,
+      })),
+    );
     setLoading(false);
   }, [user]);
 
@@ -208,6 +235,64 @@ const InsightsPage = () => {
     return `${WEEKDAYS[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}`;
   };
 
+  // ── Keyword extraction per date (Journal > Challenge > Mood-fallback) ──
+  const KEYWORD_STOPWORDS = new Set([
+    "und","oder","aber","ich","du","er","sie","es","wir","ihr","mir","dir","mich","dich",
+    "der","die","das","den","dem","des","ein","eine","einen","einem","eines",
+    "ist","war","bin","sind","sein","habe","hat","hatte","haben","werde","wird","wurde",
+    "auf","mit","von","zu","im","in","an","aus","bei","nach","vor","über","unter","für","ohne","durch",
+    "noch","schon","auch","mal","sehr","heute","gestern","morgen","ja","nein","nicht","kein","keine",
+    "wie","wenn","weil","dass","damit","sich","mein","meine","dein","deine",
+    "the","and","for","with","this","that","was","you","are","but","not","just","day","today",
+  ]);
+  const MOOD_FALLBACK = (val: number | null) => {
+    if (val === null) return "—";
+    if (val >= 75) return "Strahlend";
+    if (val >= 60) return "Leicht";
+    if (val >= 45) return "Ausgeglichen";
+    if (val >= 30) return "Gedämpft";
+    return "Schwer";
+  };
+  const keywordForDate = useCallback((dateStr: string, val: number | null): string => {
+    // 1) Journal: extract longest meaningful word from title/content
+    const j = journalSnippets.find((x) => x.date === dateStr);
+    if (j) {
+      const text = `${j.title ?? ""} ${j.content ?? ""}`.toLowerCase();
+      const words = text
+        .replace(/[^\p{L}\s]/gu, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 5 && !KEYWORD_STOPWORDS.has(w));
+      if (words.length > 0) {
+        const longest = words.reduce((a, b) => (b.length > a.length ? b : a));
+        return longest.charAt(0).toUpperCase() + longest.slice(1);
+      }
+    }
+    // 2) Completed challenges of the day
+    const dayChallenges = completionTitles.filter((c) => c.date === dateStr && c.title);
+    if (dayChallenges.length > 0) {
+      const t = dayChallenges[0].title!;
+      const firstWord = t.split(/\s+/).find((w) => w.length >= 4) ?? t.split(/\s+/)[0];
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    }
+    // 3) Mood-derived fallback
+    return MOOD_FALLBACK(val);
+  }, [journalSnippets, completionTitles]);
+
+  // Custom tooltip renderer for the Area chart
+  const MoodTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const d = payload[0].payload as { value: number | null; date: string; label: string };
+    if (d.value === null) return null;
+    const keyword = keywordForDate(d.date, d.value);
+    return (
+      <div className="mood-tooltip">
+        <div className="mood-tooltip-label">{d.label}</div>
+        <div className="mood-tooltip-value">{d.value}%</div>
+        <div className="mood-tooltip-keyword">✨ {keyword}</div>
+      </div>
+    );
+  };
+
   if (loading) return (
     <div className="px-4 pt-6 pb-32 min-h-screen">
       <Skeleton className="h-8 w-48 mb-6" />
@@ -257,7 +342,7 @@ const InsightsPage = () => {
                 <p className="text-muted-foreground text-sm">Noch keine Daten für diese Woche.</p>
               </div>
             ) : (
-              <div className="h-[180px] insights-chart-draw">
+              <div className="h-[180px] insights-chart-draw mood-line-glow">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weekChartData}>
                     <defs>
@@ -265,17 +350,22 @@ const InsightsPage = () => {
                         <stop offset="5%" stopColor="var(--mindark-accent-start)" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="var(--mindark-accent-start)" stopOpacity={0} />
                       </linearGradient>
+                      <linearGradient id="moodLineGrad" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%" stopColor="#7B5EA7" />
+                        <stop offset="60%" stopColor="#B47FE8" />
+                        <stop offset="100%" stopColor="#E0BEF5" />
+                      </linearGradient>
                     </defs>
                     <XAxis dataKey="label" axisLine={false} tickLine={false}
                       tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 12 }} />
                     <Tooltip
-                      contentStyle={{ background: "var(--mindark-bg)", border: "1px solid var(--mindark-card-border)", borderRadius: 12 }}
-                      labelStyle={{ color: "white" }}
-                      formatter={(value: any) => [value !== null ? `${value}%` : "—", "Mood"]} />
-                    <Area type="monotone" dataKey="value" stroke="var(--mindark-accent-start)"
-                      strokeWidth={2} fill="url(#moodGrad)" connectNulls={false}
+                      content={<MoodTooltip />}
+                      cursor={{ stroke: "rgba(180,127,232,0.35)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="url(#moodLineGrad)"
+                      strokeWidth={2.5} fill="url(#moodGrad)" connectNulls={false}
                       dot={{ fill: "var(--mindark-accent-start)", strokeWidth: 0, r: 4 }}
-                      activeDot={{ r: 6, fill: "var(--mindark-accent-end)" }} />
+                      activeDot={{ r: 7, fill: "#fff", stroke: "var(--mindark-accent-end)", strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
