@@ -306,7 +306,7 @@ const SanctuaryPage = () => {
         {!loading && (
           <svg
             className="absolute left-1/2 -translate-x-1/2 pointer-events-none z-[15]"
-            style={{ bottom: `calc(${FLOOR_VH}vh - 56px)`, opacity: 0.45, mixBlendMode: "screen" }}
+            style={{ bottom: `calc(${FLOOR_VH}vh - 70px)`, opacity: 0.55, mixBlendMode: "screen" }}
             width="140"
             height="70"
             viewBox="0 0 140 70"
@@ -315,8 +315,8 @@ const SanctuaryPage = () => {
           >
             <defs>
               <linearGradient id="rootGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#a5f3fc" stopOpacity="0.95" />
-                <stop offset="55%" stopColor="#67e8f9" stopOpacity="0.45" />
+                <stop offset="0%" stopColor="#a5f3fc" stopOpacity="1" />
+                <stop offset="55%" stopColor="#67e8f9" stopOpacity="0.5" />
                 <stop offset="100%" stopColor="#67e8f9" stopOpacity="0" />
               </linearGradient>
             </defs>
@@ -468,7 +468,7 @@ const SanctuaryPage = () => {
         {/* Arkie — Füße sitzen exakt auf der Moos-Oberfläche */}
         <motion.div
           className="absolute z-20"
-          style={{ bottom: `${FLOOR_VH}vh` }}
+          style={{ bottom: `calc(${FLOOR_VH}vh + 4px)` }}
           initial={{ x: -100 }}
           animate={watering ? { x: 0 } : { x: [-110, 110, -110] }}
           transition={watering ? { duration: 0.6 } : { duration: 14, repeat: Infinity, ease: "easeInOut" }}
