@@ -13,8 +13,12 @@ import tree2 from "@/assets/tree-phase-2.png";
 import tree3 from "@/assets/tree-phase-3.png";
 import tree4 from "@/assets/tree-phase-4.png";
 import tree5 from "@/assets/tree-phase-5.png";
+import moonImg from "@/assets/sanctuary-moon.png";
 
 const TREE_ASSETS = [tree1, tree2, tree3, tree4, tree5];
+
+// Floor height in viewport units — single source of truth for stacking
+const FLOOR_VH = 22;
 
 const SanctuaryPage = () => {
   const { user } = useAuth();
