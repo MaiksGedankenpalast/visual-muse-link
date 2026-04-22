@@ -20,6 +20,7 @@ import {
 } from "@/lib/chatSessions";
 import { useAuth } from "@/hooks/useAuth";
 import { detectSafetyMatch, logSafetyEvent, diagnoseHint } from "@/lib/arkieSafety";
+import { awardPoints } from "@/lib/treeProgress";
 
 interface ArkieChatProps {
   open: boolean;
