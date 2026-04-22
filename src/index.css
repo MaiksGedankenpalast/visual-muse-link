@@ -210,10 +210,56 @@
 
 /* Glass card */
 .glass-card {
-  background: var(--mindark-card-bg);
-  border: 1px solid var(--mindark-card-border);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 20px;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .glass-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(180, 127, 232, 0.35);
+    box-shadow:
+      0 12px 40px 0 rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(180, 127, 232, 0.2),
+      0 0 24px -4px rgba(180, 127, 232, 0.35);
+  }
+}
+
+.glass-card:active {
+  transform: scale(0.985);
+  transition: transform 0.12s ease;
+}
+
+/* Hierarchy variants */
+.glass-card-soft {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+}
+
+.glass-card-strong {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* Tap feedback for any interactive element */
+.tap-feedback {
+  transition: transform 0.15s ease;
+}
+.tap-feedback:active {
+  transform: scale(0.95);
 }
 
 /* Arkie pulse animation */
