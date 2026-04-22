@@ -20,6 +20,7 @@ import {
   removeUserChallenge,
   todayStr,
 } from "@/lib/userChallenges";
+import { hapticTap, hapticSuccess } from "@/lib/haptics";
 
 interface ChallengeDetail {
   id: string;
@@ -365,6 +366,7 @@ const ChallengeDetailPage = () => {
 
   const handleQuickComplete = async (silent = false) => {
     if (!user || !id) return;
+    hapticSuccess();
     setSaving(true);
     await persist({ status: "completed", notes: note.trim() || null });
     setTodayStatus("completed");
@@ -381,6 +383,7 @@ const ChallengeDetailPage = () => {
   const handleSaveLetter = async () => {
     if (!user || !id || !challenge) return;
     const text = letterText.trim();
+    if (text.length > 0) hapticSuccess();
     setSaving(true);
     const status: ChallengeStatus = text.length > 0 ? "completed" : "missed";
     await persist({
@@ -447,6 +450,7 @@ const ChallengeDetailPage = () => {
   /** Toggle a single water glass; auto-completes when all 8 are full. */
   const toggleGlass = async (index: number) => {
     if (!user || !id) return;
+    hapticTap();
     const next = glasses.map((g, i) => (i === index ? !g : g));
     setGlasses(next);
     const filled = next.filter(Boolean).length;
@@ -467,6 +471,7 @@ const ChallengeDetailPage = () => {
     setTodayStatus(status);
     setHistory((prev) => prev.map((d) => (d.date === todayStr() ? { ...d, status } : d)));
     if (allFull) {
+      hapticSuccess();
       setConfirmFlash(true);
       window.setTimeout(() => setConfirmFlash(false), 1500);
       toast({ title: "2 Liter geschafft 💧" });
@@ -476,6 +481,7 @@ const ChallengeDetailPage = () => {
   /** Mark template B as completed and log actually elapsed seconds to challenge_responses. */
   const handleTimerCompleted = async (elapsedSeconds: number) => {
     if (!user || !id) return;
+    hapticSuccess();
     setSaving(true);
     await persist({ status: "completed", notes: note.trim() || null });
     // Log actual practiced time so the insights engine can read it

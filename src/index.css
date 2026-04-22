@@ -79,6 +79,32 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  html {
+    overscroll-behavior-y: contain;
+  }
+
+  /* Buttons & nav items shouldn't be selectable on quick taps */
+  button,
+  a,
+  [role="button"],
+  nav {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Allow text selection where the user actually reads/edits content */
+  input,
+  textarea,
+  [contenteditable="true"],
+  .selectable-text {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 
@@ -524,4 +550,19 @@
   filter: blur(2px);
   pointer-events: none;
   animation: nav-aura-pulse 2.4s ease-in-out infinite;
+}
+
+/* ── Native-feel page transitions ── */
+@keyframes page-slide-in {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.page-transition {
+  animation: page-slide-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity, transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition { animation: none; }
 }

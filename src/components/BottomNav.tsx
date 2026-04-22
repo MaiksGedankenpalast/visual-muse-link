@@ -8,6 +8,7 @@ import {
   DrawerTitle,
   DrawerClose,
 } from "@/components/ui/drawer";
+import { haptic } from "@/lib/haptics";
 
 const navItems = [
   { icon: Home, label: "Home", path: "/home" },
@@ -44,7 +45,7 @@ const BottomNav = () => {
               return (
                 <button
                   key="add"
-                  onClick={() => setOpen(true)}
+                  onClick={() => { haptic("selection"); setOpen(true); }}
                   className="relative -mt-6 flex flex-col items-center"
                 >
                   <div
@@ -63,7 +64,7 @@ const BottomNav = () => {
             return (
               <button
                 key={item.path}
-                onClick={() => navigate(item.path)}
+                onClick={() => { haptic("selection"); navigate(item.path); }}
                 className="relative flex flex-col items-center gap-1 min-w-[56px] tap-feedback"
               >
                 <div className="relative flex items-center justify-center w-6 h-6">
