@@ -64,14 +64,18 @@ const BottomNav = () => {
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
-                className="flex flex-col items-center gap-1 min-w-[56px]"
+                className="relative flex flex-col items-center gap-1 min-w-[56px] tap-feedback"
               >
-                <Icon
-                  className="w-6 h-6"
-                  style={{
-                    color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
-                  }}
-                />
+                <div className="relative flex items-center justify-center w-6 h-6">
+                  {isActive && <span className="nav-aura" aria-hidden="true" />}
+                  <Icon
+                    className="w-6 h-6 relative"
+                    style={{
+                      color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
+                      filter: isActive ? "drop-shadow(0 0 6px rgba(180,127,232,0.6))" : "none",
+                    }}
+                  />
+                </div>
                 <span
                   className="text-[10px]"
                   style={{
