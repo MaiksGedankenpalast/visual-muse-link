@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { awardPoints } from "@/lib/treeProgress";
 
 const SLIDERS = [
   { key: "happy_sad", left: "Glücklich", right: "Traurig" },
@@ -119,6 +120,7 @@ const MoodTrackerPage = () => {
       await supabase.from("mood_entries").update(moodData).eq("user_id", user.id).eq("date", todayStr());
     } else {
       await supabase.from("mood_entries").insert(moodData);
+      awardPoints(user.id, 15, "mood");
     }
 
     if (journalText.trim()) {
@@ -129,6 +131,7 @@ const MoodTrackerPage = () => {
         category: "Mood",
         mood_snapshot: Math.round(avg),
       });
+      awardPoints(user.id, 50, "journal");
     }
 
     setShowConfirm(true);

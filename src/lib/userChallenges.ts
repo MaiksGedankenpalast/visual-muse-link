@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { awardPoints } from "@/lib/treeProgress";
 
 /* ── shared types ── */
 export type ChallengeStatus = "pending" | "completed" | "partial" | "missed";
@@ -194,6 +195,8 @@ export async function setChallengeStatus(
     },
     { onConflict: "user_id,challenge_id,date" }
   );
+  if (status === "completed") awardPoints(userId, 5, "challenge");
+  if (notes && notes.trim().length > 0) awardPoints(userId, 3, "challenge_note");
 }
 
 /**
@@ -222,6 +225,8 @@ export async function setChallengeQuantity(
     },
     { onConflict: "user_id,challenge_id,date" }
   );
+  if (status === "completed") awardPoints(userId, 5, "challenge");
+  if (notes && notes.trim().length > 0) awardPoints(userId, 3, "challenge_note");
   return status;
 }
 

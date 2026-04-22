@@ -20,6 +20,7 @@ import {
 } from "@/lib/chatSessions";
 import { useAuth } from "@/hooks/useAuth";
 import { detectSafetyMatch, logSafetyEvent, diagnoseHint } from "@/lib/arkieSafety";
+import { awardPoints } from "@/lib/treeProgress";
 
 interface ArkieChatProps {
   open: boolean;
@@ -159,6 +160,9 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
     } catch {
       /* non-fatal: continue conversation */
     }
+
+    // Silent reward (throttled to once per 24h inside awardPoints)
+    awardPoints(user.id, 20, "chat");
 
     // ─── Safety guardrails (client-side pre-check) ───
     const safety = detectSafetyMatch(text);

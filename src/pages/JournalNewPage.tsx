@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import { ArrowLeft, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { awardPoints } from "@/lib/treeProgress";
 
 const CATEGORIES = ["Persönlich", "Work", "Ideen", "Mood", "Dankbarkeit", "Reflexion"];
 
@@ -73,6 +74,7 @@ const JournalNewPage = () => {
       category,
       mood_snapshot: moodAvg !== null ? Math.round(moodAvg) : null,
     });
+    awardPoints(user.id, 50, "journal");
     toast({ title: "Eintrag gespeichert 💜" });
     setSaving(false);
     navigate("/journal");
