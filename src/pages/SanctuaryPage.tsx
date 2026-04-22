@@ -71,7 +71,7 @@ const SanctuaryPage = () => {
 
   const handleWaterTree = () => {
     if (watering) return;
-    haptic("light");
+    haptic("tap");
     setWatering(true);
     setTimeout(() => setWatering(false), 1800);
   };

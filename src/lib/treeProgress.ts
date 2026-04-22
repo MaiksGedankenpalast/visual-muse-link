@@ -63,7 +63,7 @@ export async function awardPoints(
     }
 
     const next = row.points + amount;
-    const update: Record<string, unknown> = { points: next };
+    const update: { points: number; last_chat_award_at?: string } = { points: next };
     if (kind === "chat") update.last_chat_award_at = new Date().toISOString();
 
     await supabase.from("tree_progress").update(update).eq("user_id", userId);
