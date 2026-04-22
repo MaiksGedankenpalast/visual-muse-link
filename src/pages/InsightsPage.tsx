@@ -474,16 +474,93 @@ const InsightsPage = () => {
             </div>
           </div>
 
-          {/* STREAK */}
-          <div className="rounded-[20px] p-5 mb-4 gradient-primary text-center">
-            {streak > 0 ? (
-              <>
-                <p className="text-foreground font-bold text-xl">🔥 {streak} Tage in Folge</p>
-                <p className="text-foreground/60 text-sm mt-1">Dein bisheriger Rekord: {maxStreak} Tage</p>
-              </>
-            ) : (
-              <p className="text-foreground text-sm">Starte heute deinen ersten Streak 💜</p>
-            )}
+          {/* STREAK + INTERACTIVE STATS ACCORDION */}
+          <div
+            className="rounded-[20px] mb-4 gradient-primary overflow-hidden"
+            style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)" }}
+          >
+            <button
+              onClick={() => setStreakOpen((v) => !v)}
+              className="w-full p-5 flex items-center justify-between text-left tap-feedback"
+              aria-expanded={streakOpen}
+            >
+              <div className="flex-1 text-center">
+                {streak > 0 ? (
+                  <>
+                    <p className="text-foreground font-bold text-xl">🔥 {streak} Tage in Folge</p>
+                    <p className="text-foreground/60 text-sm mt-1">Dein bisheriger Rekord: {maxStreak} Tage</p>
+                  </>
+                ) : (
+                  <p className="text-foreground text-sm">Starte heute deinen ersten Streak 💜</p>
+                )}
+              </div>
+              <ChevronDown
+                className="w-5 h-5 text-foreground/80 shrink-0 ml-2 transition-transform"
+                style={{ transform: streakOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+              />
+            </button>
+
+            <div
+              className="grid transition-all duration-300 ease-out"
+              style={{ gridTemplateRows: streakOpen ? "1fr" : "0fr" }}
+            >
+              <div className="overflow-hidden">
+                <div
+                  className="px-5 pb-5 pt-1 space-y-3"
+                  style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
+                >
+                  {/* Expressionist */}
+                  <div className="pt-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">✍️ Der Expressionist</p>
+                    <p className="text-foreground text-sm pb-3">
+                      Du hast diese Woche{" "}
+                      <span className="font-bold">{streakStats.wordsThisWeek}</span> Wörter genutzt, um deine Gedanken zu ordnen.
+                    </p>
+                  </div>
+
+                  {/* Time for you */}
+                  <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">⏳ Zeit für dich</p>
+                    <p className="text-foreground text-sm pb-3">
+                      In den letzten 7 Tagen hast du dir{" "}
+                      <span className="font-bold">{streakStats.timeMinutes}</span> Minuten bewusst Zeit für dich genommen.
+                    </p>
+                  </div>
+
+                  {/* Focus mood */}
+                  <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">💜 Fokus-Emotion</p>
+                    <p className="text-foreground text-sm pb-3">
+                      {streakStats.focusMood ? (
+                        <>
+                          Diese Woche fühlst du dich meistens{" "}
+                          <span className="font-bold">{streakStats.focusMood.label}</span>{" "}
+                          {streakStats.focusMood.emoji}
+                        </>
+                      ) : (
+                        <>Noch keine Mood-Daten für diese Woche.</>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Arkie motivation */}
+                  <div>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">✨ Arkies Motivation</p>
+                    <p className="text-foreground text-sm">
+                      {(() => {
+                        const a = streakStats.wordsThisWeek;
+                        const b = streakStats.wordsLastWeek;
+                        if (b > 0 && a > b) {
+                          const pct = Math.round(((a - b) / b) * 100);
+                          return `Du schreibst ${pct}% mehr als letzte Woche – das tut dir gut! 💜`;
+                        }
+                        return "Jedes Wort zählt. Arkie ist bereit für deinen nächsten Eintrag! 💜";
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* WEEK CAPSULE SUMMARY */}
