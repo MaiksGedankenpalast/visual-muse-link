@@ -27,6 +27,7 @@ import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
 import GoalsPage from "@/pages/GoalsPage";
 import SettingsPage from "@/pages/SettingsPage";
+import SanctuaryPage from "@/pages/SanctuaryPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
               <Route path="/journal/:id" element={<JournalDetailPage />} />
               <Route path="/moodtracker" element={<MoodTrackerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
+              <Route path="/sanctuary" element={<SanctuaryPage />} />
               <Route path="/goals" element={<GoalsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
