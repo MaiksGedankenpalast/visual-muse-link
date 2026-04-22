@@ -8,6 +8,8 @@ import ArkieInsightsRadar from "@/components/ArkieInsightsRadar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import { motion, type PanInfo } from "framer-motion";
+import { haptic } from "@/lib/haptics";
 
 const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
 const WEEKDAYS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
@@ -382,8 +384,21 @@ const InsightsPage = () => {
     </div>
   );
 
+  const handleSwipe = (_e: unknown, info: PanInfo) => {
+    if (info.offset.x < -110 && Math.abs(info.offset.y) < 80) {
+      haptic("selection");
+      navigate("/sanctuary");
+    }
+  };
+
   return (
-    <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
+    <motion.div
+      drag="x"
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.25}
+      onDragEnd={handleSwipe}
+      className="px-4 pt-6 pb-32 onboarding-slide min-h-screen"
+    >
       <h1 className="font-bold text-foreground text-[24px] mb-5">Deine Insights</h1>
 
       {/* MODE TOGGLE */}
@@ -748,7 +763,7 @@ const InsightsPage = () => {
           </div>
         </>
       )}
-    </div>
+    </motion.div>
   );
 };
 
