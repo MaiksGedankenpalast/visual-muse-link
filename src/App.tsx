@@ -16,6 +16,7 @@ import OnboardingMood from "@/pages/onboarding/OnboardingMood";
 import OnboardingGoals from "@/pages/onboarding/OnboardingGoals";
 import OnboardingReady from "@/pages/onboarding/OnboardingReady";
 import HomePage from "@/pages/HomePage";
+import HomeSwiper from "@/pages/HomeSwiper";
 import VibePage from "@/pages/VibePage";
 import ChallengesPage from "@/pages/ChallengesPage";
 import ChallengeDetailPage from "@/pages/ChallengeDetailPage";
@@ -56,7 +57,7 @@ const App = () => (
           {/* Protected routes with bottom nav */}
           <Route element={<AuthGuard />}>
             <Route element={<AppLayout />}>
-              <Route path="/home" element={<HomePage />} />
+              <Route path="/home" element={<HomeSwiper />} />
               <Route path="/vibe" element={<VibePage />} />
               <Route path="/challenges" element={<ChallengesPage />} />
               <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
