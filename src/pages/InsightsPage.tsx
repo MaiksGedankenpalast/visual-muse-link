@@ -342,7 +342,7 @@ const InsightsPage = () => {
                 <p className="text-muted-foreground text-sm">Noch keine Daten für diese Woche.</p>
               </div>
             ) : (
-              <div className="h-[180px] insights-chart-draw">
+              <div className="h-[180px] insights-chart-draw mood-line-glow">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weekChartData}>
                     <defs>
@@ -350,17 +350,22 @@ const InsightsPage = () => {
                         <stop offset="5%" stopColor="var(--mindark-accent-start)" stopOpacity={0.4} />
                         <stop offset="95%" stopColor="var(--mindark-accent-start)" stopOpacity={0} />
                       </linearGradient>
+                      <linearGradient id="moodLineGrad" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%" stopColor="#7B5EA7" />
+                        <stop offset="60%" stopColor="#B47FE8" />
+                        <stop offset="100%" stopColor="#E0BEF5" />
+                      </linearGradient>
                     </defs>
                     <XAxis dataKey="label" axisLine={false} tickLine={false}
                       tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 12 }} />
                     <Tooltip
-                      contentStyle={{ background: "var(--mindark-bg)", border: "1px solid var(--mindark-card-border)", borderRadius: 12 }}
-                      labelStyle={{ color: "white" }}
-                      formatter={(value: any) => [value !== null ? `${value}%` : "—", "Mood"]} />
-                    <Area type="monotone" dataKey="value" stroke="var(--mindark-accent-start)"
-                      strokeWidth={2} fill="url(#moodGrad)" connectNulls={false}
+                      content={<MoodTooltip />}
+                      cursor={{ stroke: "rgba(180,127,232,0.35)", strokeWidth: 1, strokeDasharray: "3 3" }}
+                    />
+                    <Area type="monotone" dataKey="value" stroke="url(#moodLineGrad)"
+                      strokeWidth={2.5} fill="url(#moodGrad)" connectNulls={false}
                       dot={{ fill: "var(--mindark-accent-start)", strokeWidth: 0, r: 4 }}
-                      activeDot={{ r: 6, fill: "var(--mindark-accent-end)" }} />
+                      activeDot={{ r: 7, fill: "#fff", stroke: "var(--mindark-accent-end)", strokeWidth: 2 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
