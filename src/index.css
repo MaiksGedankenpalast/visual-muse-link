@@ -92,25 +92,74 @@
   animation: star-twinkle 3s ease-in-out infinite;
 }
 
-/* Wave animations — 3 layers with parallax speeds */
-@keyframes wave-scroll {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+/* Wave animations — organic sinus-style flow with parallax + amplitude */
+@keyframes wave-flow-back {
+  0%   { transform: translate3d(0, 0, 0) scaleY(1); }
+  25%  { transform: translate3d(-12.5%, -2px, 0) scaleY(1.03); }
+  50%  { transform: translate3d(-25%, 1px, 0) scaleY(0.98); }
+  75%  { transform: translate3d(-37.5%, -1px, 0) scaleY(1.02); }
+  100% { transform: translate3d(-50%, 0, 0) scaleY(1); }
 }
 
-.wave-back svg {
-  animation: wave-scroll 14s linear infinite;
+@keyframes wave-flow-mid {
+  0%   { transform: translate3d(0, 1px, 0) scaleY(1); }
+  25%  { transform: translate3d(-12.5%, -3px, 0) scaleY(1.04); }
+  50%  { transform: translate3d(-25%, 2px, 0) scaleY(0.97); }
+  75%  { transform: translate3d(-37.5%, -2px, 0) scaleY(1.03); }
+  100% { transform: translate3d(-50%, 1px, 0) scaleY(1); }
+}
+
+@keyframes wave-flow-front {
+  0%   { transform: translate3d(0, -1px, 0) scaleY(1); }
+  25%  { transform: translate3d(-12.5%, 2px, 0) scaleY(0.97); }
+  50%  { transform: translate3d(-25%, -3px, 0) scaleY(1.04); }
+  75%  { transform: translate3d(-37.5%, 1px, 0) scaleY(0.98); }
+  100% { transform: translate3d(-50%, -1px, 0) scaleY(1); }
+}
+
+.wave-undulate-back svg {
+  animation: wave-flow-back 15s ease-in-out infinite;
+  animation-delay: -3s;
+  transform-origin: center bottom;
   will-change: transform;
 }
 
-.wave-mid svg {
-  animation: wave-scroll 10s linear infinite;
+.wave-undulate-mid svg {
+  animation: wave-flow-mid 12s ease-in-out infinite;
+  animation-delay: -1.5s;
+  transform-origin: center bottom;
   will-change: transform;
 }
 
-.wave-front svg {
-  animation: wave-scroll 7s linear infinite;
+.wave-undulate-front svg {
+  animation: wave-flow-front 8s ease-in-out infinite;
+  transform-origin: center bottom;
   will-change: transform;
+}
+
+/* Wandernder Glanzlicht-Reflex (Highlight) */
+@keyframes wave-shimmer-sweep {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  10%  { opacity: 0.9; }
+  50%  { opacity: 0.9; }
+  90%  { opacity: 0; }
+  100% { transform: translateX(120%); opacity: 0; }
+}
+
+.wave-shimmer {
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(255, 255, 255, 0.10) 48%,
+    rgba(199, 210, 254, 0.22) 50%,
+    rgba(255, 255, 255, 0.10) 52%,
+    transparent 65%,
+    transparent 100%
+  );
+  mix-blend-mode: screen;
+  animation: wave-shimmer-sweep 20s ease-in-out infinite;
+  will-change: transform, opacity;
 }
 
 /* Arkie float animation */

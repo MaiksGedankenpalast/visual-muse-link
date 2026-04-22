@@ -16,8 +16,8 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
 
       {/* Three wave layers with parallax */}
       <div className="relative w-full overflow-hidden" style={{ height: 130 }}>
-        {/* Wave layer 1 — back, deepest/darkest purple */}
-        <div className="absolute inset-0 z-10 wave-back">
+        {/* Wave layer 1 — back: Deep Purple → Dark Indigo, 60% */}
+        <div className="absolute inset-0 z-10 wave-back wave-undulate-back" style={{ opacity: 0.6, filter: "drop-shadow(0 0 12px rgba(46, 16, 101, 0.5))" }}>
           <svg
             viewBox="0 0 2400 130"
             preserveAspectRatio="none"
@@ -26,8 +26,8 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
           >
             <defs>
               <linearGradient id="wave-back-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1E0A3C" />
-                <stop offset="100%" stopColor="#160830" />
+                <stop offset="0%" stopColor="#2E1065" />
+                <stop offset="100%" stopColor="#1E1B4B" />
               </linearGradient>
             </defs>
             <path
@@ -37,8 +37,8 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
           </svg>
         </div>
 
-        {/* Wave layer 2 — middle, medium purple */}
-        <div className="absolute inset-0 z-20 wave-mid" style={{ top: -4 }}>
+        {/* Wave layer 2 — middle: Fluorescent Violet → Magenta-Haze, 40% */}
+        <div className="absolute inset-0 z-20 wave-mid wave-undulate-mid" style={{ top: -4, opacity: 0.4, filter: "drop-shadow(0 0 16px rgba(124, 58, 237, 0.45))" }}>
           <svg
             viewBox="0 0 2400 120"
             preserveAspectRatio="none"
@@ -47,8 +47,8 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
           >
             <defs>
               <linearGradient id="wave-mid-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3D1B6E" />
-                <stop offset="100%" stopColor="#2A1254" />
+                <stop offset="0%" stopColor="#7C3AED" />
+                <stop offset="100%" stopColor="#4C1D95" />
               </linearGradient>
             </defs>
             <path
@@ -58,8 +58,8 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
           </svg>
         </div>
 
-        {/* Wave layer 3 — front, lighter vibrant purple */}
-        <div className="absolute inset-0 z-25 wave-front" style={{ top: -10 }}>
+        {/* Wave layer 3 — front: Soft Neon Purple → Cyan-Indigo Glow, 30% */}
+        <div className="absolute inset-0 z-25 wave-front wave-undulate-front" style={{ top: -10, opacity: 0.3, filter: "drop-shadow(0 0 20px rgba(168, 85, 247, 0.55))" }}>
           <svg
             viewBox="0 0 2400 110"
             preserveAspectRatio="none"
@@ -68,8 +68,8 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
           >
             <defs>
               <linearGradient id="wave-front-grad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#5B2D9E" />
-                <stop offset="100%" stopColor="#4A2080" />
+                <stop offset="0%" stopColor="#A855F7" />
+                <stop offset="100%" stopColor="#6366F1" />
               </linearGradient>
             </defs>
             <path
@@ -78,6 +78,9 @@ const ArkieScene = ({ arkieSize = "large", statusText, className = "" }: ArkieSc
             />
           </svg>
         </div>
+
+        {/* Wandernder Glanzlicht-Reflex über die Wellen */}
+        <div className="absolute inset-0 z-30 pointer-events-none wave-shimmer" />
       </div>
 
       {/* Status text below waves */}
