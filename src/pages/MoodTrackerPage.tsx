@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { awardPoints } from "@/lib/treeProgress";
 
 const SLIDERS = [
   { key: "happy_sad", left: "Glücklich", right: "Traurig" },

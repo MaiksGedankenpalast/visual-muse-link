@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { awardPoints } from "@/lib/treeProgress";
 
 /* ── shared types ── */
 export type ChallengeStatus = "pending" | "completed" | "partial" | "missed";
