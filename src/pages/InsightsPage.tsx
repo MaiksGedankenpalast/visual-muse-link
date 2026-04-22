@@ -6,7 +6,7 @@ import Arkie from "@/components/Arkie";
 import ReviewsPanel from "@/components/ReviewsPanel";
 import ArkieInsightsRadar from "@/components/ArkieInsightsRadar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 
 const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
@@ -51,19 +51,40 @@ const InsightsPage = () => {
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [streakOpen, setStreakOpen] = useState(false);
+  const [streakStats, setStreakStats] = useState<{
+    wordsThisWeek: number;
+    wordsLastWeek: number;
+    timeMinutes: number;
+    focusMood: { label: string; emoji: string } | null;
+  }>({ wordsThisWeek: 0, wordsLastWeek: 0, timeMinutes: 0, focusMood: null });
 
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const today = new Date();
+    const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(today.getDate() - 7);
+    const fourteenDaysAgo = new Date(today); fourteenDaysAgo.setDate(today.getDate() - 14);
     const sevenAgoStr = sevenDaysAgo.toISOString().slice(0, 10);
-    const [{ data: moodData }, { data: compData }, { count }, { data: journalData }, { data: compTitleData }] = await Promise.all([
+    const fourteenAgoStr = fourteenDaysAgo.toISOString().slice(0, 10);
+    const [
+      { data: moodData },
+      { data: compData },
+      { count },
+      { data: journalData },
+      { data: compTitleData },
+      { data: journal14Data },
+      { data: response14Data },
+      { data: time7Data },
+    ] = await Promise.all([
       supabase.from("mood_entries").select("*").eq("user_id", user.id).order("date", { ascending: true }),
       supabase.from("daily_completions").select("date, completed, challenge_id, challenges(category)").eq("user_id", user.id),
       supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("journal_entries").select("date, title, content").eq("user_id", user.id).gte("date", sevenAgoStr),
       supabase.from("daily_completions").select("date, completed, challenges(title)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
+      supabase.from("journal_entries").select("date, content").eq("user_id", user.id).gte("date", fourteenAgoStr),
+      supabase.from("challenge_responses").select("date, response_text_1, response_text_2, response_text_3").eq("user_id", user.id).gte("date", fourteenAgoStr),
+      supabase.from("daily_completions").select("logged_value, challenges(unit)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
     ]);
     setMoods((moodData ?? []) as MoodEntry[]);
     setCompletions((compData ?? []) as any[]);
@@ -76,6 +97,65 @@ const InsightsPage = () => {
         title: c.challenges?.title ?? null,
       })),
     );
+
+    // ── Compute streak-card stats ──
+    const countWords = (s: string | null | undefined): number =>
+      s ? s.trim().split(/\s+/).filter(Boolean).length : 0;
+
+    const dateInRange = (dateStr: string, fromStr: string, toStr: string) =>
+      dateStr >= fromStr && dateStr < toStr;
+
+    const sevenStr = sevenAgoStr;
+    // "this week" = [today-7, today+1) so today counts
+    const tomorrowStr = new Date(today.getTime() + 86400000).toISOString().slice(0, 10);
+
+    let wordsThisWeek = 0;
+    let wordsLastWeek = 0;
+    ((journal14Data ?? []) as any[]).forEach((j) => {
+      const w = countWords(j.content);
+      if (dateInRange(j.date, sevenStr, tomorrowStr)) wordsThisWeek += w;
+      else if (dateInRange(j.date, fourteenAgoStr, sevenStr)) wordsLastWeek += w;
+    });
+    ((response14Data ?? []) as any[]).forEach((r) => {
+      const w = countWords(r.response_text_1) + countWords(r.response_text_2) + countWords(r.response_text_3);
+      if (dateInRange(r.date, sevenStr, tomorrowStr)) wordsThisWeek += w;
+      else if (dateInRange(r.date, fourteenAgoStr, sevenStr)) wordsLastWeek += w;
+    });
+
+    // Time: sum logged_value from challenges whose unit is minute/second-like
+    let timeMinutes = 0;
+    ((time7Data ?? []) as any[]).forEach((c) => {
+      const v = Number(c.logged_value);
+      if (!v || isNaN(v)) return;
+      const unit = (c.challenges?.unit ?? "").toLowerCase();
+      if (unit.includes("min")) timeMinutes += v;
+      else if (unit.includes("sek") || unit.includes("sec")) timeMinutes += v / 60;
+      else if (unit.includes("std") || unit.includes("hour") || unit.includes("h")) timeMinutes += v * 60;
+    });
+    timeMinutes = Math.round(timeMinutes);
+
+    // Focus mood: dominant dimension this week (lower slider value = stronger positive end)
+    const weekMoodsArr = ((moodData ?? []) as MoodEntry[]).filter((m) => m.date >= sevenStr && m.date < tomorrowStr);
+    let focusMood: { label: string; emoji: string } | null = null;
+    if (weekMoodsArr.length > 0) {
+      const dims: { key: keyof MoodEntry; label: string; emoji: string }[] = [
+        { key: "happy_sad", label: "glücklich", emoji: "😊" },
+        { key: "calm_anxious", label: "ruhig", emoji: "🧘" },
+        { key: "confident_insecure", label: "selbstsicher", emoji: "💪" },
+        { key: "excited_bored", label: "aufgeregt", emoji: "⚡" },
+        { key: "rested_tired", label: "ausgeruht", emoji: "🌙" },
+      ];
+      const scored = dims.map((d) => {
+        const sum = weekMoodsArr.reduce((a, m) => a + (m[d.key] as number), 0);
+        const avg = sum / weekMoodsArr.length;
+        return { ...d, strength: 100 - avg }; // higher = more pronounced positive feeling
+      });
+      scored.sort((a, b) => b.strength - a.strength);
+      focusMood = { label: scored[0].label, emoji: scored[0].emoji };
+    }
+
+    setStreakStats({ wordsThisWeek, wordsLastWeek, timeMinutes, focusMood });
+
     setLoading(false);
   }, [user]);
 
@@ -394,16 +474,93 @@ const InsightsPage = () => {
             </div>
           </div>
 
-          {/* STREAK */}
-          <div className="rounded-[20px] p-5 mb-4 gradient-primary text-center">
-            {streak > 0 ? (
-              <>
-                <p className="text-foreground font-bold text-xl">🔥 {streak} Tage in Folge</p>
-                <p className="text-foreground/60 text-sm mt-1">Dein bisheriger Rekord: {maxStreak} Tage</p>
-              </>
-            ) : (
-              <p className="text-foreground text-sm">Starte heute deinen ersten Streak 💜</p>
-            )}
+          {/* STREAK + INTERACTIVE STATS ACCORDION */}
+          <div
+            className="rounded-[20px] mb-4 gradient-primary overflow-hidden"
+            style={{ boxShadow: "0 8px 32px 0 rgba(0,0,0,0.37)" }}
+          >
+            <button
+              onClick={() => setStreakOpen((v) => !v)}
+              className="w-full p-5 flex items-center justify-between text-left tap-feedback"
+              aria-expanded={streakOpen}
+            >
+              <div className="flex-1 text-center">
+                {streak > 0 ? (
+                  <>
+                    <p className="text-foreground font-bold text-xl">🔥 {streak} Tage in Folge</p>
+                    <p className="text-foreground/60 text-sm mt-1">Dein bisheriger Rekord: {maxStreak} Tage</p>
+                  </>
+                ) : (
+                  <p className="text-foreground text-sm">Starte heute deinen ersten Streak 💜</p>
+                )}
+              </div>
+              <ChevronDown
+                className="w-5 h-5 text-foreground/80 shrink-0 ml-2 transition-transform"
+                style={{ transform: streakOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+              />
+            </button>
+
+            <div
+              className="grid transition-all duration-300 ease-out"
+              style={{ gridTemplateRows: streakOpen ? "1fr" : "0fr" }}
+            >
+              <div className="overflow-hidden">
+                <div
+                  className="px-5 pb-5 pt-1 space-y-3"
+                  style={{ borderTop: "1px solid rgba(255,255,255,0.12)" }}
+                >
+                  {/* Expressionist */}
+                  <div className="pt-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">✍️ Der Expressionist</p>
+                    <p className="text-foreground text-sm pb-3">
+                      Du hast diese Woche{" "}
+                      <span className="font-bold">{streakStats.wordsThisWeek}</span> Wörter genutzt, um deine Gedanken zu ordnen.
+                    </p>
+                  </div>
+
+                  {/* Time for you */}
+                  <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">⏳ Zeit für dich</p>
+                    <p className="text-foreground text-sm pb-3">
+                      In den letzten 7 Tagen hast du dir{" "}
+                      <span className="font-bold">{streakStats.timeMinutes}</span> Minuten bewusst Zeit für dich genommen.
+                    </p>
+                  </div>
+
+                  {/* Focus mood */}
+                  <div style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">💜 Fokus-Emotion</p>
+                    <p className="text-foreground text-sm pb-3">
+                      {streakStats.focusMood ? (
+                        <>
+                          Diese Woche fühlst du dich meistens{" "}
+                          <span className="font-bold">{streakStats.focusMood.label}</span>{" "}
+                          {streakStats.focusMood.emoji}
+                        </>
+                      ) : (
+                        <>Noch keine Mood-Daten für diese Woche.</>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Arkie motivation */}
+                  <div>
+                    <p className="text-foreground/60 text-[11px] uppercase tracking-wider mb-1">✨ Arkies Motivation</p>
+                    <p className="text-foreground text-sm">
+                      {(() => {
+                        const a = streakStats.wordsThisWeek;
+                        const b = streakStats.wordsLastWeek;
+                        if (b > 0 && a > b) {
+                          const pct = Math.round(((a - b) / b) * 100);
+                          return `Du schreibst ${pct}% mehr als letzte Woche – das tut dir gut! 💜`;
+                        }
+                        return "Jedes Wort zählt. Arkie ist bereit für deinen nächsten Eintrag! 💜";
+                      })()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* WEEK CAPSULE SUMMARY */}
