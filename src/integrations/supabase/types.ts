@@ -399,6 +399,36 @@ export type Database = {
         }
         Relationships: []
       }
+      tree_progress: {
+        Row: {
+          created_at: string
+          current_phase: number
+          id: string
+          last_chat_award_at: string | null
+          last_update: string
+          points: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_phase?: number
+          id?: string
+          last_chat_award_at?: string | null
+          last_update?: string
+          points?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_phase?: number
+          id?: string
+          last_chat_award_at?: string | null
+          last_update?: string
+          points?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_app_start: {
         Row: {
           created_at: string
