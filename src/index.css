@@ -79,6 +79,32 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+
+  html {
+    overscroll-behavior-y: contain;
+  }
+
+  /* Buttons & nav items shouldn't be selectable on quick taps */
+  button,
+  a,
+  [role="button"],
+  nav {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Allow text selection where the user actually reads/edits content */
+  input,
+  textarea,
+  [contenteditable="true"],
+  .selectable-text {
+    -webkit-user-select: text;
+    user-select: text;
   }
 }
 
