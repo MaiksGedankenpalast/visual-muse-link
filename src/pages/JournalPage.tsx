@@ -21,6 +21,10 @@ interface MoodDay {
   avg: number;
 }
 
+interface MomentDay {
+  date: string;
+}
+
 const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
@@ -38,6 +42,7 @@ const JournalPage = () => {
 
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [moodDays, setMoodDays] = useState<MoodDay[]>([]);
+  const [momentDates, setMomentDates] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("Alle");
   const [search, setSearch] = useState("");
@@ -51,9 +56,10 @@ const JournalPage = () => {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const [{ data: entryData }, { data: moodData }] = await Promise.all([
+    const [{ data: entryData }, { data: moodData }, { data: momentData }] = await Promise.all([
       supabase.from("journal_entries").select("*").eq("user_id", user.id).order("date", { ascending: false }),
       supabase.from("mood_entries").select("date, tags, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired").eq("user_id", user.id),
+      supabase.from("moments").select("date").eq("user_id", user.id),
     ]);
     const e = (entryData ?? []) as JournalEntry[];
     setEntries(e);
@@ -64,6 +70,7 @@ const JournalPage = () => {
       tags: m.tags,
       avg: (m.happy_sad + m.calm_anxious + m.confident_insecure + m.excited_bored + m.rested_tired) / 5,
     })));
+    setMomentDates(new Set(((momentData ?? []) as MomentDay[]).map((m) => m.date)));
     setLoading(false);
   }, [user]);
 
@@ -128,7 +135,8 @@ const JournalPage = () => {
   const handleDayTap = (day: number) => {
     const dateStr = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const hasEntry = entries.some((e) => e.date === dateStr);
-    if (hasEntry) {
+    const hasMoment = momentDates.has(dateStr);
+    if (hasEntry || hasMoment) {
       navigate(`/journal/day/${dateStr}`);
     }
   };
