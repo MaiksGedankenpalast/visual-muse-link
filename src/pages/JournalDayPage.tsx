@@ -460,6 +460,36 @@ const JournalDayPage = () => {
           })}
         </div>
       )}
+
+      {/* GLÜCKSMOMENT FÜR DIESEN TAG */}
+      {dayMoment && (
+        <div className="mt-6">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            Dein Glücksmoment
+          </p>
+          <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <img
+              src={dayMoment.signed_url ?? dayMoment.photo_url}
+              alt={dayMoment.caption ?? "Glücksmoment"}
+              className="w-full object-cover"
+              style={{ height: 200 }}
+              loading="lazy"
+            />
+            {(dayMoment.caption || dayMoment.prompt_used) && (
+              <div className="p-3 space-y-1.5">
+                {dayMoment.caption && (
+                  <p className="text-foreground text-[14px]">{dayMoment.caption}</p>
+                )}
+                {dayMoment.prompt_used && (
+                  <p className="text-[12px] italic text-muted-foreground leading-snug">
+                    „{dayMoment.prompt_used}"
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
