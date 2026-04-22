@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, BookOpen, BarChart3, Target, Plus, X } from "lucide-react";
 import {
@@ -22,6 +22,12 @@ const BottomNav = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const [indicator, setIndicator] = useState<{ left: number; width: number; visible: boolean }>({
+    left: 0,
+    width: 0,
+    visible: false,
+  });
 
   const quickActions = [
     { label: "🎯 Vibe hinzufügen", path: "/vibe" },
@@ -29,6 +35,45 @@ const BottomNav = () => {
     { label: "📝 Tagebuch schreiben", path: "/journal/new" },
     { label: "💜 Mood eintragen", path: "/moodtracker" },
   ];
+
+  // Update indicator position when route changes
+  useLayoutEffect(() => {
+    const activeIndex = navItems.findIndex(
+      (item, i) => i !== 2 && item.path && location.pathname.startsWith(item.path),
+    );
+    if (activeIndex === -1) {
+      setIndicator((p) => ({ ...p, visible: false }));
+      return;
+    }
+    const el = itemRefs.current[activeIndex];
+    const parent = el?.parentElement;
+    if (!el || !parent) return;
+    const elRect = el.getBoundingClientRect();
+    const parentRect = parent.getBoundingClientRect();
+    const indicatorWidth = 22;
+    const left = elRect.left - parentRect.left + elRect.width / 2 - indicatorWidth / 2;
+    setIndicator({ left, width: indicatorWidth, visible: true });
+  }, [location.pathname]);
+
+  // Recalculate on resize
+  useEffect(() => {
+    const handler = () => {
+      const activeIndex = navItems.findIndex(
+        (item, i) => i !== 2 && item.path && location.pathname.startsWith(item.path),
+      );
+      if (activeIndex === -1) return;
+      const el = itemRefs.current[activeIndex];
+      const parent = el?.parentElement;
+      if (!el || !parent) return;
+      const elRect = el.getBoundingClientRect();
+      const parentRect = parent.getBoundingClientRect();
+      const indicatorWidth = 22;
+      const left = elRect.left - parentRect.left + elRect.width / 2 - indicatorWidth / 2;
+      setIndicator({ left, width: indicatorWidth, visible: true });
+    };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, [location.pathname]);
 
   return (
     <>
@@ -39,7 +84,14 @@ const BottomNav = () => {
           borderTop: "1px solid var(--mindark-card-border)",
         }}
       >
-        <div className="flex items-end justify-around px-2 pb-5 pt-2">
+        <div className="relative flex items-end justify-around px-2 pb-5 pt-2">
+          {indicator.visible && (
+            <span
+              aria-hidden="true"
+              className="nav-indicator"
+              style={{ left: indicator.left, width: indicator.width }}
+            />
+          )}
           {navItems.map((item, i) => {
             if (i === 2) {
               return (
@@ -64,6 +116,7 @@ const BottomNav = () => {
             return (
               <button
                 key={item.path}
+                ref={(el) => (itemRefs.current[i] = el)}
                 onClick={() => { haptic("selection"); navigate(item.path); }}
                 className="relative flex flex-col items-center gap-1 min-w-[56px] tap-feedback"
               >
