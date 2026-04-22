@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import Arkie from "./Arkie";
 import StarBackground from "./StarBackground";
@@ -9,12 +9,15 @@ import { useAuth } from "@/hooks/useAuth";
 const AppLayout = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const { profileName } = useAuth();
+  const location = useLocation();
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto">
       <StarBackground />
       <div className="relative z-10 pb-24">
-        <Outlet />
+        <div key={location.pathname} className="page-transition">
+          <Outlet />
+        </div>
       </div>
 
       {/* Arkie floating button */}
