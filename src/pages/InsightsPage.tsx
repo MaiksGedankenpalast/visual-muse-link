@@ -246,7 +246,7 @@ const InsightsPage = () => {
       {mode === "four_weekly_review" && user && <ReviewsPanel userId={user.id} type="four_weekly" />}
 
       {mode === "week" && (
-        <>
+        <div className="insights-stagger">
           {/* ═══ WEEK VIEW ═══ */}
           {/* MOOD CHART */}
           <div className="glass-card p-4 mb-4">
@@ -257,7 +257,7 @@ const InsightsPage = () => {
                 <p className="text-muted-foreground text-sm">Noch keine Daten für diese Woche.</p>
               </div>
             ) : (
-              <div className="h-[180px]">
+              <div className="h-[180px] insights-chart-draw">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={weekChartData}>
                     <defs>
