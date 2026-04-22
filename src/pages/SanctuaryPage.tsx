@@ -104,31 +104,104 @@ const SanctuaryPage = () => {
 
       {/* Stage container */}
       <div className="relative w-full h-[100dvh] flex items-end justify-center">
+        {/* Hintergrund-Sterne (Parallaxe — langsamer als Boden-Sterne) */}
+        <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
+          {Array.from({ length: 38 }).map((_, i) => {
+            const seed = (i * 9301 + 49297) % 233280;
+            const left = (seed % 1000) / 10;
+            const top = ((seed * 7) % 700) / 10;
+            const size = (i % 5 === 0) ? 2 : 1.2;
+            return (
+              <motion.div
+                key={`bgstar-${i}`}
+                className="absolute rounded-full bg-white"
+                style={{
+                  width: size,
+                  height: size,
+                  left: `${left}%`,
+                  top: `${top}%`,
+                  filter: "drop-shadow(0 0 2px rgba(255,255,255,0.7))",
+                }}
+                animate={{ opacity: [0.25, 0.85, 0.25] }}
+                transition={{
+                  duration: 7 + (i % 6),
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: (i % 8) * 0.6,
+                }}
+              />
+            );
+          })}
+        </div>
+
         {/* Mond oben rechts — sanftes Leuchten + Strahlen */}
         <div
           className="absolute z-10 pointer-events-none"
           style={{ top: "5vh", right: "6vw" }}
           aria-hidden
         >
-          {/* Mondstrahlen */}
+          {/* Mond-Halo (subtiles Pulsieren) */}
           <motion.div
             className="absolute inset-0 -z-10 rounded-full"
             style={{
               background:
-                "radial-gradient(circle, rgba(254,243,199,0.45) 0%, rgba(254,243,199,0.18) 35%, transparent 70%)",
-              filter: "blur(20px)",
-              transform: "scale(2.2)",
+                "radial-gradient(circle, rgba(254,243,199,0.55) 0%, rgba(254,243,199,0.22) 35%, transparent 70%)",
+              filter: "blur(22px)",
+              transform: "scale(2.4)",
             }}
-            animate={{ opacity: [0.6, 0.9, 0.6], scale: [2.1, 2.3, 2.1] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+            animate={{ opacity: [0.55, 1, 0.55], scale: [2.3, 2.55, 2.3] }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut" }}
           />
+          {/* Mondstrahlen — fallen schräg nach unten, faden ein/aus */}
+          <div
+            className="absolute pointer-events-none -z-[5]"
+            style={{
+              top: "50%",
+              left: "50%",
+              width: "1px",
+              height: "1px",
+            }}
+            aria-hidden
+          >
+            {[
+              { angle: 28, length: 320, width: 2, dur: 7, delay: 0, max: 0.32 },
+              { angle: 38, length: 260, width: 1.5, dur: 9, delay: 1.4, max: 0.22 },
+              { angle: 48, length: 380, width: 2, dur: 8, delay: 0.7, max: 0.28 },
+              { angle: 58, length: 220, width: 1.2, dur: 11, delay: 2.2, max: 0.2 },
+              { angle: 68, length: 340, width: 1.6, dur: 9.5, delay: 0.3, max: 0.26 },
+              { angle: 78, length: 280, width: 1.3, dur: 12, delay: 1.8, max: 0.22 },
+            ].map((ray, i) => (
+              <motion.div
+                key={`ray-${i}`}
+                className="absolute"
+                style={{
+                  width: `${ray.width}px`,
+                  height: `${ray.length}px`,
+                  top: 0,
+                  left: 0,
+                  background:
+                    "linear-gradient(180deg, rgba(254,243,199,0.85) 0%, rgba(254,243,199,0.35) 40%, transparent 100%)",
+                  filter: "blur(1.5px)",
+                  transformOrigin: "top center",
+                  transform: `rotate(${ray.angle + 180}deg)`,
+                }}
+                animate={{ opacity: [0, ray.max, 0] }}
+                transition={{
+                  duration: ray.dur,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: ray.delay,
+                }}
+              />
+            ))}
+          </div>
           <motion.img
             src={moonImg}
             alt="Mond"
             width={120}
             height={120}
             loading="lazy"
-            className="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] object-contain drop-shadow-[0_0_18px_rgba(254,243,199,0.55)]"
+            className="w-[84px] h-[84px] sm:w-[96px] sm:h-[96px] object-contain drop-shadow-[0_0_24px_rgba(254,243,199,0.7)]"
             animate={{ y: [0, -2, 0] }}
             transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
           />
