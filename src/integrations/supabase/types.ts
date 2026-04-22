@@ -234,6 +234,36 @@ export type Database = {
         }
         Relationships: []
       }
+      moments: {
+        Row: {
+          caption: string | null
+          created_at: string
+          date: string
+          id: string
+          photo_url: string
+          prompt_used: string | null
+          user_id: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          photo_url: string
+          prompt_used?: string | null
+          user_id: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          photo_url?: string
+          prompt_used?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       mood_entries: {
         Row: {
           calm_anxious: number
