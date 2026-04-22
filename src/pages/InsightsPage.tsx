@@ -6,7 +6,7 @@ import Arkie from "@/components/Arkie";
 import ReviewsPanel from "@/components/ReviewsPanel";
 import ArkieInsightsRadar from "@/components/ArkieInsightsRadar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
 
 const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
@@ -51,6 +51,13 @@ const InsightsPage = () => {
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
+  const [streakOpen, setStreakOpen] = useState(false);
+  const [streakStats, setStreakStats] = useState<{
+    wordsThisWeek: number;
+    wordsLastWeek: number;
+    timeMinutes: number;
+    focusMood: { label: string; emoji: string } | null;
+  }>({ wordsThisWeek: 0, wordsLastWeek: 0, timeMinutes: 0, focusMood: null });
 
   const fetchData = useCallback(async () => {
     if (!user) return;
