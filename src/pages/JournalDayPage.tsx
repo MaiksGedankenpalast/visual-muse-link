@@ -40,6 +40,14 @@ interface DayChallenge {
   status: "completed" | "partial" | "missed" | "pending";
 }
 
+interface DayMoment {
+  id: string;
+  photo_url: string;
+  signed_url?: string;
+  caption: string | null;
+  prompt_used: string | null;
+}
+
 const JournalDayPage = () => {
   const { date } = useParams<{ date: string }>();
   const navigate = useNavigate();
@@ -58,11 +66,18 @@ const JournalDayPage = () => {
     text: string;
     completed: boolean;
   } | null>(null);
+  const [dayMoment, setDayMoment] = useState<DayMoment | null>(null);
 
   useEffect(() => {
     if (!user || !date) return;
     (async () => {
-      const [{ data: entryData }, { data: moodData }, { data: logData }, { data: smartData }] = await Promise.all([
+      const [
+        { data: entryData },
+        { data: moodData },
+        { data: logData },
+        { data: smartData },
+        { data: momentData },
+      ] = await Promise.all([
         supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }),
         supabase.from("mood_entries")
           .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
@@ -77,6 +92,14 @@ const JournalDayPage = () => {
           .select("challenge_text, completed")
           .eq("user_id", user.id)
           .eq("date", date)
+          .maybeSingle(),
+        supabase
+          .from("moments")
+          .select("id, photo_url, caption, prompt_used")
+          .eq("user_id", user.id)
+          .eq("date", date)
+          .order("created_at", { ascending: false })
+          .limit(1)
           .maybeSingle(),
       ]);
       // Sort: regular entries first (newest → oldest), then Challenge-mirrors at the end (chronologically).
@@ -100,6 +123,26 @@ const JournalDayPage = () => {
         setSmartChallenge({
           text: (smartData as any).challenge_text,
           completed: (smartData as any).completed,
+        });
+      }
+      if (momentData) {
+        const m = momentData as any;
+        const path = (m.photo_url as string).startsWith(`${user.id}/`)
+          ? (m.photo_url as string)
+          : null;
+        let signed = m.photo_url as string;
+        if (path) {
+          const { data: signedData } = await supabase.storage
+            .from("moment-photos")
+            .createSignedUrl(path, 60 * 60);
+          if (signedData?.signedUrl) signed = signedData.signedUrl;
+        }
+        setDayMoment({
+          id: m.id,
+          photo_url: m.photo_url,
+          signed_url: signed,
+          caption: m.caption,
+          prompt_used: m.prompt_used,
         });
       }
       setLoading(false);
@@ -415,6 +458,36 @@ const JournalDayPage = () => {
               </button>
             );
           })}
+        </div>
+      )}
+
+      {/* GLÜCKSMOMENT FÜR DIESEN TAG */}
+      {dayMoment && (
+        <div className="mt-6">
+          <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-2">
+            Dein Glücksmoment
+          </p>
+          <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+            <img
+              src={dayMoment.signed_url ?? dayMoment.photo_url}
+              alt={dayMoment.caption ?? "Glücksmoment"}
+              className="w-full object-cover"
+              style={{ height: 200 }}
+              loading="lazy"
+            />
+            {(dayMoment.caption || dayMoment.prompt_used) && (
+              <div className="p-3 space-y-1.5">
+                {dayMoment.caption && (
+                  <p className="text-foreground text-[14px]">{dayMoment.caption}</p>
+                )}
+                {dayMoment.prompt_used && (
+                  <p className="text-[12px] italic text-muted-foreground leading-snug">
+                    „{dayMoment.prompt_used}"
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

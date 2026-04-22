@@ -1,12 +1,46 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, LogOut } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Camera, Image as ImageIcon, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useEffect } from "react";
+
+type PermState = "granted" | "denied" | "prompt" | "unknown";
+
+async function queryPermission(name: PermissionName): Promise<PermState> {
+  try {
+    if (typeof navigator === "undefined" || !navigator.permissions) return "unknown";
+    const r = await navigator.permissions.query({ name } as any);
+    return r.state as PermState;
+  } catch {
+    return "unknown";
+  }
+}
 
 const SettingsPage = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [cameraState, setCameraState] = useState<PermState>("unknown");
+  const [galleryState, setGalleryState] = useState<PermState>("unknown");
+  const [info, setInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    queryPermission("camera" as PermissionName).then(setCameraState);
+    // Gallery (file picker) hat keine Permissions API → wir nutzen localStorage flag
+    if (typeof window !== "undefined" && window.localStorage.getItem("mindark.cameraAsked") === "1") {
+      setGalleryState("granted");
+    }
+  }, []);
 
   const handleLogout = async () => {
     setLoading(true);
@@ -18,6 +52,31 @@ const SettingsPage = () => {
       return;
     }
     navigate("/splash", { replace: true });
+  };
+
+  const requestCamera = async () => {
+    if (cameraState === "granted") {
+      setInfo("Kamera-Zugriff ist aktiv. Um ihn zu entziehen, gehe zu deinen Geräte-Einstellungen → MindArk → Kamera ausschalten.");
+      return;
+    }
+    if (cameraState === "denied") {
+      setInfo("Kamera-Zugriff wurde verweigert. Bitte aktiviere ihn in deinen Geräte-Einstellungen → MindArk → Kamera.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach((t) => t.stop());
+      setCameraState("granted");
+    } catch {
+      setCameraState("denied");
+    }
+  };
+
+  const subtitleFor = (s: PermState) => {
+    if (s === "granted") return { text: "Zugriff erlaubt ✓", color: "#4ade80" };
+    if (s === "denied") return { text: "Zugriff verweigert", color: "#f87171" };
+    if (s === "prompt") return { text: "Noch nicht festgelegt", color: "rgba(255,255,255,0.5)" };
+    return { text: "Noch nicht festgelegt", color: "rgba(255,255,255,0.5)" };
   };
 
   return (
@@ -33,6 +92,50 @@ const SettingsPage = () => {
         </button>
         <h1 className="text-[28px] font-bold text-foreground">Settings</h1>
       </div>
+
+      {/* PRIVACY & PERMISSIONS */}
+      <section className="space-y-3 mb-6">
+        <h2 className="text-xs uppercase tracking-wider text-muted-foreground px-1">
+          Privatsphäre
+        </h2>
+        <div
+          className="rounded-2xl overflow-hidden divide-y"
+          style={{
+            background: "var(--mindark-card-bg, rgba(255,255,255,0.04))",
+            border: "1px solid var(--mindark-card-border, rgba(255,255,255,0.08))",
+            // @ts-expect-error css var
+            "--tw-divide-opacity": 1,
+          }}
+        >
+          <button
+            onClick={requestCamera}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left"
+          >
+            <Camera className="w-5 h-5 text-foreground/80 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Kamera</p>
+              <p className="text-xs" style={{ color: subtitleFor(cameraState).color }}>
+                {subtitleFor(cameraState).text}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
+          <button
+            onClick={() => setInfo("Galerie-Zugriff wird beim Auswählen eines Fotos abgefragt. iOS/Android steuern das systemweit.")}
+            className="w-full flex items-center gap-3 px-4 py-3 text-left"
+          >
+            <ImageIcon className="w-5 h-5 text-foreground/80 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-foreground">Galerie-Zugriff</p>
+              <p className="text-xs" style={{ color: subtitleFor(galleryState).color }}>
+                {subtitleFor(galleryState).text}
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground px-1">
@@ -70,6 +173,18 @@ const SettingsPage = () => {
           )}
         </div>
       </section>
+
+      <AlertDialog open={info !== null} onOpenChange={(o) => !o && setInfo(null)}>
+        <AlertDialogContent style={{ background: "#0D0B14", borderColor: "rgba(255,255,255,0.1)" }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-foreground">Berechtigung verwalten</AlertDialogTitle>
+            <AlertDialogDescription>{info}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-foreground">Schließen</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
