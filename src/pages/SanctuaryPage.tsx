@@ -250,6 +250,22 @@ const SanctuaryPage = () => {
                   animate={watering ? { scale: [1, 1.04, 1] } : {}}
                   transition={{ duration: 1.2, ease: "easeInOut" }}
                 />
+                {/* Stängel-Verlängerung: leuchtende Linie vom Asset-Fuß bis in die Moos-Masse,
+                    fließt ohne sichtbare Kante in die Wurzeln über */}
+                <div
+                  className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+                  style={{
+                    bottom: "-14px",
+                    width: "3px",
+                    height: "22px",
+                    background:
+                      "linear-gradient(180deg, rgba(165,243,252,0.85) 0%, rgba(103,232,249,0.55) 55%, rgba(103,232,249,0) 100%)",
+                    filter: "blur(0.6px) drop-shadow(0 0 6px rgba(165,243,252,0.7))",
+                    borderRadius: "2px",
+                    zIndex: 1,
+                  }}
+                  aria-hidden
+                />
                 {/* Weicher Bodenschatten direkt unter dem Keimling, auf der Moos-Oberfläche */}
                 <div
                   className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
