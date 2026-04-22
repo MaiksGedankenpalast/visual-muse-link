@@ -289,7 +289,7 @@ const InsightsPage = () => {
               {bestDay ? (
                 <>
                   <p className="text-foreground font-bold text-sm">{formatDate(bestDay.date)}</p>
-                  <p className="text-sm font-bold" style={{ color: "#4ade80" }}>{Math.round(100 - avg(bestDay))}%</p>
+                  <p className="text-sm font-bold mood-glow-good" style={{ color: "#4ade80" }}>{Math.round(100 - avg(bestDay))}%</p>
                 </>
               ) : <p className="text-muted-foreground text-xs">Noch zu wenig Daten</p>}
             </div>
@@ -298,7 +298,7 @@ const InsightsPage = () => {
               {worstDay ? (
                 <>
                   <p className="text-foreground font-bold text-sm">{formatDate(worstDay.date)}</p>
-                  <p className="text-sm font-bold" style={{ color: "#ef4444" }}>{Math.round(100 - avg(worstDay))}%</p>
+                  <p className="text-sm font-bold mood-glow-rough" style={{ color: "#ef4444" }}>{Math.round(100 - avg(worstDay))}%</p>
                 </>
               ) : <p className="text-muted-foreground text-xs">Noch zu wenig Daten</p>}
             </div>
@@ -325,9 +325,15 @@ const InsightsPage = () => {
                   <div key={i} className="flex flex-col items-center flex-1">
                     <div className="relative w-full rounded-full overflow-hidden"
                       style={{ height: 70, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
-                      <div className="absolute bottom-0 left-0 right-0 gradient-primary flex items-center justify-center"
-                        style={{ height: `${pct}%`, borderRadius: "0 0 22px 22px" }}>
-                        <span className="text-foreground font-bold text-[10px]">{pct}%</span>
+                      <div className="absolute bottom-0 left-0 right-0 gradient-primary flex items-center justify-center insights-bar-rise"
+                        style={{ height: `${pct}%`, borderRadius: "0 0 22px 22px", animationDelay: `${0.5 + i * 0.08}s` }}>
+                        <span
+                          className={`text-foreground font-bold text-[10px] ${
+                            ["mood-glow-happy","mood-glow-calm","mood-glow-conf","mood-glow-excited","mood-glow-rested"][i]
+                          }`}
+                        >
+                          {pct}%
+                        </span>
                       </div>
                     </div>
                     <span className="text-[10px] text-muted-foreground mt-0.5 text-center">{SLIDER_LABELS[i]}</span>
@@ -375,7 +381,7 @@ const InsightsPage = () => {
               </div>
             )}
           </div>
-        </>
+        </div>
       )}
 
       {mode === "month" && (
