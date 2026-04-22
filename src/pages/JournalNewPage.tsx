@@ -73,6 +73,7 @@ const JournalNewPage = () => {
       category,
       mood_snapshot: moodAvg !== null ? Math.round(moodAvg) : null,
     });
+    awardPoints(user.id, 50, "journal");
     toast({ title: "Eintrag gespeichert 💜" });
     setSaving(false);
     navigate("/journal");
