@@ -235,6 +235,64 @@ const InsightsPage = () => {
     return `${WEEKDAYS[d.getDay()]}, ${d.getDate()}.${d.getMonth() + 1}`;
   };
 
+  // ── Keyword extraction per date (Journal > Challenge > Mood-fallback) ──
+  const KEYWORD_STOPWORDS = new Set([
+    "und","oder","aber","ich","du","er","sie","es","wir","ihr","mir","dir","mich","dich",
+    "der","die","das","den","dem","des","ein","eine","einen","einem","eines",
+    "ist","war","bin","sind","sein","habe","hat","hatte","haben","werde","wird","wurde",
+    "auf","mit","von","zu","im","in","an","aus","bei","nach","vor","über","unter","für","ohne","durch",
+    "noch","schon","auch","mal","sehr","heute","gestern","morgen","ja","nein","nicht","kein","keine",
+    "wie","wenn","weil","dass","damit","sich","mein","meine","dein","deine",
+    "the","and","for","with","this","that","was","you","are","but","not","just","day","today",
+  ]);
+  const MOOD_FALLBACK = (val: number | null) => {
+    if (val === null) return "—";
+    if (val >= 75) return "Strahlend";
+    if (val >= 60) return "Leicht";
+    if (val >= 45) return "Ausgeglichen";
+    if (val >= 30) return "Gedämpft";
+    return "Schwer";
+  };
+  const keywordForDate = useCallback((dateStr: string, val: number | null): string => {
+    // 1) Journal: extract longest meaningful word from title/content
+    const j = journalSnippets.find((x) => x.date === dateStr);
+    if (j) {
+      const text = `${j.title ?? ""} ${j.content ?? ""}`.toLowerCase();
+      const words = text
+        .replace(/[^\p{L}\s]/gu, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 5 && !KEYWORD_STOPWORDS.has(w));
+      if (words.length > 0) {
+        const longest = words.reduce((a, b) => (b.length > a.length ? b : a));
+        return longest.charAt(0).toUpperCase() + longest.slice(1);
+      }
+    }
+    // 2) Completed challenges of the day
+    const dayChallenges = completionTitles.filter((c) => c.date === dateStr && c.title);
+    if (dayChallenges.length > 0) {
+      const t = dayChallenges[0].title!;
+      const firstWord = t.split(/\s+/).find((w) => w.length >= 4) ?? t.split(/\s+/)[0];
+      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
+    }
+    // 3) Mood-derived fallback
+    return MOOD_FALLBACK(val);
+  }, [journalSnippets, completionTitles]);
+
+  // Custom tooltip renderer for the Area chart
+  const MoodTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || payload.length === 0) return null;
+    const d = payload[0].payload as { value: number | null; date: string; label: string };
+    if (d.value === null) return null;
+    const keyword = keywordForDate(d.date, d.value);
+    return (
+      <div className="mood-tooltip">
+        <div className="mood-tooltip-label">{d.label}</div>
+        <div className="mood-tooltip-value">{d.value}%</div>
+        <div className="mood-tooltip-keyword">✨ {keyword}</div>
+      </div>
+    );
+  };
+
   if (loading) return (
     <div className="px-4 pt-6 pb-32 min-h-screen">
       <Skeleton className="h-8 w-48 mb-6" />
