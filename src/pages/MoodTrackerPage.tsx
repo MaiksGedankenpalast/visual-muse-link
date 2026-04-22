@@ -119,6 +119,7 @@ const MoodTrackerPage = () => {
       await supabase.from("mood_entries").update(moodData).eq("user_id", user.id).eq("date", todayStr());
     } else {
       await supabase.from("mood_entries").insert(moodData);
+      awardPoints(user.id, 15, "mood");
     }
 
     if (journalText.trim()) {
@@ -129,6 +130,7 @@ const MoodTrackerPage = () => {
         category: "Mood",
         mood_snapshot: Math.round(avg),
       });
+      awardPoints(user.id, 50, "journal");
     }
 
     setShowConfirm(true);
