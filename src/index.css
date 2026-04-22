@@ -457,3 +457,71 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
+
+/* ── Insights staggered entrance ── */
+@keyframes insights-fade-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes insights-draw-in {
+  from { opacity: 0; clip-path: inset(0 100% 0 0); }
+  to   { opacity: 1; clip-path: inset(0 0 0 0); }
+}
+
+@keyframes insights-bar-rise {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+.insights-stagger > * {
+  opacity: 0;
+  animation: insights-fade-up 0.55s ease-out forwards;
+}
+.insights-stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.insights-stagger > *:nth-child(2) { animation-delay: 0.18s; }
+.insights-stagger > *:nth-child(3) { animation-delay: 0.30s; }
+.insights-stagger > *:nth-child(4) { animation-delay: 0.42s; }
+.insights-stagger > *:nth-child(5) { animation-delay: 0.54s; }
+.insights-stagger > *:nth-child(6) { animation-delay: 0.66s; }
+.insights-stagger > *:nth-child(7) { animation-delay: 0.78s; }
+.insights-stagger > *:nth-child(n+8) { animation-delay: 0.9s; }
+
+.insights-chart-draw {
+  animation: insights-draw-in 1.1s ease-out both;
+  animation-delay: 0.1s;
+}
+
+.insights-bar-rise {
+  transform-origin: bottom;
+  animation: insights-bar-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transition: height 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── Mood-colored number glows ── */
+.mood-glow-happy   { text-shadow: 0 0 12px rgba(201, 158, 240, 0.65), 0 0 24px rgba(180, 127, 232, 0.35); }
+.mood-glow-calm    { text-shadow: 0 0 12px rgba(122, 168, 255, 0.6),  0 0 24px rgba(99, 102, 241, 0.3); }
+.mood-glow-conf    { text-shadow: 0 0 12px rgba(168, 85, 247, 0.6),   0 0 24px rgba(124, 58, 237, 0.3); }
+.mood-glow-excited { text-shadow: 0 0 12px rgba(244, 114, 182, 0.6),  0 0 24px rgba(219, 39, 119, 0.3); }
+.mood-glow-rested  { text-shadow: 0 0 12px rgba(94, 234, 212, 0.55),  0 0 24px rgba(45, 212, 191, 0.3); }
+.mood-glow-good    { text-shadow: 0 0 12px rgba(74, 222, 128, 0.6),   0 0 24px rgba(34, 197, 94, 0.3); }
+.mood-glow-rough   { text-shadow: 0 0 12px rgba(239, 68, 68, 0.55),   0 0 24px rgba(220, 38, 38, 0.3); }
+
+/* ── Bottom nav active aura ── */
+@keyframes nav-aura-pulse {
+  0%, 100% { opacity: 0.18; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 0.32; transform: translate(-50%, -50%) scale(1.15); }
+}
+
+.nav-aura {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 44px;
+  height: 44px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(180, 127, 232, 0.55) 0%, rgba(180, 127, 232, 0) 70%);
+  filter: blur(2px);
+  pointer-events: none;
+  animation: nav-aura-pulse 2.4s ease-in-out infinite;
+}
