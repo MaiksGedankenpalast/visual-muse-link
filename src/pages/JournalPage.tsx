@@ -278,7 +278,18 @@ const JournalPage = () => {
                 <button key={day} onClick={() => handleDayTap(day)}
                   className="aspect-square rounded-lg flex items-center justify-center text-sm transition-colors"
                   style={{ background: bg, border, color: textColor, fontWeight }}>
-                  {day}
+                  <span className="relative w-full h-full flex items-center justify-center">
+                    {day}
+                    {momentDates.has(dateStr) && (
+                      <span
+                        className="absolute bottom-0.5 right-0.5 text-[8px] leading-none"
+                        aria-label="Glücksmoment"
+                        title="Glücksmoment"
+                      >
+                        📷
+                      </span>
+                    )}
+                  </span>
                 </button>
               );
             })}
