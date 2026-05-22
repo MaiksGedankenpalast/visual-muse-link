@@ -250,10 +250,9 @@ const HomePage = () => {
             {/* ARKIE SESSION CARD — outlined */}
             <button
               onClick={openChat}
-              className="action-card relative w-full text-left p-[16px] rounded-[20px] flex items-center gap-3 active:scale-[0.97] active:brightness-90 transition-all duration-150"
+              className="arkie-glow-border action-card relative w-full text-left p-[16px] rounded-[20px] flex items-center gap-3 active:scale-[0.97] active:brightness-90 transition-all duration-150"
               style={{
                 background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(180,127,232,0.5)",
                 backdropFilter: "blur(10px)",
               }}
             >
