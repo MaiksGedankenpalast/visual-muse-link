@@ -36,7 +36,14 @@ export interface StatsSnapshot {
     missed: number;
     completion_rate: number;
     best_streak: number;
-    breakdown: unknown[];
+    breakdown: Array<{
+      title: string;
+      completed: number;
+      total_logged_value: number;
+      total_target_value: number;
+      unit: string | null;
+      is_quantifiable: boolean;
+    }>;
   };
   chat: {
     sessions: number;
@@ -180,7 +187,7 @@ export async function buildStatsSnapshot(
   const missed = 0;
   const completion_rate = 0;
   const best_streak = 0;
-  const breakdown: unknown[] = [];
+  const breakdown: StatsSnapshot["challenges"]["breakdown"] = [];
 
   // Chat
   const sessionRows = (sessionsRes.data ?? []) as any[];

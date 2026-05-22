@@ -275,61 +275,6 @@ const JournalDayPage = () => {
         </div>
       )}
 
-      {/* SMART CHALLENGE FOR THIS DAY */}
-      {smartChallenge && (
-        <div className="mb-4">
-          <p className="text-[11px] font-bold tracking-[0.15em] text-[rgba(180,127,232,0.9)] uppercase mb-2">
-            ✨ Arkies Geheimtipp
-          </p>
-          <div
-            className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
-            style={{
-              background: "rgba(180,127,232,0.12)",
-              border: "1px solid rgba(180,127,232,0.35)",
-            }}
-          >
-            <span className="text-lg">{smartChallenge.completed ? "✅" : "⬜"}</span>
-            <span
-              className={`flex-1 text-[14px] ${
-                smartChallenge.completed ? "text-foreground/50 line-through" : "text-foreground"
-              }`}
-            >
-              {smartChallenge.text}
-            </span>
-            <span className="text-[11px] text-muted-foreground">
-              {smartChallenge.completed ? "Erledigt" : "Offen"}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* CHALLENGES FOR THIS DAY */}
-      {dayChallenges.length > 0 && (
-        <div className="mb-6">
-          <p className="text-[13px] text-muted-foreground mb-2 font-medium">Challenges</p>
-          <div className="space-y-2">
-            {dayChallenges.map((c) => {
-              const statusMeta: Record<DayChallenge["status"], { label: string; icon: string; color: string }> = {
-                completed: { label: "Erledigt", icon: "✅", color: "rgba(74, 222, 128, 0.15)" },
-                partial: { label: "Teilweise", icon: "🔶", color: "rgba(251, 191, 36, 0.15)" },
-                missed: { label: "Verpasst", icon: "❌", color: "rgba(255,255,255,0.05)" },
-                pending: { label: "Offen", icon: "⬜", color: "rgba(255,255,255,0.06)" },
-              };
-              const m = statusMeta[c.status];
-              return (
-                <div key={c.challenge_id}
-                  className="flex items-center gap-3 rounded-2xl px-3 py-2.5"
-                  style={{ background: m.color, border: "1px solid rgba(255,255,255,0.06)" }}>
-                  <span className="text-lg">{c.icon || m.icon}</span>
-                  <span className="flex-1 text-foreground text-[14px]">{c.title}</span>
-                  <span className="text-[11px] text-muted-foreground">{m.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* ARKIE PROMPT CARD — only if there's a mood entry (we derive prompt from mood) */}
       {mood && entries.length > 0 && entries[0].mood_snapshot !== null && (
         <div className="rounded-2xl p-4 mb-6"
@@ -356,52 +301,13 @@ const JournalDayPage = () => {
         <div className="space-y-4">
           {entries.map((entry) => {
             const time = new Date(entry.created_at).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
-            const isLetter = entry.category === "Challenge-Brief";
-            const isRecipe = entry.category === "Challenge-Rezept";
-            const isChallengeMirror = isLetter || isRecipe;
             return (
               <button key={entry.id} onClick={() => setExpandedEntry(entry.id)}
-                className="w-full text-left"
-                style={
-                  isChallengeMirror
-                    ? {
-                        border: "1px solid rgba(139,92,246,0.3)",
-                        borderRadius: 16,
-                        padding: 12,
-                        background: "rgba(139,92,246,0.04)",
-                      }
-                    : undefined
-                }>
+                className="w-full text-left">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-[12px] text-muted-foreground">{time}</p>
-                  {isLetter && (
-                    <span
-                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
-                      style={{
-                        background: "rgba(139,92,246,0.18)",
-                        border: "1px solid rgba(139,92,246,0.35)",
-                        color: "rgba(216,180,254,0.95)",
-                      }}
-                    >
-                      <Mail className="w-3 h-3" /> Challenge-Brief
-                    </span>
-                  )}
-                  {isRecipe && (
-                    <span
-                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
-                      style={{
-                        background: "rgba(139,92,246,0.18)",
-                        border: "1px solid rgba(139,92,246,0.35)",
-                        color: "rgba(216,180,254,0.95)",
-                      }}
-                    >
-                      <ChefHat className="w-3 h-3" /> Challenge: Neues Rezept
-                    </span>
-                  )}
                 </div>
                 <h2 className="font-bold text-foreground text-[18px] mb-1 flex items-center gap-2">
-                  {isLetter && <Mail className="w-4 h-4 opacity-70" />}
-                  {isRecipe && <ChefHat className="w-4 h-4 opacity-70" />}
                   {entry.title}
                 </h2>
                 <p className="text-foreground text-[14px] leading-relaxed line-clamp-3 opacity-50">

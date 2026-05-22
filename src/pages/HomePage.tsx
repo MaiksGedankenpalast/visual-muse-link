@@ -4,292 +4,126 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
+import Arkie from "@/components/Arkie";
 import { Skeleton } from "@/components/ui/skeleton";
-import AddChallengeSheet from "@/components/AddChallengeSheet";
-import SmartChallengeWidget from "@/components/SmartChallengeWidget";
+import { Plus, BookOpen, MessageCircle, ChevronRight, RotateCcw, Settings as SettingsIcon, X } from "lucide-react";
 import {
-  ChallengeStatus,
-  autoLogMissedYesterday,
-  ensureUserChallengesSeeded,
-  todayStr as todayStrFn,
-} from "@/lib/userChallenges";
-import { Check, ChevronRight, Plus, Pencil, Flame, Send, RotateCcw, Settings as SettingsIcon, CircleDashed, CircleSlash, Minus, Sparkles } from "lucide-react";
-import { X } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose,
+} from "@/components/ui/drawer";
 
-/* ── helpers ── */
+const SLIDER_LABELS = ["Glücklich", "Ruhig", "Selbstsicher", "Aufgeregt", "Ausgeruht"];
+
 const germanDate = () => {
   const d = new Date();
   return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
 };
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const buzz = (pattern: number | number[] = 8) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    try { (navigator as Navigator).vibrate(pattern); } catch { /* ignore */ }
+  }
+};
 
-/* ── types ── */
-interface MoodEntry {
+interface MoodRow {
+  id: string;
   happy_sad: number;
   calm_anxious: number;
   confident_insecure: number;
   excited_bored: number;
   rested_tired: number;
   tags: string[] | null;
+  created_at: string;
 }
 
-interface ActiveChallenge {
-  id: string;          // challenge id
-  title: string;
-  icon: string | null;
-  category: string | null;
-  status: ChallengeStatus; // status for TODAY
-  is_quantifiable: boolean;
-  default_target: number | null;
-  unit: string | null;
-  logged_value: number | null;
-  target_value: number | null;
-}
-
-interface VibeItem {
+interface JournalRow {
   id: string;
-  text: string;
-  completed: boolean;
+  title: string;
+  content: string | null;
+  created_at: string;
 }
 
-const today = () => new Date().toISOString().slice(0, 10);
-const yesterday = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
-};
-
-const STATUS_COLORS: Record<ChallengeStatus, string> = {
-  completed: "#22c55e",
-  partial: "#f59e0b",
-  missed: "rgba(255,255,255,0.2)",
-  pending: "rgba(255,255,255,0.08)",
-};
+type TimelineItem =
+  | { kind: "mood"; row: MoodRow }
+  | { kind: "journal"; row: JournalRow };
 
 const HomePage = () => {
   const navigate = useNavigate();
   const { user, profileName } = useAuth();
+  const name = profileName || "du";
 
   const [loading, setLoading] = useState(true);
-  const [todayMood, setTodayMood] = useState<MoodEntry | null>(null);
-  const [yesterdayMood, setYesterdayMood] = useState<MoodEntry | null>(null);
-  const [activeChallenges, setActiveChallenges] = useState<ActiveChallenge[]>([]);
-  const [vibeItems, setVibeItems] = useState<VibeItem[]>([]);
-  const [streak, setStreak] = useState(0);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [quickVibeText, setQuickVibeText] = useState("");
-  const [addOpen, setAddOpen] = useState(false);
-  const [dismissTarget, setDismissTarget] = useState<ActiveChallenge | null>(null);
-  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
-
-  /* pull-to-refresh */
-  const [pullStart, setPullStart] = useState<number | null>(null);
-  const [pulling, setPulling] = useState(false);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (window.scrollY === 0) setPullStart(e.touches[0].clientY);
-  };
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (pullStart && e.touches[0].clientY - pullStart > 80) setPulling(true);
-  };
-  const handleTouchEnd = () => {
-    if (pulling) {
-      setRefreshKey((k) => k + 1);
-      setPulling(false);
-    }
-    setPullStart(null);
-  };
+  const [todayMoods, setTodayMoods] = useState<MoodRow[]>([]);
+  const [todayJournals, setTodayJournals] = useState<JournalRow[]>([]);
+  const [expanded, setExpanded] = useState<TimelineItem | null>(null);
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-
-    const todayStr = today();
-    const yesterdayStr = yesterday();
-
-    // 1. Seed challenges if none + auto-log yesterday misses (run in order)
-    await ensureUserChallengesSeeded(user.id);
-    await autoLogMissedYesterday(user.id);
-
-    const [
-      { data: todayMoodData },
-      { data: yesterdayMoodData },
-      { data: vibeData },
-      { data: moodDates },
-      { data: activeUC },
-      { data: todayLogs },
-    ] = await Promise.all([
-      supabase.from("mood_entries").select("happy_sad,calm_anxious,confident_insecure,excited_bored,rested_tired,tags").eq("user_id", user.id).eq("date", todayStr).maybeSingle(),
-      supabase.from("mood_entries").select("happy_sad,calm_anxious,confident_insecure,excited_bored,rested_tired,tags").eq("user_id", user.id).eq("date", yesterdayStr).maybeSingle(),
-      supabase.from("vibe_items").select("id,text,completed").eq("user_id", user.id).eq("date", todayStr).order("created_at", { ascending: true }),
-      supabase.from("mood_entries").select("date").eq("user_id", user.id).order("date", { ascending: false }).limit(100),
-      supabase
-        .from("user_challenges")
-        .select("challenge_id, added_at, challenges!inner(id,title,icon,category,is_quantifiable,default_target,unit)")
-        .eq("user_id", user.id)
-        .eq("is_active", true)
-        .order("added_at", { ascending: true }),
-      supabase
-        .from("daily_completions")
-        .select("challenge_id, status, logged_value, target_value")
-        .eq("user_id", user.id)
-        .eq("date", todayStr),
+    const t = todayStr();
+    const [{ data: moods }, { data: journals }] = await Promise.all([
+      supabase.from("mood_entries")
+        .select("id, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags, created_at")
+        .eq("user_id", user.id).eq("date", t)
+        .order("created_at", { ascending: false }),
+      supabase.from("journal_entries")
+        .select("id, title, content, created_at")
+        .eq("user_id", user.id).eq("date", t)
+        .order("created_at", { ascending: false }),
     ]);
-
-    setTodayMood(todayMoodData as MoodEntry | null);
-    setYesterdayMood(yesterdayMoodData as MoodEntry | null);
-    setVibeItems((vibeData as VibeItem[]) ?? []);
-
-    const logByChallenge = new Map<string, { status: ChallengeStatus; logged_value: number | null; target_value: number | null }>();
-    (todayLogs ?? []).forEach((l: any) =>
-      logByChallenge.set(l.challenge_id, { status: l.status, logged_value: l.logged_value, target_value: l.target_value }),
-    );
-
-    const active: ActiveChallenge[] = (activeUC ?? []).map((uc: any) => {
-      const log = logByChallenge.get(uc.challenges.id);
-      return {
-        id: uc.challenges.id,
-        title: uc.challenges.title,
-        icon: uc.challenges.icon,
-        category: uc.challenges.category,
-        status: log?.status ?? "pending",
-        is_quantifiable: uc.challenges.is_quantifiable ?? true,
-        default_target: uc.challenges.default_target ?? null,
-        unit: uc.challenges.unit ?? null,
-        logged_value: log?.logged_value ?? null,
-        target_value: log?.target_value ?? uc.challenges.default_target ?? null,
-      };
-    });
-    setActiveChallenges(active);
-
-    // Streak calculation
-    if (moodDates && moodDates.length > 0) {
-      const dates = moodDates.map((m: { date: string }) => m.date).sort().reverse();
-      let s = 0;
-      const d = new Date();
-      for (const dateStr of dates) {
-        const expected = d.toISOString().slice(0, 10);
-        if (dateStr === expected) {
-          s++;
-          d.setDate(d.getDate() - 1);
-        } else if (s === 0 && dateStr === yesterday()) {
-          d.setDate(d.getDate() - 1);
-          const exp2 = d.toISOString().slice(0, 10);
-          if (dateStr === exp2) { s++; d.setDate(d.getDate() - 1); }
-        } else {
-          break;
-        }
-      }
-      setStreak(s);
-    } else {
-      setStreak(0);
-    }
-
+    setTodayMoods((moods as MoodRow[]) ?? []);
+    setTodayJournals((journals as JournalRow[]) ?? []);
     setLoading(false);
   }, [user]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll, refreshKey]);
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  /* ── quick add vibe ── */
-  const addQuickVibe = async () => {
-    if (!user || !quickVibeText.trim()) return;
-    const text = quickVibeText.trim();
-    const optimistic: VibeItem = { id: crypto.randomUUID(), text, completed: false };
-    setVibeItems((prev) => [...prev, optimistic]);
-    setQuickVibeText("");
+  // Realtime: refresh when this user inserts mood or journal entries
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`home-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "mood_entries", filter: `user_id=eq.${user.id}` }, fetchAll)
+      .on("postgres_changes", { event: "*", schema: "public", table: "journal_entries", filter: `user_id=eq.${user.id}` }, fetchAll)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, fetchAll]);
 
-    const { data } = await supabase
-      .from("vibe_items")
-      .insert({ user_id: user.id, text, date: today() })
-      .select("id,text,completed")
-      .single();
-    if (data) {
-      setVibeItems((prev) => prev.map((i) => i.id === optimistic.id ? (data as VibeItem) : i));
-    }
-  };
+  const latestMood = todayMoods[0] ?? null;
+  const journalDone = todayJournals.length > 0;
+  const dominantTag = latestMood?.tags?.[0] ?? null;
 
-  /* ── derived state ── */
   const arkieStatus = (() => {
-    if (!yesterdayMood) return "Arkie wartet auf deinen ersten Eintrag 🌙";
-    const avg = (yesterdayMood.happy_sad + yesterdayMood.calm_anxious + yesterdayMood.confident_insecure + yesterdayMood.excited_bored + yesterdayMood.rested_tired) / 5;
-    if (avg < 35) return "Arkie fühlt sich gut heute 💜";
+    if (!latestMood) return "Arkie wartet auf deinen ersten Eintrag 🌙";
+    const avg = (latestMood.happy_sad + latestMood.calm_anxious + latestMood.confident_insecure + latestMood.excited_bored + latestMood.rested_tired) / 5;
+    if (avg < 35) return "Arkie freut sich mit dir 💜";
     if (avg <= 65) return "Arkie ist neugierig auf deinen Tag ✨";
     return "Arkie denkt an dich 🌙";
   })();
 
-  const moodDone = !!todayMood;
-  const dominantTag = todayMood?.tags?.[0] ?? null;
-
-  // Vibe stats
-  const vibeCompleted = vibeItems.filter((v) => v.completed).length;
-  const vibeTotal = vibeItems.length;
-
-  const name = profileName || "du";
-
-  const renderStatusIcon = (status: ChallengeStatus) => {
-    const common = "w-4 h-4";
-    if (status === "completed") return <Check className={`${common} text-white`} />;
-    if (status === "partial") return <Minus className={`${common} text-white`} />;
-    if (status === "missed") return <CircleSlash className={`${common} text-foreground/60`} />;
-    return <CircleDashed className={`${common} text-foreground/50`} />;
+  const openChat = () => {
+    buzz(8);
+    window.dispatchEvent(new CustomEvent("arkie:open-chat"));
   };
 
-  const confirmDismiss = async () => {
-    if (!user || !dismissTarget) return;
-    const target = dismissTarget;
-    setDismissTarget(null);
-    // Trigger slide-out animation
-    setDismissingIds((prev) => new Set(prev).add(target.id));
-    // Background log for Arkie context (best-effort, fire and forget)
-    try {
-      console.log(`[arkie-context] User dismissed challenge "${target.title}" today`);
-    } catch {}
-    // After animation, deactivate the user_challenge link (history preserved)
-    setTimeout(async () => {
-      await supabase
-        .from("user_challenges")
-        .update({ is_active: false })
-        .eq("user_id", user.id)
-        .eq("challenge_id", target.id);
-      setActiveChallenges((prev) => prev.filter((c) => c.id !== target.id));
-      setDismissingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(target.id);
-        return next;
-      });
-    }, 280);
-  };
+  const goJournal = () => { buzz(8); navigate("/journal/new"); };
+  const goMood = () => { buzz(8); navigate("/moodtracker"); };
+
+  const timeline: TimelineItem[] = [
+    ...todayMoods.map((row) => ({ kind: "mood" as const, row })),
+    ...todayJournals.map((row) => ({ kind: "journal" as const, row })),
+  ].sort((a, b) => b.row.created_at.localeCompare(a.row.created_at));
+
+  const timeStr = (iso: string) =>
+    new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div
-      className="pb-4 space-y-5 onboarding-slide"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      {pulling && (
-        <div className="flex justify-center -mt-4 mb-2">
-          <div className="w-8 h-1 rounded-full bg-muted-foreground animate-pulse" />
-        </div>
-      )}
-
+    <div className="pb-4 space-y-5 onboarding-slide">
       {/* HEADER */}
       <div className="px-4 pt-6 flex items-start justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{capitalize(germanDate())}</p>
-          <h1 className="text-[28px] font-bold text-foreground mt-1">
-            Hallo {name} 👋
-          </h1>
+          <h1 className="text-[28px] font-bold text-foreground mt-1">Hallo {name} 👋</h1>
         </div>
         <div className="flex items-center gap-2 mt-2">
           {user?.email === "pitch@mindark.app" && (
@@ -302,8 +136,7 @@ const HomePage = () => {
               }}
               className="flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors"
             >
-              <RotateCcw size={12} />
-              Reset
+              <RotateCcw size={12} /> Reset
             </button>
           )}
           <button
@@ -317,257 +150,287 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* ARKIE WAVE SECTION */}
-      <div className="-mx-0">
-        <ArkieScene arkieSize="large" statusText={arkieStatus} />
-      </div>
+      {/* ARKIE WAVES */}
+      <ArkieScene arkieSize="large" statusText={arkieStatus} />
 
-      <div className="px-4 space-y-5">
+      <div className="px-4 space-y-4">
         {loading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-24 rounded-[20px]" />
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-24 rounded-[20px]" />
+              <Skeleton className="h-24 rounded-[20px]" />
+            </div>
+            <Skeleton className="h-20 rounded-[20px]" />
             <Skeleton className="h-40 rounded-[20px]" />
-            <Skeleton className="h-48 rounded-[20px]" />
-          </div>
+          </>
         ) : (
           <>
-            {/* CARD 1 — Mood Check-in */}
-            <button
-              onClick={() => navigate("/moodtracker")}
-              className="w-full rounded-[20px] p-[18px] flex items-center justify-between gradient-primary text-left"
-            >
-              {moodDone ? (
-                <div className="flex items-center gap-3 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
-                    <Check className="w-5 h-5 text-green-400" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-foreground text-[16px]">Mood gecheckt ✓</p>
-                    {dominantTag && (
-                      <span className="inline-block mt-1 text-xs px-3 py-0.5 rounded-full"
-                        style={{ background: "rgba(180,127,232,0.3)" }}>
-                        {dominantTag}
-                      </span>
-                    )}
-                  </div>
-                  <Pencil className="w-4 h-4 text-foreground/60 ml-auto" />
+            {/* TWO TOP CARDS */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* JOURNAL CARD */}
+              <button
+                onClick={goJournal}
+                className="action-card relative text-left p-[16px] rounded-[20px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
+                style={{
+                  background: "rgba(255,255,255,0.07)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                  minHeight: 100,
+                }}
+              >
+                <p className="font-bold text-foreground text-[16px]">Tagebuch</p>
+                <p className="italic text-muted-foreground text-[13px] mt-1 pr-8">
+                  {journalDone ? "Weiterschreiben 💜" : "Schreib deinen ersten Eintrag"}
+                </p>
+                <div
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: "rgba(0,0,0,0.35)" }}
+                >
+                  <Plus className="w-5 h-5 text-foreground" />
                 </div>
-              ) : (
-                <>
-                  <div>
-                    <p className="font-bold text-foreground text-[16px]">Wie geht's dir heute, {name}?</p>
-                    <p className="text-xs text-foreground/60 mt-1">Arkie wartet.</p>
-                  </div>
-                  <div className="w-11 h-11 rounded-full flex items-center justify-center"
-                    style={{ background: "rgba(0,0,0,0.25)" }}>
-                    <Plus className="w-6 h-6 text-foreground" />
-                  </div>
-                </>
-              )}
+              </button>
+
+              {/* MOOD CARD */}
+              <button
+                onClick={goMood}
+                className="action-card relative text-left p-[16px] rounded-[20px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
+                style={{
+                  background: "rgba(139,92,246,0.2)",
+                  border: "1px solid rgba(139,92,246,0.3)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                  minHeight: 100,
+                }}
+              >
+                <p className="font-bold text-foreground text-[16px]">Mood</p>
+                <p className="italic text-muted-foreground text-[13px] mt-1 pr-8">
+                  {latestMood
+                    ? dominantTag
+                      ? `${dominantTag} ✓`
+                      : "Mood eingetragen ✓"
+                    : "Wie geht es dir heute?"}
+                </p>
+                <div
+                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, #7B5EA7, #9B6FD4)" }}
+                >
+                  <Plus className="w-5 h-5 text-white" />
+                </div>
+              </button>
+            </div>
+
+            {/* ARKIE SESSION CARD */}
+            <button
+              onClick={openChat}
+              className="action-card relative w-full text-left p-[18px] rounded-[20px] flex items-center gap-3 active:scale-[0.97] active:brightness-90 transition-all duration-150"
+              style={{
+                background: "linear-gradient(135deg, #7B5EA7, #9B6FD4)",
+                border: "1px solid rgba(255,255,255,0.12)",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+              }}
+            >
+              <div className="shrink-0">
+                <Arkie size="small" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-[16px]">Arkie Session</p>
+                <p className="italic text-white/70 text-[13px] mt-0.5">
+                  Gespräch starten →
+                </p>
+              </div>
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                style={{ background: "rgba(255,255,255,0.18)" }}
+              >
+                <Plus className="w-5 h-5 text-white" />
+              </div>
             </button>
 
-            {/* CARD 2 — Today's Vibe (personal to-dos) */}
-            <div className="glass-card p-[18px]">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-bold text-foreground text-[16px]">Today's Vibe</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                    {vibeCompleted}/{vibeTotal}
-                  </span>
-                  <button onClick={() => navigate("/vibe")}>
-                    <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                  </button>
-                </div>
-              </div>
+            {/* MOOD CAPSULES */}
+            <MoodCapsules mood={latestMood} onLogNew={goMood} />
 
-              {vibeItems.length === 0 ? (
-                <div className="text-center py-3">
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Was steht heute an? 💜
+            {/* TIMELINE */}
+            <div>
+              <p className="font-bold text-foreground text-[16px] mb-3">Heute</p>
+              {timeline.length === 0 ? (
+                <div className="text-center py-6 flex flex-col items-center gap-2">
+                  <Arkie size="small" />
+                  <p className="text-muted-foreground text-sm">
+                    Noch nichts heute — wie war dein Tag bisher?
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2 mb-3">
-                  {vibeItems.slice(0, 3).map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 py-1">
-                      <div className="w-5 h-5 rounded border flex items-center justify-center shrink-0"
-                        style={{
-                          borderColor: item.completed ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.2)",
-                          background: item.completed ? "var(--mindark-accent-start)" : "transparent",
-                        }}>
-                        {item.completed && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <span className={`text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                        {item.text}
-                      </span>
-                    </div>
-                  ))}
-                  {vibeItems.length > 3 && (
-                    <button onClick={() => navigate("/vibe")} className="text-xs text-muted-foreground mt-1">
-                      + {vibeItems.length - 3} weitere
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* Quick add */}
-              <form onSubmit={(e) => { e.preventDefault(); addQuickVibe(); }} className="flex gap-2">
-                <input
-                  type="text"
-                  value={quickVibeText}
-                  onChange={(e) => setQuickVibeText(e.target.value)}
-                  placeholder="+ Hinzufügen..."
-                  className="flex-1 rounded-[10px] px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-                />
-                <button type="submit" disabled={!quickVibeText.trim()}
-                  className="w-8 h-8 rounded-[10px] flex items-center justify-center gradient-primary disabled:opacity-40 shrink-0">
-                  <Send className="w-4 h-4 text-foreground" />
-                </button>
-              </form>
-            </div>
-
-            {/* STREAK */}
-            <div className="text-center">
-              {streak > 0 ? (
-                <p className="text-sm font-bold text-foreground flex items-center justify-center gap-1">
-                  <Flame className="w-4 h-4 text-orange-400" /> {streak} Tage in Folge
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">Starte deinen ersten Streak heute</p>
-              )}
-            </div>
-
-            {/* CARD 3 — Daily Challenges (dynamic) */}
-            <div className="glass-card p-[18px]">
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-bold text-foreground text-[16px]">Daily Challenges</p>
-                <button onClick={() => navigate("/challenges")}
-                  className="text-xs px-3 py-1 rounded-full"
-                  style={{ background: "rgba(180,127,232,0.25)", color: "var(--mindark-accent-start)" }}>
-                  Browse
-                </button>
-              </div>
-
-              <SmartChallengeWidget />
-
-              {activeChallenges.length === 0 ? (
-                <div className="text-center py-6">
-                  <Sparkles className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Du hast heute noch keine aktiven Challenges.
-                  </p>
-                  <button
-                    onClick={() => setAddOpen(true)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-foreground"
-                    style={{
-                      background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
-                    }}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Challenge hinzufügen
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    {activeChallenges.map((ch) => (
+                <div className="space-y-2">
+                  {timeline.map((it) => {
+                    const isMood = it.kind === "mood";
+                    const title = isMood ? "Mood" : "Tagebuch";
+                    const preview = isMood
+                      ? ((it.row as MoodRow).tags ?? []).slice(0, 3).join(", ") || "Mood-Eintrag"
+                      : (it.row as JournalRow).title;
+                    return (
                       <div
-                        key={ch.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => navigate(`/challenges/${ch.id}`)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            navigate(`/challenges/${ch.id}`);
-                          }
+                        key={`${it.kind}-${it.row.id}`}
+                        className="timeline-row flex items-stretch gap-3 rounded-[14px] p-3"
+                        style={{
+                          background: "rgba(255,255,255,0.05)",
+                          border: "1px solid rgba(255,255,255,0.08)",
                         }}
-                        className={`group relative w-full flex items-center gap-3 p-3 pl-9 rounded-[14px] text-left transition-all hover:bg-white/5 cursor-pointer ${
-                          dismissingIds.has(ch.id)
-                            ? "opacity-0 -translate-x-4 scale-95"
-                            : "opacity-100 translate-x-0 scale-100"
-                        }`}
-                        style={{ background: "rgba(255,255,255,0.05)", transitionDuration: "260ms" }}
                       >
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDismissTarget(ch);
-                          }}
-                          aria-label="Challenge entfernen"
-                          className="absolute left-2 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full flex items-center justify-center text-foreground/30 hover:text-foreground/80 hover:bg-white/10 focus:text-foreground/80 transition-colors"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                        <span className="text-[22px] leading-none shrink-0">{ch.icon || "✨"}</span>
+                        <div className="text-[11px] text-muted-foreground w-[44px] shrink-0 pt-0.5">
+                          {timeStr(it.row.created_at)}
+                        </div>
+                        <div className="w-px shrink-0" style={{ background: "rgba(255,255,255,0.12)" }} />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-foreground text-[14px] truncate">{ch.title}</p>
-                          {ch.is_quantifiable && ch.status === "partial" && ch.logged_value != null ? (
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                              {ch.logged_value} / {ch.target_value ?? ch.default_target ?? "—"}
-                              {ch.unit ? ` ${ch.unit}` : ""}
-                            </p>
-                          ) : ch.category ? (
-                            <span
-                              className="inline-block mt-0.5 text-[10px] px-2 py-0.5 rounded-full"
-                              style={{ background: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)" }}
-                            >
-                              {ch.category}
-                            </span>
-                          ) : null}
+                          <p className="font-bold text-foreground text-[14px]">{title}</p>
+                          <p className="text-muted-foreground text-[12px] truncate">{preview}</p>
                         </div>
-                        <div
-                          className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                          style={{ background: STATUS_COLORS[ch.status] }}
+                        <button
+                          onClick={() => { buzz(8); setExpanded(it); }}
+                          className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                          style={{ background: "rgba(139,92,246,0.25)" }}
+                          aria-label="Eintrag öffnen"
                         >
-                          {renderStatusIcon(ch.status)}
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                          <ChevronRight className="w-4 h-4 text-foreground" />
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                  <button
-                    onClick={() => setAddOpen(true)}
-                    className="w-full mt-3 text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-2"
-                  >
-                    + Challenge hinzufügen
-                  </button>
-                </>
+                    );
+                  })}
+                </div>
               )}
             </div>
           </>
         )}
       </div>
 
-      <AddChallengeSheet
-        open={addOpen}
-        onOpenChange={setAddOpen}
-        onAdded={() => setRefreshKey((k) => k + 1)}
-      />
+      {/* DETAIL BOTTOM SHEET */}
+      <Drawer open={!!expanded} onOpenChange={(o) => !o && setExpanded(null)}>
+        <DrawerContent
+          className="border-t-0 max-h-[85vh] flex flex-col"
+          style={{ background: "var(--mindark-bg)", borderColor: "var(--mindark-card-border)" }}
+        >
+          <DrawerHeader className="flex items-center justify-between">
+            <DrawerTitle className="text-foreground">
+              {expanded?.kind === "mood" ? "Mood-Eintrag" : "Tagebuch-Eintrag"}
+            </DrawerTitle>
+            <DrawerClose asChild>
+              <button className="text-muted-foreground" aria-label="Schließen"><X className="w-5 h-5" /></button>
+            </DrawerClose>
+          </DrawerHeader>
+          <div className="px-4 pb-6 overflow-y-auto scrollbar-hide">
+            {expanded?.kind === "mood" && (() => {
+              const m = expanded.row as MoodRow;
+              const vals = [m.happy_sad, m.calm_anxious, m.confident_insecure, m.excited_bored, m.rested_tired];
+              return (
+                <>
+                  <p className="text-center text-[12px] text-muted-foreground mb-4">
+                    {new Date(m.created_at).toLocaleString("de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                  <div className="flex justify-between gap-2 mb-4">
+                    {vals.map((val, i) => {
+                      const pct = 100 - val;
+                      return (
+                        <div key={i} className="flex flex-col items-center flex-1">
+                          <div className="relative w-full overflow-hidden"
+                            style={{ height: 130, background: "rgba(255,255,255,0.06)", borderRadius: 22 }}>
+                            <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gradient-primary"
+                              style={{ height: `${pct}%`, borderRadius: "0 0 22px 22px" }}>
+                              <span className="text-foreground font-bold text-[12px]">{pct}%</span>
+                            </div>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{SLIDER_LABELS[i]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {m.tags && m.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {m.tags.map((t) => (
+                        <span key={t} className="text-xs px-3 py-1 rounded-full"
+                          style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.8)" }}>
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+            {expanded?.kind === "journal" && (() => {
+              const j = expanded.row as JournalRow;
+              return (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Arkie size="small" />
+                    <p className="text-[12px] text-muted-foreground">
+                      {new Date(j.created_at).toLocaleString("de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  <h2 className="text-foreground font-bold text-[20px] mb-3">{j.title}</h2>
+                  <p className="text-foreground text-[16px] leading-relaxed whitespace-pre-wrap">
+                    {j.content || "Kein Inhalt."}
+                  </p>
+                </>
+              );
+            })()}
+          </div>
+        </DrawerContent>
+      </Drawer>
+    </div>
+  );
+};
 
-      <AlertDialog open={!!dismissTarget} onOpenChange={(open) => !open && setDismissTarget(null)}>
-        <AlertDialogContent className="max-w-[340px] rounded-[20px]">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[16px]">
-              Diese Challenge für heute entfernen?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-xs text-muted-foreground">
-              Sie verschwindet aus deiner heutigen Übersicht. Du kannst sie jederzeit wieder hinzufügen.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row gap-2 sm:gap-2">
-            <AlertDialogCancel className="flex-1 mt-0">Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmDismiss}
-              className="flex-1 bg-red-500/80 hover:bg-red-500 text-white border-0"
-            >
-              Ja, entfernen
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+/* ── Mood capsules sub-component ── */
+const MoodCapsules = ({ mood, onLogNew }: { mood: MoodRow | null; onLogNew: () => void }) => {
+  if (!mood) {
+    return (
+      <div>
+        <div className="flex justify-between gap-2 mb-2">
+          {SLIDER_LABELS.map((label) => (
+            <div key={label} className="flex flex-col items-center flex-1">
+              <div className="relative w-full flex items-center justify-center mood-capsule-pulse"
+                style={{ height: 110, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
+                <span className="text-foreground text-lg" style={{ opacity: 0.4 }}>?</span>
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{label}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-center text-xs text-muted-foreground mt-1">
+          Wie geht's dir heute? Tippe auf Mood ↑
+        </p>
+      </div>
+    );
+  }
+  const vals = [mood.happy_sad, mood.calm_anxious, mood.confident_insecure, mood.excited_bored, mood.rested_tired];
+  return (
+    <div>
+      <div className="flex justify-between gap-2 mb-2">
+        {vals.map((val, i) => {
+          const pct = 100 - val;
+          return (
+            <div key={i} className="flex flex-col items-center flex-1">
+              <div className="relative w-full overflow-hidden"
+                style={{ height: 110, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
+                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gradient-primary"
+                  style={{ height: `${pct}%`, borderRadius: "0 0 22px 22px" }}>
+                  <span className="text-foreground font-bold text-[12px]">{pct}%</span>
+                </div>
+              </div>
+              <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{SLIDER_LABELS[i]}</span>
+            </div>
+          );
+        })}
+      </div>
+      <div className="flex justify-end">
+        <button
+          onClick={onLogNew}
+          className="text-xs text-foreground/70 hover:text-foreground transition-colors"
+        >
+          Neu eintragen +
+        </button>
+      </div>
     </div>
   );
 };
