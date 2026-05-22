@@ -47,9 +47,21 @@ type TimelineItem =
   | { kind: "mood"; row: MoodRow }
   | { kind: "journal"; row: JournalRow };
 
-const HomePage = () => {
-  const navigate = useNavigate();
-  const { user, profileName } = useAuth();
+  const [showMomentsHint, setShowMomentsHint] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.localStorage.getItem("shown_moments_hint")) {
+      setShowMomentsHint(true);
+    }
+  }, []);
+
+  const goMoments = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("shown_moments_hint", "1");
+      setShowMomentsHint(false);
+    }
+    window.dispatchEvent(new CustomEvent("swiper:go-to", { detail: 1 }));
+  };
   const name = profileName || "du";
 
   const [loading, setLoading] = useState(true);
