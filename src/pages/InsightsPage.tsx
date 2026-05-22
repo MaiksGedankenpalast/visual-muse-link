@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import ReviewsPanel from "@/components/ReviewsPanel";
-import ArkieInsightsRadar from "@/components/ArkieInsightsRadar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
