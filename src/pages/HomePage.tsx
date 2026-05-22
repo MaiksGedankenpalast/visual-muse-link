@@ -47,6 +47,11 @@ type TimelineItem =
   | { kind: "mood"; row: MoodRow }
   | { kind: "journal"; row: JournalRow };
 
+const HomePage = () => {
+  const navigate = useNavigate();
+  const { user, profileName } = useAuth();
+  const name = profileName || "du";
+
   const [showMomentsHint, setShowMomentsHint] = useState(false);
 
   useEffect(() => {
@@ -62,7 +67,6 @@ type TimelineItem =
     }
     window.dispatchEvent(new CustomEvent("swiper:go-to", { detail: 1 }));
   };
-  const name = profileName || "du";
 
   const [loading, setLoading] = useState(true);
   const [todayMoods, setTodayMoods] = useState<MoodRow[]>([]);
