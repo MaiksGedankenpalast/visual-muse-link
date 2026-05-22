@@ -195,45 +195,56 @@ const HomePage = () => {
           </>
         ) : (
           <>
-            {/* JOURNAL CARD — full width */}
-            <button
-              onClick={goJournal}
-              className="action-card relative w-full text-left p-[18px] rounded-[20px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
-              style={{
-                background: "rgba(245,240,255,0.92)",
-                border: "1px solid rgba(255,255,255,0.12)",
-                backdropFilter: "blur(10px)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-              }}
-            >
-              <p className="font-bold text-[16px]" style={{ color: "#1a1530" }}>Tagebuch</p>
-              <p className="italic text-[13px] mt-1 pr-12" style={{ color: "rgba(26,21,48,0.55)" }}>
-                {journalDone ? "Weiterschreiben 💜" : "Schreib deinen ersten Eintrag"}
-              </p>
-              <div
-                className="absolute top-1/2 -translate-y-1/2 right-4 w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ background: "#1a1530" }}
+            {/* JOURNAL + MOOD — side by side */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={goJournal}
+                className="action-card relative text-left p-[16px] rounded-[20px] min-h-[130px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
+                style={{
+                  background: "rgba(245,240,255,0.92)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                }}
               >
-                <Plus className="w-5 h-5 text-white" />
-              </div>
-            </button>
+                <div className="flex items-start justify-between">
+                  <p className="font-bold text-[16px]" style={{ color: "#1a1530" }}>Tagebuch</p>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: "#1a1530" }}>
+                    <Plus className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <p className="italic text-[13px] mt-2" style={{ color: "rgba(26,21,48,0.55)" }}>
+                  {journalDone ? "Weiterschreiben 💜" : "Schreib deinen ersten Eintrag"}
+                </p>
+              </button>
 
-            {/* MOOD SECTION */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <p className="font-bold text-foreground text-[18px]">How Are You Feeling?</p>
-                <button
-                  onClick={goMood}
-                  className="px-4 py-1.5 rounded-full text-[13px] font-medium text-white active:scale-95 transition-transform"
-                  style={{ background: "linear-gradient(135deg, #B47FE8, #9B6FD4)" }}
-                >
-                  {latestMood ? "New Mood" : "Mood +"}
-                </button>
-              </div>
-              <MoodCapsules mood={latestMood} onLogNew={goMood} />
-              {latestMood && dominantTag && (
-                <p className="text-[12px] text-muted-foreground mt-2">Letzter Vibe: {dominantTag}</p>
-              )}
+              <button
+                onClick={goMood}
+                className="action-card relative text-left p-[16px] rounded-[20px] min-h-[130px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
+                style={{
+                  background: "rgba(220,195,245,0.92)",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                }}
+              >
+                <div className="flex items-start justify-between">
+                  <p className="font-bold text-[16px]" style={{ color: "#1a1530" }}>Mood</p>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+                    style={{ background: "#1a1530" }}>
+                    <Plus className="w-4 h-4 text-white" />
+                  </div>
+                </div>
+                <p className="italic text-[13px] mt-2" style={{ color: "rgba(26,21,48,0.6)" }}>
+                  Wie fühlst du dich gerade?
+                </p>
+                {latestMood && dominantTag && (
+                  <p className="text-[11px] mt-1" style={{ color: "rgba(26,21,48,0.5)" }}>
+                    Letzter Vibe: {dominantTag}
+                  </p>
+                )}
+              </button>
             </div>
 
             {/* ARKIE SESSION CARD — outlined */}
@@ -385,60 +396,6 @@ const HomePage = () => {
           </div>
         </DrawerContent>
       </Drawer>
-    </div>
-  );
-};
-
-/* ── Mood capsules sub-component ── */
-const MoodCapsules = ({ mood, onLogNew }: { mood: MoodRow | null; onLogNew: () => void }) => {
-  if (!mood) {
-    return (
-      <div>
-        <div className="flex justify-between gap-2 mb-2">
-          {SLIDER_LABELS.map((label) => (
-            <div key={label} className="flex flex-col items-center flex-1">
-              <div className="relative w-full flex items-center justify-center mood-capsule-pulse"
-                style={{ height: 110, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
-                <span className="text-foreground text-lg" style={{ opacity: 0.4 }}>?</span>
-              </div>
-              <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{label}</span>
-            </div>
-          ))}
-        </div>
-        <p className="text-center text-xs text-muted-foreground mt-1">
-          Wie geht's dir heute? Tippe auf Mood ↑
-        </p>
-      </div>
-    );
-  }
-  const vals = [mood.happy_sad, mood.calm_anxious, mood.confident_insecure, mood.excited_bored, mood.rested_tired];
-  return (
-    <div>
-      <div className="flex justify-between gap-2 mb-2">
-        {vals.map((val, i) => {
-          const pct = 100 - val;
-          return (
-            <div key={i} className="flex flex-col items-center flex-1">
-              <div className="relative w-full overflow-hidden"
-                style={{ height: 110, background: "rgba(255,255,255,0.08)", borderRadius: 22 }}>
-                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center gradient-primary"
-                  style={{ height: `${pct}%`, borderRadius: "0 0 22px 22px" }}>
-                  <span className="text-foreground font-bold text-[12px]">{pct}%</span>
-                </div>
-              </div>
-              <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{SLIDER_LABELS[i]}</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex justify-end">
-        <button
-          onClick={onLogNew}
-          className="text-xs text-foreground/70 hover:text-foreground transition-colors"
-        >
-          Neu eintragen +
-        </button>
-      </div>
     </div>
   );
 };
