@@ -24,6 +24,7 @@ import JournalDayPage from "@/pages/JournalDayPage";
 import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
 import ExperimentPage from "@/pages/ExperimentPage";
+import VibePage from "@/pages/VibePage";
 import SettingsPage from "@/pages/SettingsPage";
 import SanctuaryPage from "@/pages/SanctuaryPage";
 import NotFound from "@/pages/NotFound";
@@ -63,6 +64,7 @@ const App = () => (
               <Route path="/insights" element={<InsightsPage />} />
               <Route path="/sanctuary" element={<SanctuaryPage />} />
               <Route path="/experiment" element={<ExperimentPage />} />
+              <Route path="/experiment/vibe" element={<VibePage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>

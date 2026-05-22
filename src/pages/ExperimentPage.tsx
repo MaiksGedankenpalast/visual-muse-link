@@ -1,131 +1,91 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
-import { Check, X, Send } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
+import { ChevronRight } from "lucide-react";
+import { toast } from "sonner";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-interface VibeItem {
-  id: string;
-  text: string;
-  completed: boolean;
-}
+const ComingSoonCard = ({ emoji, title }: { emoji: string; title: string }) => (
+  <button
+    onClick={() => toast("Kommt bald! Arkie arbeitet daran. 🔮")}
+    className="relative text-left p-4 rounded-[20px] opacity-50 active:scale-[0.98] transition"
+    style={{
+      background: "rgba(255,255,255,0.07)",
+      border: "1px solid rgba(255,255,255,0.12)",
+    }}
+  >
+    <span
+      className="absolute top-2 right-2 text-[10px] px-2 py-0.5 rounded-full text-muted-foreground"
+      style={{ background: "rgba(255,255,255,0.08)" }}
+    >
+      Bald
+    </span>
+    <div className="text-[28px] mb-2">{emoji}</div>
+    <div className="text-foreground font-semibold text-sm">{title}</div>
+  </button>
+);
 
 const ExperimentPage = () => {
-  const { user, profileName } = useAuth();
-  const name = profileName || "du";
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [completedCount, setCompletedCount] = useState(0);
 
-  const [items, setItems] = useState<VibeItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [newText, setNewText] = useState("");
-
-  const fetchData = useCallback(async () => {
+  useEffect(() => {
     if (!user) return;
-    setLoading(true);
-    const { data } = await supabase
-      .from("vibe_items")
-      .select("id, text, completed")
-      .eq("user_id", user.id)
-      .eq("date", todayStr())
-      .order("created_at", { ascending: true });
-    setItems((data as VibeItem[]) ?? []);
-    setLoading(false);
+    (async () => {
+      const { data } = await supabase
+        .from("vibe_items")
+        .select("completed")
+        .eq("user_id", user.id)
+        .eq("date", todayStr())
+        .eq("completed", true);
+      setCompletedCount(data?.length ?? 0);
+    })();
   }, [user]);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
-  const addItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !newText.trim()) return;
-    const text = newText.trim();
-    const optimistic: VibeItem = { id: crypto.randomUUID(), text, completed: false };
-    setItems((prev) => [...prev, optimistic]);
-    setNewText("");
-    const { data } = await supabase
-      .from("vibe_items")
-      .insert({ user_id: user.id, text, date: todayStr() })
-      .select("id, text, completed")
-      .single();
-    if (data) {
-      setItems((prev) => prev.map((i) => (i.id === optimistic.id ? (data as VibeItem) : i)));
-    }
-  };
-
-  const toggle = async (id: string, current: boolean) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, completed: !current } : i)));
-    await supabase.from("vibe_items").update({ completed: !current }).eq("id", id);
-  };
-
-  const remove = async (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-    await supabase.from("vibe_items").delete().eq("id", id);
-  };
 
   return (
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
-      <h1 className="font-bold text-foreground text-[24px] mb-1">Experiment 🔮</h1>
-      <p className="text-muted-foreground text-sm mb-5">Today's Vibe — was steht heute an, {name}?</p>
+      <h1 className="font-bold text-foreground text-[24px] mb-1">Experiment 🧪</h1>
+      <p className="text-muted-foreground text-sm mb-6">Entdecke neue Funktionen</p>
 
-      <form onSubmit={addItem} className="flex gap-2 mb-5">
-        <input
-          type="text"
-          value={newText}
-          onChange={(e) => setNewText(e.target.value)}
-          placeholder="Was möchtest du heute erledigen?"
-          className="flex-1 rounded-[14px] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
-          style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
-        />
-        <button
-          type="submit"
-          disabled={!newText.trim()}
-          className="w-11 h-11 rounded-[14px] flex items-center justify-center gradient-primary disabled:opacity-40 shrink-0"
-        >
-          <Send className="w-5 h-5 text-foreground" />
-        </button>
-      </form>
+      {/* Today's Vibe — full width */}
+      <button
+        onClick={() => navigate("/experiment/vibe")}
+        className="w-full text-left p-[18px] rounded-[20px] flex items-center gap-4 active:scale-[0.98] active:brightness-90 transition-all duration-150 mb-3"
+        style={{
+          background: "rgba(255,255,255,0.07)",
+          border: "1px solid rgba(255,255,255,0.12)",
+        }}
+      >
+        <div className="text-[40px] leading-none shrink-0">✅</div>
+        <div className="flex-1 min-w-0">
+          <div className="text-foreground font-bold text-[16px]">Today's Vibe</div>
+          <div className="text-muted-foreground text-[13px]">Deine tägliche To-Do Liste</div>
+          <div className="text-[12px] mt-1" style={{ color: "var(--mindark-accent-start)" }}>
+            {completedCount} {completedCount === 1 ? "Ding" : "Dinge"} heute erledigt
+          </div>
+        </div>
+        <ChevronRight className="w-5 h-5 text-foreground/60 shrink-0" />
+      </button>
 
-      {loading ? (
-        <div className="space-y-2">
-          <Skeleton className="h-14 rounded-[14px]" />
-          <Skeleton className="h-14 rounded-[14px]" />
-        </div>
-      ) : items.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="arkie-float inline-block mb-3"><Arkie size="medium" /></div>
-          <p className="text-muted-foreground text-sm">Noch nichts auf der Liste 💜</p>
-        </div>
-      ) : (
-        <div className="space-y-2 mb-8">
-          {items.map((item) => (
-            <div key={item.id} className="glass-card px-4 py-3 flex items-center gap-3">
-              <button
-                onClick={() => toggle(item.id, item.completed)}
-                className="w-5 h-5 rounded border flex items-center justify-center shrink-0"
-                style={{
-                  borderColor: item.completed ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.2)",
-                  background: item.completed ? "var(--mindark-accent-start)" : "transparent",
-                }}
-              >
-                {item.completed && <Check className="w-3 h-3 text-white" />}
-              </button>
-              <span className={`flex-1 text-sm ${item.completed ? "line-through text-muted-foreground" : "text-foreground"}`}>
-                {item.text}
-              </span>
-              <button onClick={() => remove(item.id)}>
-                <X className="w-4 h-4 text-muted-foreground" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Coming soon grid */}
+      <div className="grid grid-cols-2 gap-3 mt-3">
+        <ComingSoonCard emoji="🎯" title="Gewohnheiten" />
+        <ComingSoonCard emoji="📊" title="Wochenreview" />
+        <ComingSoonCard emoji="🌬️" title="Atemübungen" />
+      </div>
 
-      <div className="border-t pt-6 mt-6" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-        <div className="text-center py-6">
-          <div className="arkie-float inline-block mb-3"><Arkie size="medium" /></div>
-          <p className="text-muted-foreground text-sm">Hier entstehen bald weitere Experimente.</p>
+      {/* Arkie hint */}
+      <div className="flex flex-col items-center text-center mt-10 px-6">
+        <div className="arkie-float mb-3" style={{ width: 50, height: 50 }}>
+          <Arkie size="small" />
         </div>
+        <p className="text-muted-foreground text-sm">
+          Arkie testet hier neue Ideen mit dir. Was hilft dir wirklich?
+        </p>
       </div>
     </div>
   );
