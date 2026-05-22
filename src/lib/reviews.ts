@@ -34,16 +34,16 @@ export interface StatsSnapshot {
     completed: number;
     partial: number;
     missed: number;
-    completion_rate: number; // 0-100
+    completion_rate: number;
     best_streak: number;
-    breakdown: {
+    breakdown: Array<{
       title: string;
       completed: number;
       total_logged_value: number;
       total_target_value: number;
       unit: string | null;
       is_quantifiable: boolean;
-    }[];
+    }>;
   };
   chat: {
     sessions: number;
@@ -126,7 +126,7 @@ export async function buildStatsSnapshot(
   periodStart: string,
   periodEnd: string,
 ): Promise<StatsSnapshot> {
-  const [moodRes, journalRes, completionRes, sessionsRes] = await Promise.all([
+  const [moodRes, journalRes, sessionsRes] = await Promise.all([
     supabase
       .from("mood_entries")
       .select("date, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired")
@@ -141,12 +141,6 @@ export async function buildStatsSnapshot(
       .gte("date", periodStart)
       .lte("date", periodEnd)
       .order("date", { ascending: true }),
-    supabase
-      .from("daily_completions")
-      .select("date, status, logged_value, target_value, challenge_id, challenges!inner(title, unit, is_quantifiable)")
-      .eq("user_id", userId)
-      .gte("date", periodStart)
-      .lte("date", periodEnd),
     supabase
       .from("chat_sessions")
       .select("id, created_at")
@@ -187,45 +181,13 @@ export async function buildStatsSnapshot(
     excerpt: (j.content ?? "").slice(0, 200),
   }));
 
-  // Challenges
-  const compRows = (completionRes.data ?? []) as any[];
-  const completed = compRows.filter((r) => r.status === "completed").length;
-  const partial = compRows.filter((r) => r.status === "partial").length;
-  const missed = compRows.filter((r) => r.status === "missed").length;
-  const totalLogged = completed + partial + missed;
-  const completion_rate = totalLogged > 0 ? Math.round((completed / totalLogged) * 100) : 0;
-
-  // Best streak: longest consecutive days with ≥1 completed log
-  const completedDates = new Set(compRows.filter((r) => r.status === "completed").map((r) => r.date as string));
-  const sortedDates = Array.from(completedDates).sort();
-  let best_streak = 0;
-  let cur = 0;
-  let prev: string | null = null;
-  for (const d of sortedDates) {
-    if (prev && daysBetween(prev, d) === 1) cur++;
-    else cur = 1;
-    if (cur > best_streak) best_streak = cur;
-    prev = d;
-  }
-
-  // Per-challenge breakdown (completed count + logged/target totals)
-  const breakdownMap = new Map<
-    string,
-    { title: string; completed: number; total_logged_value: number; total_target_value: number; unit: string | null; is_quantifiable: boolean }
-  >();
-  compRows.forEach((r) => {
-    const title = r.challenges?.title ?? "Challenge";
-    const unit = r.challenges?.unit ?? null;
-    const isQ = r.challenges?.is_quantifiable ?? true;
-    const entry =
-      breakdownMap.get(title) ??
-      { title, completed: 0, total_logged_value: 0, total_target_value: 0, unit, is_quantifiable: isQ };
-    if (r.status === "completed") entry.completed += 1;
-    entry.total_logged_value += Number(r.logged_value ?? 0);
-    entry.total_target_value += Number(r.target_value ?? 0);
-    breakdownMap.set(title, entry);
-  });
-  const breakdown = Array.from(breakdownMap.values());
+  // Challenges removed from app — keep zero stats for backwards compatibility with old reviews UI.
+  const completed = 0;
+  const partial = 0;
+  const missed = 0;
+  const completion_rate = 0;
+  const best_streak = 0;
+  const breakdown: StatsSnapshot["challenges"]["breakdown"] = [];
 
   // Chat
   const sessionRows = (sessionsRes.data ?? []) as any[];

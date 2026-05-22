@@ -12,22 +12,6 @@ export interface JournalCtx {
   excerpt: string;
 }
 
-export interface ChallengeLogCtx {
-  date: string;
-  title: string;
-  status: string;
-  notes?: string;
-  logged_value?: number | null;
-  target_value?: number | null;
-  unit?: string | null;
-  is_quantifiable?: boolean;
-}
-
-export interface ChallengeContext {
-  recent: ChallengeLogCtx[]; // last 7 days, grouped/sorted
-  active: string[]; // active challenge titles
-}
-
 export interface ReviewCtx {
   label: string; // e.g. "Woche 4 (14.04.–20.04.)"
   excerpt: string; // truncated to 400 chars
@@ -66,20 +50,15 @@ function formatShort(dateStr: string): string {
 export async function fetchArkieContext(userId: string): Promise<{
   moods: MoodCtx[];
   journals: JournalCtx[];
-  challenges: ChallengeContext;
   reviews: ReviewsCtx;
 }> {
-  // 7-day window for challenge logs
-  const sevenDaysAgo = new Date();
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  const sevenCutoff = sevenDaysAgo.toISOString().slice(0, 10);
-
-  const [moodRes, journalRes, logRes, activeRes, weeklyRes, fourWeeklyRes] = await Promise.all([
+  const [moodRes, journalRes, weeklyRes, fourWeeklyRes] = await Promise.all([
     supabase
       .from("mood_entries")
       .select("date, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
       .eq("user_id", userId)
       .order("date", { ascending: false })
+      .order("created_at", { ascending: false })
       .limit(14),
     supabase
       .from("journal_entries")
@@ -88,18 +67,6 @@ export async function fetchArkieContext(userId: string): Promise<{
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(10),
-    supabase
-      .from("daily_completions")
-      .select("date, status, notes, logged_value, target_value, challenge_id, challenges!inner(title, unit, is_quantifiable)")
-      .eq("user_id", userId)
-      .gte("date", sevenCutoff)
-      .order("date", { ascending: false })
-      .limit(40),
-    supabase
-      .from("user_challenges")
-      .select("challenge_id, challenges!inner(title)")
-      .eq("user_id", userId)
-      .eq("is_active", true),
     supabase
       .from("reviews")
       .select("period_start, period_end, llm_narrative")
@@ -138,22 +105,6 @@ export async function fetchArkieContext(userId: string): Promise<{
     };
   });
 
-  const recent: ChallengeLogCtx[] = (logRes.data ?? []).map((l: any) => ({
-    date: l.date,
-    title: l.challenges?.title ?? "Challenge",
-    status: l.status ?? "pending",
-    notes: l.notes ?? undefined,
-    logged_value: l.logged_value ?? null,
-    target_value: l.target_value ?? null,
-    unit: l.challenges?.unit ?? null,
-    is_quantifiable: l.challenges?.is_quantifiable ?? true,
-  }));
-  const active: string[] = (activeRes.data ?? [])
-    .map((r: any) => r.challenges?.title)
-    .filter((t: unknown): t is string => typeof t === "string");
-
-  const challenges: ChallengeContext = { recent, active };
-
   const weeklyRow = (weeklyRes.data ?? [])[0] as any;
   const fourRow = (fourWeeklyRes.data ?? [])[0] as any;
   const reviews: ReviewsCtx = {
@@ -171,12 +122,11 @@ export async function fetchArkieContext(userId: string): Promise<{
       : null,
   };
 
-  // Token budget check (~2000 tokens for moods+journals; challenge block ≤400)
-  const combined =
-    JSON.stringify(moods) + JSON.stringify(journals) + JSON.stringify(challenges);
+  // Token budget check
+  const combined = JSON.stringify(moods) + JSON.stringify(journals);
   if (estimateTokens(combined) > 2400) {
     journals = journals.slice(0, 5);
   }
 
-  return { moods, journals, challenges, reviews };
+  return { moods, journals, reviews };
 }
