@@ -6,12 +6,68 @@ import { resetPitchData } from "@/lib/seedPitchData";
 import ArkieScene from "@/components/ArkieScene";
 import Arkie from "@/components/Arkie";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, BookOpen, MessageCircle, ChevronRight, RotateCcw, Settings as SettingsIcon, X } from "lucide-react";
+import { MessageCircle, ChevronRight, RotateCcw, Settings as SettingsIcon, X } from "lucide-react";
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose,
 } from "@/components/ui/drawer";
 
 const SLIDER_LABELS = ["Glücklich", "Ruhig", "Selbstsicher", "Aufgeregt", "Ausgeruht"];
+
+const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd: () => void }) => {
+  const vals = latestMood
+    ? [latestMood.happy_sad, latestMood.calm_anxious, latestMood.confident_insecure, latestMood.excited_bored, latestMood.rested_tired]
+    : null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-2">
+        <div className="flex-1 flex justify-between gap-2">
+          {SLIDER_LABELS.map((label, i) => {
+            const pct = vals ? 100 - vals[i] : 0;
+            return (
+              <div key={label} className="flex flex-col items-center flex-1">
+                <div
+                  className="relative w-full overflow-hidden"
+                  style={{ height: 90, background: "rgba(255,255,255,0.06)", borderRadius: 18 }}
+                >
+                  {vals ? (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 flex items-center justify-center gradient-primary"
+                      style={{ height: `${pct}%`, borderRadius: "0 0 18px 18px" }}
+                    >
+                      <span className="text-white font-bold text-[11px]">{pct}%</span>
+                    </div>
+                  ) : (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center text-white font-medium"
+                      style={{ animation: "capsule-pulse 2.5s ease-in-out infinite" }}
+                    >
+                      ?
+                    </div>
+                  )}
+                </div>
+                <span className="text-[11px] text-muted-foreground mt-1.5 text-center leading-tight">{label}</span>
+              </div>
+            );
+          })}
+        </div>
+        {vals && (
+          <button
+            onClick={onAdd}
+            className="shrink-0 text-[11px] px-2.5 py-1 rounded-full text-white/70 active:scale-95 transition-transform"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
+          >
+            + Neu
+          </button>
+        )}
+      </div>
+      {!vals && (
+        <p className="text-center text-[12px] text-muted-foreground">
+          Wie geht's dir heute? Tippe auf Mood ↑
+        </p>
+      )}
+    </div>
+  );
+};
 
 const germanDate = () => {
   const d = new Date();
@@ -199,74 +255,70 @@ const HomePage = () => {
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={goJournal}
-                className="action-card relative text-left p-[16px] rounded-[20px] min-h-[130px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
+                className="action-card group relative text-left p-[16px] rounded-[20px] min-h-[80px] flex flex-col justify-between transition-all duration-200 active:scale-[0.97]"
                 style={{
-                  background: "rgba(245,240,255,0.92)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                  background: "rgba(139,92,246,0.15)",
+                  border: "1px solid rgba(167,139,250,0.3)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  boxShadow: "0 0 20px rgba(139,92,246,0.2), 0 0 40px rgba(139,92,246,0.08)",
                 }}
               >
-                <div className="flex items-start justify-between">
-                  <p className="font-bold text-[16px]" style={{ color: "#1a1530" }}>Tagebuch</p>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: "#1a1530" }}>
-                    <Plus className="w-4 h-4 text-white" />
-                  </div>
+                <div>
+                  <p className="font-bold text-white text-[17px]">Tagebuch</p>
+                  <p className="italic text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {journalDone ? "Weiterschreiben" : "Schreib drauf los…"}
+                  </p>
                 </div>
-                <p className="italic text-[13px] mt-2" style={{ color: "rgba(26,21,48,0.55)" }}>
-                  {journalDone ? "Weiterschreiben 💜" : "Schreib deinen ersten Eintrag"}
-                </p>
+                <span className="self-end text-[13px]" style={{ color: "rgba(255,255,255,0.35)" }}>→</span>
               </button>
 
               <button
                 onClick={goMood}
-                className="action-card relative text-left p-[16px] rounded-[20px] min-h-[130px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
+                className="action-card group relative text-left p-[16px] rounded-[20px] min-h-[80px] flex flex-col justify-between transition-all duration-200 active:scale-[0.97]"
                 style={{
-                  background: "rgba(220,195,245,0.92)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                  background: "rgba(99,102,241,0.15)",
+                  border: "1px solid rgba(129,140,248,0.3)",
+                  backdropFilter: "blur(12px)",
+                  WebkitBackdropFilter: "blur(12px)",
+                  boxShadow: "0 0 20px rgba(99,102,241,0.2), 0 0 40px rgba(99,102,241,0.08)",
                 }}
               >
-                <div className="flex items-start justify-between">
-                  <p className="font-bold text-[16px]" style={{ color: "#1a1530" }}>Mood</p>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                    style={{ background: "#1a1530" }}>
-                    <Plus className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-                <p className="italic text-[13px] mt-2" style={{ color: "rgba(26,21,48,0.6)" }}>
-                  Wie fühlst du dich gerade?
-                </p>
-                {latestMood && dominantTag && (
-                  <p className="text-[11px] mt-1" style={{ color: "rgba(26,21,48,0.5)" }}>
-                    Letzter Vibe: {dominantTag}
+                <div>
+                  <p className="font-bold text-white text-[17px]">Mood</p>
+                  <p className="italic text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>
+                    {latestMood
+                      ? (dominantTag ? `${dominantTag} ✓` : "Mood erfasst ✓")
+                      : "Wie fühlst du dich?"}
                   </p>
-                )}
+                </div>
+                <span className="self-end text-[13px]" style={{ color: "rgba(255,255,255,0.35)" }}>→</span>
               </button>
             </div>
+
+            {/* MOOD CAPSULES */}
+            <MoodCapsules latestMood={latestMood} onAdd={goMood} />
 
             {/* ARKIE SESSION CARD — outlined */}
             <button
               onClick={openChat}
-              className="arkie-glow-border action-card relative w-full text-left p-[16px] rounded-[20px] flex items-center gap-3 active:scale-[0.97] active:brightness-90 transition-all duration-150"
+              className="arkie-glow-border action-card relative w-full text-left p-[16px] rounded-[20px] flex items-center gap-3 transition-all duration-200 active:scale-[0.98]"
               style={{
-                background: "rgba(255,255,255,0.04)",
-                backdropFilter: "blur(10px)",
+                background: "linear-gradient(135deg, rgba(109,40,217,0.4), rgba(139,92,246,0.25))",
+                border: "1px solid rgba(167,139,250,0.25)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                boxShadow: "0 0 24px rgba(109,40,217,0.25)",
               }}
             >
-              <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ background: "linear-gradient(135deg, #7B5EA7, #9B6FD4)" }}>
-                <Arkie size="small" />
-              </div>
+              <Arkie size={48} className="shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-foreground text-[16px]">Arkie Session</p>
-                <p className="italic text-muted-foreground text-[13px] mt-0.5">
+                <p className="italic text-[13px] mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>
                   Gespräch starten →
                 </p>
               </div>
-              <MessageCircle className="w-5 h-5 text-foreground/60 shrink-0" />
+              <MessageCircle className="w-5 h-5 shrink-0" style={{ color: "rgba(255,255,255,0.3)" }} />
             </button>
 
             {/* TIMELINE */}
