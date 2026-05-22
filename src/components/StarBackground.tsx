@@ -2,24 +2,26 @@ import { useMemo } from "react";
 
 const StarBackground = () => {
   const stars = useMemo(() => {
-    const count = 60;
-    const sizes = [1.5, 1.65, 1.725];
+    const count = 110;
+    const sizes = [1.2, 1.5, 1.75, 2];
     const result: { x: number; y: number; size: number; opacity: number; twinkle: boolean; duration: number }[] = [];
     for (let i = 0; i < count; i++) {
       const seed = (i * 7919 + 104729) % 100000;
-      const x = ((seed * 13) % 900) / 10 + 5;
-      const y = ((seed * 7) % 500) / 10 + 3; // 3–53% — nur obere Hälfte, über den Wellen
-      const size = sizes[i % 3];
-      const opacity = 0.5 + ((seed % 4) / 10);
-      const twinkle = i % 4 === 0;
+      const x = ((seed * 13) % 960) / 10 + 2;   // 2–98%
+      const y = ((seed * 17) % 980) / 10 + 1;   // 1–99% — kompletter Screen
+      const size = sizes[i % 4];
+      const opacity = 0.35 + ((seed % 5) / 12);
+      const twinkle = i % 3 === 0;
       const duration = 3 + ((seed % 50) / 10);
-      result.push({ x, y, size, opacity: Math.min(opacity, 0.8), twinkle, duration });
+      result.push({ x, y, size, opacity: Math.min(opacity, 0.75), twinkle, duration });
     }
     return result;
   }, []);
 
   return (
-    <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+    <div
+      className="fixed inset-y-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-0 pointer-events-none overflow-hidden"
+    >
       {stars.map((s, i) => (
         <div
           key={i}
