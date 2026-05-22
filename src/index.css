@@ -694,3 +694,8 @@
 @media (prefers-reduced-motion: reduce) {
   .mood-capsule-pulse, .timeline-row { animation: none; }
 }
+
+@keyframes capsule-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.6; }
+}
