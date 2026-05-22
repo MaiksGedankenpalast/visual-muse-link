@@ -522,13 +522,6 @@ const InsightsPage = () => {
             </div>
           )}
 
-          {/* ARKIE'S INSIGHTS RADAR */}
-          <ArkieInsightsRadar
-            moods={moods}
-            completions={completions}
-            userId={user?.id}
-          />
-
           {/* PATTERN INSIGHTS */}
           <div className="mb-4">
             <p className="font-bold text-foreground text-sm mb-3">Arkie hat etwas bemerkt 🔮</p>
@@ -643,35 +636,11 @@ const InsightsPage = () => {
             })()}
           </div>
 
-          {/* CHALLENGE COMPLETION RATE */}
-          {monthChallengeRate.length > 0 && (
-            <div className="glass-card p-4 mb-4">
-              <p className="font-bold text-foreground text-sm mb-3">Deine Challenges diesen Monat</p>
-              <div className="space-y-3">
-                {monthChallengeRate.map(({ cat, pct }) => (
-                  <div key={cat}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-foreground">{cat}</span>
-                      <span className="text-muted-foreground">{pct}%</span>
-                    </div>
-                    <div className="w-full h-[6px] rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                      <div className="h-full rounded-full gradient-primary transition-all" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* MONTH STATS */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">📝 {journalCount}</p>
               <p className="text-[11px] text-muted-foreground">Einträge</p>
-            </div>
-            <div className="glass-card p-3 text-center">
-              <p className="text-lg font-bold text-foreground">✅ {monthCompletions.length}</p>
-              <p className="text-[11px] text-muted-foreground">Challenges</p>
             </div>
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">🔥 {streak}</p>
