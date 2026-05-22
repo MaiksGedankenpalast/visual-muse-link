@@ -165,91 +165,69 @@ const HomePage = () => {
           </>
         ) : (
           <>
-            {/* TWO TOP CARDS */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* JOURNAL CARD */}
-              <button
-                onClick={goJournal}
-                className="action-card relative text-left p-[16px] rounded-[20px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
-                style={{
-                  background: "rgba(255,255,255,0.07)",
-                  border: "1px solid rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-                  minHeight: 100,
-                }}
-              >
-                <p className="font-bold text-foreground text-[16px]">Tagebuch</p>
-                <p className="italic text-muted-foreground text-[13px] mt-1 pr-8">
-                  {journalDone ? "Weiterschreiben 💜" : "Schreib deinen ersten Eintrag"}
-                </p>
-                <div
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: "rgba(0,0,0,0.35)" }}
-                >
-                  <Plus className="w-5 h-5 text-foreground" />
-                </div>
-              </button>
-
-              {/* MOOD CARD */}
-              <button
-                onClick={goMood}
-                className="action-card relative text-left p-[16px] rounded-[20px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
-                style={{
-                  background: "rgba(139,92,246,0.2)",
-                  border: "1px solid rgba(139,92,246,0.3)",
-                  backdropFilter: "blur(10px)",
-                  boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-                  minHeight: 100,
-                }}
-              >
-                <p className="font-bold text-foreground text-[16px]">Mood</p>
-                <p className="italic text-muted-foreground text-[13px] mt-1 pr-8">
-                  {latestMood
-                    ? dominantTag
-                      ? `${dominantTag} ✓`
-                      : "Mood eingetragen ✓"
-                    : "Wie geht es dir heute?"}
-                </p>
-                <div
-                  className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, #7B5EA7, #9B6FD4)" }}
-                >
-                  <Plus className="w-5 h-5 text-white" />
-                </div>
-              </button>
-            </div>
-
-            {/* ARKIE SESSION CARD */}
+            {/* JOURNAL CARD — full width */}
             <button
-              onClick={openChat}
-              className="action-card relative w-full text-left p-[18px] rounded-[20px] flex items-center gap-3 active:scale-[0.97] active:brightness-90 transition-all duration-150"
+              onClick={goJournal}
+              className="action-card relative w-full text-left p-[18px] rounded-[20px] active:scale-[0.97] active:brightness-90 transition-all duration-150"
               style={{
-                background: "linear-gradient(135deg, #7B5EA7, #9B6FD4)",
+                background: "rgba(245,240,255,0.92)",
                 border: "1px solid rgba(255,255,255,0.12)",
                 backdropFilter: "blur(10px)",
                 boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
               }}
             >
-              <div className="shrink-0">
-                <Arkie size="small" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-foreground text-[16px]">Arkie Session</p>
-                <p className="italic text-white/70 text-[13px] mt-0.5">
-                  Gespräch starten →
-                </p>
-              </div>
+              <p className="font-bold text-[16px]" style={{ color: "#1a1530" }}>Tagebuch</p>
+              <p className="italic text-[13px] mt-1 pr-12" style={{ color: "rgba(26,21,48,0.55)" }}>
+                {journalDone ? "Weiterschreiben 💜" : "Schreib deinen ersten Eintrag"}
+              </p>
               <div
-                className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: "rgba(255,255,255,0.18)" }}
+                className="absolute top-1/2 -translate-y-1/2 right-4 w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: "#1a1530" }}
               >
                 <Plus className="w-5 h-5 text-white" />
               </div>
             </button>
 
-            {/* MOOD CAPSULES */}
-            <MoodCapsules mood={latestMood} onLogNew={goMood} />
+            {/* MOOD SECTION */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-bold text-foreground text-[18px]">How Are You Feeling?</p>
+                <button
+                  onClick={goMood}
+                  className="px-4 py-1.5 rounded-full text-[13px] font-medium text-white active:scale-95 transition-transform"
+                  style={{ background: "linear-gradient(135deg, #B47FE8, #9B6FD4)" }}
+                >
+                  {latestMood ? "New Mood" : "Mood +"}
+                </button>
+              </div>
+              <MoodCapsules mood={latestMood} onLogNew={goMood} />
+              {latestMood && dominantTag && (
+                <p className="text-[12px] text-muted-foreground mt-2">Letzter Vibe: {dominantTag}</p>
+              )}
+            </div>
+
+            {/* ARKIE SESSION CARD — outlined */}
+            <button
+              onClick={openChat}
+              className="action-card relative w-full text-left p-[16px] rounded-[20px] flex items-center gap-3 active:scale-[0.97] active:brightness-90 transition-all duration-150"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(180,127,232,0.5)",
+                backdropFilter: "blur(10px)",
+              }}
+            >
+              <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: "linear-gradient(135deg, #7B5EA7, #9B6FD4)" }}>
+                <Arkie size="small" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-[16px]">Arkie Session</p>
+                <p className="italic text-muted-foreground text-[13px] mt-0.5">
+                  Gespräch starten →
+                </p>
+              </div>
+              <MessageCircle className="w-5 h-5 text-foreground/60 shrink-0" />
+            </button>
 
             {/* TIMELINE */}
             <div>
