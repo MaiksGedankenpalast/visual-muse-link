@@ -141,7 +141,7 @@ const HomePage = () => {
           <p className="text-sm text-muted-foreground">{capitalize(germanDate())}</p>
           <h1 className="text-[28px] font-bold text-foreground mt-1">Hallo {name} 👋</h1>
         </div>
-        <div className="flex items-center gap-2 mt-2">
+        <div className="flex items-center gap-3 mt-2">
           {user?.email === "pitch@mindark.app" && (
             <button
               onClick={async () => {
@@ -155,6 +155,20 @@ const HomePage = () => {
               <RotateCcw size={12} /> Reset
             </button>
           )}
+          <div className="relative flex flex-col items-center">
+            <button
+              onClick={goMoments}
+              className="opacity-50 active:opacity-100 transition-opacity duration-150"
+              aria-label="Momente"
+            >
+              <ChevronRight size={20} className="text-white" />
+            </button>
+            {showMomentsHint && (
+              <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-[9px] text-muted-foreground/40 whitespace-nowrap">
+                Momente
+              </span>
+            )}
+          </div>
           <button
             onClick={() => navigate("/settings")}
             className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"

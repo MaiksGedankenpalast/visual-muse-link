@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Camera, Image as ImageIcon, X, Trash2, ArrowLeft, Sparkles, Plus } from "lucide-react";
+import { Camera, Image as ImageIcon, X, Trash2, ArrowLeft, Sparkles, Plus, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -232,12 +232,19 @@ const MomentsPage = () => {
 
       {/* HEADER */}
       <div className="flex items-start justify-between mb-5">
-        <div>
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("swiper:go-to", { detail: 0 }))}
+          className="opacity-50 active:opacity-100 transition-opacity duration-150 mt-1"
+          aria-label="Zurück"
+        >
+          <ChevronLeft size={20} className="text-white" />
+        </button>
+        <div className="text-center">
           <h1 className="text-foreground font-bold text-[22px]">Deine Glücksmomente</h1>
           <p className="text-xs text-muted-foreground mt-1">{germanDate()}</p>
         </div>
         <span
-          className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white whitespace-nowrap"
+          className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white whitespace-nowrap mt-1"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C084FC)" }}
         >
           Premium ✨
