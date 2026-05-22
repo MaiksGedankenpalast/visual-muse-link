@@ -13,6 +13,62 @@ import {
 
 const SLIDER_LABELS = ["Glücklich", "Ruhig", "Selbstsicher", "Aufgeregt", "Ausgeruht"];
 
+const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd: () => void }) => {
+  const vals = latestMood
+    ? [latestMood.happy_sad, latestMood.calm_anxious, latestMood.confident_insecure, latestMood.excited_bored, latestMood.rested_tired]
+    : null;
+  return (
+    <div className="space-y-2">
+      <div className="flex items-end gap-2">
+        <div className="flex-1 flex justify-between gap-2">
+          {SLIDER_LABELS.map((label, i) => {
+            const pct = vals ? 100 - vals[i] : 0;
+            return (
+              <div key={label} className="flex flex-col items-center flex-1">
+                <div
+                  className="relative w-full overflow-hidden"
+                  style={{ height: 90, background: "rgba(255,255,255,0.06)", borderRadius: 18 }}
+                >
+                  {vals ? (
+                    <div
+                      className="absolute bottom-0 left-0 right-0 flex items-center justify-center gradient-primary"
+                      style={{ height: `${pct}%`, borderRadius: "0 0 18px 18px" }}
+                    >
+                      <span className="text-white font-bold text-[11px]">{pct}%</span>
+                    </div>
+                  ) : (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center text-white font-medium"
+                      style={{ animation: "capsule-pulse 2.5s ease-in-out infinite" }}
+                    >
+                      ?
+                    </div>
+                  )}
+                </div>
+                <span className="text-[11px] text-muted-foreground mt-1.5 text-center leading-tight">{label}</span>
+              </div>
+            );
+          })}
+        </div>
+        {vals && (
+          <button
+            onClick={onAdd}
+            className="shrink-0 text-[11px] px-2.5 py-1 rounded-full text-white/70 active:scale-95 transition-transform"
+            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
+          >
+            + Neu
+          </button>
+        )}
+      </div>
+      {!vals && (
+        <p className="text-center text-[12px] text-muted-foreground">
+          Wie geht's dir heute? Tippe auf Mood ↑
+        </p>
+      )}
+    </div>
+  );
+};
+
 const germanDate = () => {
   const d = new Date();
   return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
