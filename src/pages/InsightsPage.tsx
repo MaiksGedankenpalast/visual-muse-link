@@ -21,21 +21,10 @@ interface MoodEntry {
   excited_bored: number; rested_tired: number; tags: string[] | null;
 }
 
-interface Completion {
-  date: string; completed: boolean; challenge_id: string;
-  challenges: { category: string | null } | null;
-}
-
 interface JournalSnippet {
   date: string;
   title: string;
   content: string | null;
-}
-
-interface CompletionWithTitle {
-  date: string;
-  completed: boolean;
-  title: string | null;
 }
 
 const InsightsPage = () => {
@@ -45,10 +34,8 @@ const InsightsPage = () => {
 
   const [mode, setMode] = useState<"week" | "month" | "weekly_review" | "four_weekly_review">("week");
   const [moods, setMoods] = useState<MoodEntry[]>([]);
-  const [completions, setCompletions] = useState<Completion[]>([]);
   const [journalCount, setJournalCount] = useState(0);
   const [journalSnippets, setJournalSnippets] = useState<JournalSnippet[]>([]);
-  const [completionTitles, setCompletionTitles] = useState<CompletionWithTitle[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
@@ -70,34 +57,18 @@ const InsightsPage = () => {
     const fourteenAgoStr = fourteenDaysAgo.toISOString().slice(0, 10);
     const [
       { data: moodData },
-      { data: compData },
       { count },
       { data: journalData },
-      { data: compTitleData },
       { data: journal14Data },
-      { data: response14Data },
-      { data: time7Data },
     ] = await Promise.all([
       supabase.from("mood_entries").select("*").eq("user_id", user.id).order("date", { ascending: true }),
-      supabase.from("daily_completions").select("date, completed, challenge_id, challenges(category)").eq("user_id", user.id),
       supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("journal_entries").select("date, title, content").eq("user_id", user.id).gte("date", sevenAgoStr),
-      supabase.from("daily_completions").select("date, completed, challenges(title)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
       supabase.from("journal_entries").select("date, content").eq("user_id", user.id).gte("date", fourteenAgoStr),
-      supabase.from("challenge_responses").select("date, response_text_1, response_text_2, response_text_3").eq("user_id", user.id).gte("date", fourteenAgoStr),
-      supabase.from("daily_completions").select("logged_value, challenges(unit)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
     ]);
     setMoods((moodData ?? []) as MoodEntry[]);
-    setCompletions((compData ?? []) as any[]);
     setJournalCount(count ?? 0);
     setJournalSnippets((journalData ?? []) as JournalSnippet[]);
-    setCompletionTitles(
-      ((compTitleData ?? []) as any[]).map((c) => ({
-        date: c.date,
-        completed: c.completed,
-        title: c.challenges?.title ?? null,
-      })),
-    );
 
     // ── Compute streak-card stats ──
     const countWords = (s: string | null | undefined): number =>
@@ -117,23 +88,7 @@ const InsightsPage = () => {
       if (dateInRange(j.date, sevenStr, tomorrowStr)) wordsThisWeek += w;
       else if (dateInRange(j.date, fourteenAgoStr, sevenStr)) wordsLastWeek += w;
     });
-    ((response14Data ?? []) as any[]).forEach((r) => {
-      const w = countWords(r.response_text_1) + countWords(r.response_text_2) + countWords(r.response_text_3);
-      if (dateInRange(r.date, sevenStr, tomorrowStr)) wordsThisWeek += w;
-      else if (dateInRange(r.date, fourteenAgoStr, sevenStr)) wordsLastWeek += w;
-    });
-
-    // Time: sum logged_value from challenges whose unit is minute/second-like
-    let timeMinutes = 0;
-    ((time7Data ?? []) as any[]).forEach((c) => {
-      const v = Number(c.logged_value);
-      if (!v || isNaN(v)) return;
-      const unit = (c.challenges?.unit ?? "").toLowerCase();
-      if (unit.includes("min")) timeMinutes += v;
-      else if (unit.includes("sek") || unit.includes("sec")) timeMinutes += v / 60;
-      else if (unit.includes("std") || unit.includes("hour") || unit.includes("h")) timeMinutes += v * 60;
-    });
-    timeMinutes = Math.round(timeMinutes);
+    const timeMinutes = 0;
 
     // Focus mood: dominant dimension this week (lower slider value = stronger positive end)
     const weekMoodsArr = ((moodData ?? []) as MoodEntry[]).filter((m) => m.date >= sevenStr && m.date < tomorrowStr);
