@@ -196,33 +196,27 @@ const InsightsPage = () => {
   // ── Pattern insights ──
   const insights = useMemo(() => {
     if (moods.length < 7) return null;
-    const moodMap = new Map(moods.map((m) => [m.date, avg(m)]));
-    const catDays: Record<string, string[]> = {};
-    completions.filter((c) => c.completed && c.challenges?.category).forEach((c) => {
-      const cat = c.challenges!.category!;
-      if (!catDays[cat]) catDays[cat] = [];
-      catDays[cat].push(c.date);
+    // Compare avg mood on journaling-days vs non-journaling-days
+    const journalDates = new Set(journalSnippets.map((j) => j.date));
+    const moodMap = new Map<string, number[]>();
+    moods.forEach((m) => {
+      const arr = moodMap.get(m.date) ?? [];
+      arr.push(avg(m));
+      moodMap.set(m.date, arr);
     });
-
+    const dayAvg: { date: string; v: number }[] = [];
+    moodMap.forEach((arr, date) => dayAvg.push({ date, v: arr.reduce((a, b) => a + b, 0) / arr.length }));
+    const withJ = dayAvg.filter((d) => journalDates.has(d.date)).map((d) => d.v);
+    const withoutJ = dayAvg.filter((d) => !journalDates.has(d.date)).map((d) => d.v);
     const results: { text: string }[] = [];
-    for (const [cat, days] of Object.entries(catDays)) {
-      const uniqueDays = [...new Set(days)];
-      const withAvg = uniqueDays.map((d) => moodMap.get(d)).filter((v) => v !== undefined) as number[];
-      const withoutDays = [...moodMap.entries()].filter(([d]) => !uniqueDays.includes(d));
-      const withoutAvg = withoutDays.map(([, v]) => v);
-
-      if (withAvg.length >= 2 && withoutAvg.length >= 2) {
-        const avgWith = withAvg.reduce((a, b) => a + b, 0) / withAvg.length;
-        const avgWithout = withoutAvg.reduce((a, b) => a + b, 0) / withoutAvg.length;
-        const diff = Math.round(avgWithout - avgWith); // positive = better with challenge
-        if (diff > 10) {
-          const label = cat.charAt(0).toUpperCase() + cat.slice(1);
-          results.push({ text: `An Tagen mit ${label}-Challenges war dein Mood ${diff}% besser 💪` });
-        }
-      }
+    if (withJ.length >= 2 && withoutJ.length >= 2) {
+      const aJ = withJ.reduce((a, b) => a + b, 0) / withJ.length;
+      const aN = withoutJ.reduce((a, b) => a + b, 0) / withoutJ.length;
+      const diff = Math.round(aN - aJ);
+      if (diff > 8) results.push({ text: `An Tagen mit Tagebuch-Eintrag war dein Mood ${diff}% besser 💜` });
     }
     return results.length > 0 ? results : null;
-  }, [moods, completions]);
+  }, [moods, journalSnippets]);
 
   // ── Month data ──
   const monthMoods = useMemo(() =>
@@ -239,30 +233,6 @@ const InsightsPage = () => {
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
     return days;
   }, [firstDayOfWeek, daysInMonth]);
-
-  const monthCompletions = useMemo(() =>
-    completions.filter((c) => {
-      const d = new Date(c.date);
-      return d.getMonth() === viewMonth && d.getFullYear() === viewYear && c.completed;
-    }), [completions, viewMonth, viewYear]);
-
-  const monthChallengeRate = useMemo(() => {
-    const catCounts: Record<string, { done: number; total: number }> = {};
-    const monthComps = completions.filter((c) => {
-      const d = new Date(c.date);
-      return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
-    });
-    monthComps.forEach((c) => {
-      const cat = c.challenges?.category ?? "Andere";
-      if (!catCounts[cat]) catCounts[cat] = { done: 0, total: 0 };
-      catCounts[cat].total++;
-      if (c.completed) catCounts[cat].done++;
-    });
-    return Object.entries(catCounts).map(([cat, { done, total }]) => ({
-      cat: cat.charAt(0).toUpperCase() + cat.slice(1),
-      pct: Math.round((done / total) * 100),
-    }));
-  }, [completions, viewMonth, viewYear]);
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
@@ -303,16 +273,9 @@ const InsightsPage = () => {
         return longest.charAt(0).toUpperCase() + longest.slice(1);
       }
     }
-    // 2) Completed challenges of the day
-    const dayChallenges = completionTitles.filter((c) => c.date === dateStr && c.title);
-    if (dayChallenges.length > 0) {
-      const t = dayChallenges[0].title!;
-      const firstWord = t.split(/\s+/).find((w) => w.length >= 4) ?? t.split(/\s+/)[0];
-      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
-    }
-    // 3) Mood-derived fallback
+    // Mood-derived fallback
     return MOOD_FALLBACK(val);
-  }, [journalSnippets, completionTitles]);
+  }, [journalSnippets]);
 
   // Custom tooltip renderer for the Area chart
   const MoodTooltip = ({ active, payload }: any) => {
