@@ -47,6 +47,58 @@
     --mindark-nav-bg: rgba(20, 15, 35, 0.97);
     --mindark-glow: rgba(180, 127, 232, 0.4);
 
+    /* Rotating glow border for highlighted cards */
+  }
+}
+
+@property --arkie-glow-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@layer utilities {
+  .arkie-glow-border {
+    position: relative;
+    isolation: isolate;
+  }
+  .arkie-glow-border::before {
+    content: "";
+    position: absolute;
+    inset: -1.5px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--arkie-glow-angle),
+      rgba(180, 127, 232, 0) 0deg,
+      rgba(180, 127, 232, 0.15) 60deg,
+      rgba(201, 158, 240, 0.9) 140deg,
+      rgba(255, 255, 255, 0.95) 180deg,
+      rgba(201, 158, 240, 0.9) 220deg,
+      rgba(180, 127, 232, 0.15) 300deg,
+      rgba(180, 127, 232, 0) 360deg
+    );
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+    animation: arkie-glow-spin 8s linear infinite;
+  }
+  @supports not (background: conic-gradient(from 0deg, red, blue)) {
+    .arkie-glow-border::before { display: none; }
+  }
+}
+
+@keyframes arkie-glow-spin {
+  to { --arkie-glow-angle: 360deg; }
+}
+
+@layer base {
+  :root {
+    --noop: 0;
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
