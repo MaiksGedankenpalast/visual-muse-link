@@ -14,84 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      challenge_responses: {
-        Row: {
-          challenge_id: string
-          created_at: string
-          date: string
-          id: string
-          response_text_1: string | null
-          response_text_2: string | null
-          response_text_3: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          challenge_id: string
-          created_at?: string
-          date?: string
-          id?: string
-          response_text_1?: string | null
-          response_text_2?: string | null
-          response_text_3?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          challenge_id?: string
-          created_at?: string
-          date?: string
-          id?: string
-          response_text_1?: string | null
-          response_text_2?: string | null
-          response_text_3?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      challenges: {
-        Row: {
-          category: string | null
-          created_at: string
-          default_target: number | null
-          description: string | null
-          icon: string | null
-          id: string
-          is_preset: boolean
-          is_quantifiable: boolean
-          title: string
-          unit: string | null
-          user_id: string | null
-        }
-        Insert: {
-          category?: string | null
-          created_at?: string
-          default_target?: number | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_preset?: boolean
-          is_quantifiable?: boolean
-          title: string
-          unit?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          category?: string | null
-          created_at?: string
-          default_target?: number | null
-          description?: string | null
-          icon?: string | null
-          id?: string
-          is_preset?: boolean
-          is_quantifiable?: boolean
-          title?: string
-          unit?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       chat_messages: {
         Row: {
           content: string
@@ -150,56 +72,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      daily_completions: {
-        Row: {
-          challenge_id: string
-          completed: boolean
-          created_at: string
-          date: string
-          id: string
-          logged_value: number | null
-          notes: string | null
-          response_data: Json | null
-          status: string
-          target_value: number | null
-          user_id: string
-        }
-        Insert: {
-          challenge_id: string
-          completed?: boolean
-          created_at?: string
-          date?: string
-          id?: string
-          logged_value?: number | null
-          notes?: string | null
-          response_data?: Json | null
-          status?: string
-          target_value?: number | null
-          user_id: string
-        }
-        Update: {
-          challenge_id?: string
-          completed?: boolean
-          created_at?: string
-          date?: string
-          id?: string
-          logged_value?: number | null
-          notes?: string | null
-          response_data?: Json | null
-          status?: string
-          target_value?: number | null
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "daily_completions_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "challenges"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       journal_entries: {
         Row: {
@@ -393,42 +265,6 @@ export type Database = {
         }
         Relationships: []
       }
-      smart_challenges: {
-        Row: {
-          challenge_text: string
-          completed: boolean
-          completed_at: string | null
-          created_at: string
-          date: string
-          id: string
-          prompt_context: string | null
-          rationale: string | null
-          user_id: string
-        }
-        Insert: {
-          challenge_text: string
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          date?: string
-          id?: string
-          prompt_context?: string | null
-          rationale?: string | null
-          user_id: string
-        }
-        Update: {
-          challenge_text?: string
-          completed?: boolean
-          completed_at?: string | null
-          created_at?: string
-          date?: string
-          id?: string
-          prompt_context?: string | null
-          rationale?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       tree_progress: {
         Row: {
           created_at: string
@@ -479,38 +315,6 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
-      }
-      user_challenges: {
-        Row: {
-          added_at: string
-          challenge_id: string
-          id: string
-          is_active: boolean
-          user_id: string
-        }
-        Insert: {
-          added_at?: string
-          challenge_id: string
-          id?: string
-          is_active?: boolean
-          user_id: string
-        }
-        Update: {
-          added_at?: string
-          challenge_id?: string
-          id?: string
-          is_active?: boolean
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_challenges_challenge_id_fkey"
-            columns: ["challenge_id"]
-            isOneToOne: false
-            referencedRelation: "challenges"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       vibe_items: {
         Row: {
