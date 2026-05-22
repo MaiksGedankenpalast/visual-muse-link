@@ -6,7 +6,7 @@ import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "./Arkie";
 import { ChatMessage, sendMessageToArkie } from "@/lib/arkieChat";
-import { fetchArkieContext, MoodCtx, JournalCtx, ChallengeContext, ReviewsCtx } from "@/lib/arkieContext";
+import { fetchArkieContext, MoodCtx, JournalCtx, ReviewsCtx } from "@/lib/arkieContext";
 import {
   ChatSession,
   StoredMessage,
@@ -191,10 +191,9 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       return;
     }
 
-    // Fetch context (mood + journals + challenges) and cross-session memory in parallel
+    // Fetch context (mood + journals + reviews) and cross-session memory in parallel
     let moods: MoodCtx[] = [];
     let journals: JournalCtx[] = [];
-    let challenges: ChallengeContext = { recent: [], active: [] };
     let reviews: ReviewsCtx = { weekly: null, fourWeekly: null };
     let crossMemory: string | null = null;
     try {
@@ -204,7 +203,6 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       ]);
       moods = ctx.moods;
       journals = ctx.journals;
-      challenges = ctx.challenges;
       reviews = ctx.reviews;
       crossMemory = mem;
     } catch {
@@ -245,7 +243,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
             ];
           });
         },
-        { moods, journals, challenges, reviews },
+        { moods, journals, reviews },
         // Combine cross-session memory + diagnosis hint into one optional system message
         ((): { role: "system"; content: string } | null => {
           const parts: string[] = [];

@@ -10,10 +10,6 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arkie-chat`;
 export interface ArkieContextPayload {
   moods?: Array<{ date: string; label: string; score: number; notes?: string }>;
   journals?: Array<{ date: string; excerpt: string }>;
-  challenges?: {
-    recent: Array<{ date: string; title: string; status: string; notes?: string }>;
-    active: string[];
-  };
   reviews?: {
     weekly: { label: string; excerpt: string } | null;
     fourWeekly: { label: string; excerpt: string } | null;
@@ -50,7 +46,6 @@ export async function sendMessageToArkie(
       userName,
       moods: context?.moods ?? [],
       journals: context?.journals ?? [],
-      challenges: context?.challenges ?? { recent: [], active: [] },
       reviews: context?.reviews ?? { weekly: null, fourWeekly: null },
     }),
   });

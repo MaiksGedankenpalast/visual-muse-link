@@ -16,20 +16,6 @@ interface JournalCtx {
   date: string;
   excerpt: string;
 }
-interface ChallengeLogCtx {
-  date: string;
-  title: string;
-  status: string;
-  notes?: string;
-  logged_value?: number | null;
-  target_value?: number | null;
-  unit?: string | null;
-  is_quantifiable?: boolean;
-}
-interface ChallengesCtx {
-  recent: ChallengeLogCtx[];
-  active: string[];
-}
 interface ReviewCtx {
   label: string;
   excerpt: string;
@@ -43,51 +29,6 @@ function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
-function formatChallengeLine(i: ChallengeLogCtx): string {
-  const unit = i.unit ?? "";
-  let body: string;
-  if (i.is_quantifiable === false) {
-    // Binary
-    body = i.status === "completed" ? "Done" : i.status === "missed" ? "Not done" : i.status;
-  } else if (i.logged_value != null && i.target_value != null) {
-    body = `${i.logged_value}${unit ? ` ${unit}` : ""} / ${i.target_value}${unit ? ` ${unit}` : ""}`;
-  } else {
-    body = i.status;
-  }
-  let line = `${i.date}: ${i.title} — ${body} (${i.status})`;
-  if (line.length > 100) line = line.slice(0, 97) + "...";
-  return line;
-}
-
-function buildChallengeSection(c: ChallengesCtx): string {
-  // Group logs by date, newest first
-  let logs = c.recent ?? [];
-  // Keep budget ≤ 400 tokens: trim until small enough
-  const render = (entries: ChallengeLogCtx[]) => {
-    if (entries.length === 0) return "No challenge data recorded yet.";
-    const byDate = new Map<string, ChallengeLogCtx[]>();
-    for (const e of entries) {
-      const arr = byDate.get(e.date) ?? [];
-      arr.push(e);
-      byDate.set(e.date, arr);
-    }
-    const sortedDates = Array.from(byDate.keys()).sort().reverse();
-    return sortedDates
-      .map((d) => byDate.get(d)!.map(formatChallengeLine).join("\n"))
-      .join("\n");
-  };
-
-  let text = render(logs);
-  while (estimateTokens(text) > 400 && logs.length > 0) {
-    // drop the oldest day
-    const dates = Array.from(new Set(logs.map((l) => l.date))).sort();
-    const oldest = dates[0];
-    logs = logs.filter((l) => l.date !== oldest);
-    text = render(logs);
-  }
-  return text;
-}
-
 function buildReviewsSection(r: ReviewsCtx): string {
   const parts: string[] = [];
   if (r.weekly) parts.push(`${r.weekly.label}: ${r.weekly.excerpt}`);
@@ -99,7 +40,6 @@ function buildSystemPrompt(
   userName: string | undefined,
   moods: MoodCtx[],
   journals: JournalCtx[],
-  challenges: ChallengesCtx,
   reviews: ReviewsCtx
 ): string {
   const today = new Date().toISOString().slice(0, 10);
@@ -117,10 +57,6 @@ function buildSystemPrompt(
     ? journals.map((j) => `${j.date}: ${j.excerpt}`).join("\n")
     : "No diary entries recorded yet.";
 
-  const challengeSection = buildChallengeSection(challenges);
-  const activeSection = challenges.active.length
-    ? challenges.active.map((t) => `- ${t}`).join("\n")
-    : "User has no active challenges.";
   const reviewsSection = buildReviewsSection(reviews);
 
   return `Du bist Arkie, ein warmherziger, empathischer mentaler Begleiter. Du bietest unterstützende, nicht-klinische Gespräche und sanfte, personalisierte Reflexionsanstöße. Du erkennst strategisch Muster im Nutzer und weist behutsam darauf hin, damit dieser sich menschlich weiterentwickeln kann. Du stellst kritische Fragen, um neue Perspektiven zu eröffnen.
@@ -163,19 +99,13 @@ ${moodSection}
 **Recent Diary Entries (last ${journals.length} entries):**
 ${journalSection}
 
-**Recent Daily Challenges (last 7 days):**
-${challengeSection}
-
-**Currently Active Challenges:**
-${activeSection}
-
 **Recent Reviews:**
 ${reviewsSection}
 
 Nutze diesen Kontext, um:
-- Muster zu erkennen, die dir auffallen (z. B. eine Serie niedriger Stimmungen, wiederkehrende Themen, verpasste Challenges)
+- Muster zu erkennen, die dir auffallen (z. B. eine Serie niedriger Stimmungen, wiederkehrende Themen)
 - Antworten zu personalisieren, ohne die Daten wörtlich zu wiederholen
-- Bezug auf aktive Challenges und vergangene Rückblicke zu nehmen, wenn es zur Reflexion passt
+- Bezug auf vergangene Rückblicke zu nehmen, wenn es zur Reflexion passt
 - Gezielten, mitfühlenden Rat zu geben, der zu den jüngsten Erlebnissen des Users passt
 - Niemals zu diagnostizieren, zu verschreiben oder professionelle psychische Unterstützung zu ersetzen
 - Wenn die jüngsten Einträge auf ernste Belastung hindeuten, sanft professionelle Hilfe zu empfehlen
@@ -198,7 +128,6 @@ serve(async (req) => {
       userName,
       moods = [],
       journals = [],
-      challenges = { recent: [], active: [] },
       reviews = { weekly: null, fourWeekly: null },
     } = await req.json();
 
@@ -214,7 +143,7 @@ serve(async (req) => {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
 
-    const systemContent = buildSystemPrompt(userName, moods, journals, challenges, reviews);
+    const systemContent = buildSystemPrompt(userName, moods, journals, reviews);
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
