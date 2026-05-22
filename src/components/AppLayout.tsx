@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import BottomNav from "./BottomNav";
 import Arkie from "./Arkie";
@@ -10,6 +10,12 @@ const AppLayout = () => {
   const [chatOpen, setChatOpen] = useState(false);
   const { profileName } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    const handler = () => setChatOpen(true);
+    window.addEventListener("arkie:open-chat", handler);
+    return () => window.removeEventListener("arkie:open-chat", handler);
+  }, []);
 
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto">

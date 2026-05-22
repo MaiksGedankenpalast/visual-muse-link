@@ -621,3 +621,24 @@
 @media (prefers-reduced-motion: reduce) {
   .page-transition { animation: none; }
 }
+
+/* ── Mood capsule empty-state pulse ── */
+@keyframes mood-capsule-pulse-kf {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.02); }
+}
+.mood-capsule-pulse {
+  animation: mood-capsule-pulse-kf 2.4s ease-in-out infinite;
+}
+
+/* ── Timeline row slide-in ── */
+@keyframes timeline-row-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.timeline-row {
+  animation: timeline-row-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mood-capsule-pulse, .timeline-row { animation: none; }
+}

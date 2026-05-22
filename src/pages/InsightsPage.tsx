@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import ReviewsPanel from "@/components/ReviewsPanel";
-import ArkieInsightsRadar from "@/components/ArkieInsightsRadar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { LineChart, Line, XAxis, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
@@ -22,21 +21,10 @@ interface MoodEntry {
   excited_bored: number; rested_tired: number; tags: string[] | null;
 }
 
-interface Completion {
-  date: string; completed: boolean; challenge_id: string;
-  challenges: { category: string | null } | null;
-}
-
 interface JournalSnippet {
   date: string;
   title: string;
   content: string | null;
-}
-
-interface CompletionWithTitle {
-  date: string;
-  completed: boolean;
-  title: string | null;
 }
 
 const InsightsPage = () => {
@@ -46,10 +34,8 @@ const InsightsPage = () => {
 
   const [mode, setMode] = useState<"week" | "month" | "weekly_review" | "four_weekly_review">("week");
   const [moods, setMoods] = useState<MoodEntry[]>([]);
-  const [completions, setCompletions] = useState<Completion[]>([]);
   const [journalCount, setJournalCount] = useState(0);
   const [journalSnippets, setJournalSnippets] = useState<JournalSnippet[]>([]);
-  const [completionTitles, setCompletionTitles] = useState<CompletionWithTitle[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
@@ -71,34 +57,18 @@ const InsightsPage = () => {
     const fourteenAgoStr = fourteenDaysAgo.toISOString().slice(0, 10);
     const [
       { data: moodData },
-      { data: compData },
       { count },
       { data: journalData },
-      { data: compTitleData },
       { data: journal14Data },
-      { data: response14Data },
-      { data: time7Data },
     ] = await Promise.all([
       supabase.from("mood_entries").select("*").eq("user_id", user.id).order("date", { ascending: true }),
-      supabase.from("daily_completions").select("date, completed, challenge_id, challenges(category)").eq("user_id", user.id),
       supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", user.id),
       supabase.from("journal_entries").select("date, title, content").eq("user_id", user.id).gte("date", sevenAgoStr),
-      supabase.from("daily_completions").select("date, completed, challenges(title)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
       supabase.from("journal_entries").select("date, content").eq("user_id", user.id).gte("date", fourteenAgoStr),
-      supabase.from("challenge_responses").select("date, response_text_1, response_text_2, response_text_3").eq("user_id", user.id).gte("date", fourteenAgoStr),
-      supabase.from("daily_completions").select("logged_value, challenges(unit)").eq("user_id", user.id).gte("date", sevenAgoStr).eq("completed", true),
     ]);
     setMoods((moodData ?? []) as MoodEntry[]);
-    setCompletions((compData ?? []) as any[]);
     setJournalCount(count ?? 0);
     setJournalSnippets((journalData ?? []) as JournalSnippet[]);
-    setCompletionTitles(
-      ((compTitleData ?? []) as any[]).map((c) => ({
-        date: c.date,
-        completed: c.completed,
-        title: c.challenges?.title ?? null,
-      })),
-    );
 
     // ── Compute streak-card stats ──
     const countWords = (s: string | null | undefined): number =>
@@ -118,23 +88,7 @@ const InsightsPage = () => {
       if (dateInRange(j.date, sevenStr, tomorrowStr)) wordsThisWeek += w;
       else if (dateInRange(j.date, fourteenAgoStr, sevenStr)) wordsLastWeek += w;
     });
-    ((response14Data ?? []) as any[]).forEach((r) => {
-      const w = countWords(r.response_text_1) + countWords(r.response_text_2) + countWords(r.response_text_3);
-      if (dateInRange(r.date, sevenStr, tomorrowStr)) wordsThisWeek += w;
-      else if (dateInRange(r.date, fourteenAgoStr, sevenStr)) wordsLastWeek += w;
-    });
-
-    // Time: sum logged_value from challenges whose unit is minute/second-like
-    let timeMinutes = 0;
-    ((time7Data ?? []) as any[]).forEach((c) => {
-      const v = Number(c.logged_value);
-      if (!v || isNaN(v)) return;
-      const unit = (c.challenges?.unit ?? "").toLowerCase();
-      if (unit.includes("min")) timeMinutes += v;
-      else if (unit.includes("sek") || unit.includes("sec")) timeMinutes += v / 60;
-      else if (unit.includes("std") || unit.includes("hour") || unit.includes("h")) timeMinutes += v * 60;
-    });
-    timeMinutes = Math.round(timeMinutes);
+    const timeMinutes = 0;
 
     // Focus mood: dominant dimension this week (lower slider value = stronger positive end)
     const weekMoodsArr = ((moodData ?? []) as MoodEntry[]).filter((m) => m.date >= sevenStr && m.date < tomorrowStr);
@@ -177,16 +131,29 @@ const InsightsPage = () => {
     return days;
   }, []);
 
+  // Build per-day mood average (multiple entries per day → AVG)
+  const dayAvgMap = useMemo(() => {
+    const map = new Map<string, { sum: number; n: number }>();
+    moods.forEach((m) => {
+      const e = map.get(m.date) ?? { sum: 0, n: 0 };
+      e.sum += avg(m); e.n += 1;
+      map.set(m.date, e);
+    });
+    const out = new Map<string, number>();
+    map.forEach((v, k) => out.set(k, v.sum / v.n));
+    return out;
+  }, [moods]);
+
   const weekChartData = useMemo(() => last7Days.map((dateStr) => {
-    const m = moods.find((x) => x.date === dateStr);
+    const v = dayAvgMap.get(dateStr);
     const d = new Date(dateStr);
     return {
       label: WEEKDAYS_SHORT[d.getDay() === 0 ? 6 : d.getDay() - 1],
-      value: m ? Math.round(100 - avg(m)) : null, // invert: higher = better
+      value: v !== undefined ? Math.round(100 - v) : null,
       date: dateStr,
       isToday: dateStr === todayStr,
     };
-  }), [last7Days, moods, todayStr]);
+  }), [last7Days, dayAvgMap, todayStr]);
 
   const weekMoods = useMemo(() => moods.filter((m) => last7Days.includes(m.date)), [moods, last7Days]);
 
@@ -242,33 +209,27 @@ const InsightsPage = () => {
   // ── Pattern insights ──
   const insights = useMemo(() => {
     if (moods.length < 7) return null;
-    const moodMap = new Map(moods.map((m) => [m.date, avg(m)]));
-    const catDays: Record<string, string[]> = {};
-    completions.filter((c) => c.completed && c.challenges?.category).forEach((c) => {
-      const cat = c.challenges!.category!;
-      if (!catDays[cat]) catDays[cat] = [];
-      catDays[cat].push(c.date);
+    // Compare avg mood on journaling-days vs non-journaling-days
+    const journalDates = new Set(journalSnippets.map((j) => j.date));
+    const moodMap = new Map<string, number[]>();
+    moods.forEach((m) => {
+      const arr = moodMap.get(m.date) ?? [];
+      arr.push(avg(m));
+      moodMap.set(m.date, arr);
     });
-
+    const dayAvg: { date: string; v: number }[] = [];
+    moodMap.forEach((arr, date) => dayAvg.push({ date, v: arr.reduce((a, b) => a + b, 0) / arr.length }));
+    const withJ = dayAvg.filter((d) => journalDates.has(d.date)).map((d) => d.v);
+    const withoutJ = dayAvg.filter((d) => !journalDates.has(d.date)).map((d) => d.v);
     const results: { text: string }[] = [];
-    for (const [cat, days] of Object.entries(catDays)) {
-      const uniqueDays = [...new Set(days)];
-      const withAvg = uniqueDays.map((d) => moodMap.get(d)).filter((v) => v !== undefined) as number[];
-      const withoutDays = [...moodMap.entries()].filter(([d]) => !uniqueDays.includes(d));
-      const withoutAvg = withoutDays.map(([, v]) => v);
-
-      if (withAvg.length >= 2 && withoutAvg.length >= 2) {
-        const avgWith = withAvg.reduce((a, b) => a + b, 0) / withAvg.length;
-        const avgWithout = withoutAvg.reduce((a, b) => a + b, 0) / withoutAvg.length;
-        const diff = Math.round(avgWithout - avgWith); // positive = better with challenge
-        if (diff > 10) {
-          const label = cat.charAt(0).toUpperCase() + cat.slice(1);
-          results.push({ text: `An Tagen mit ${label}-Challenges war dein Mood ${diff}% besser 💪` });
-        }
-      }
+    if (withJ.length >= 2 && withoutJ.length >= 2) {
+      const aJ = withJ.reduce((a, b) => a + b, 0) / withJ.length;
+      const aN = withoutJ.reduce((a, b) => a + b, 0) / withoutJ.length;
+      const diff = Math.round(aN - aJ);
+      if (diff > 8) results.push({ text: `An Tagen mit Tagebuch-Eintrag war dein Mood ${diff}% besser 💜` });
     }
     return results.length > 0 ? results : null;
-  }, [moods, completions]);
+  }, [moods, journalSnippets]);
 
   // ── Month data ──
   const monthMoods = useMemo(() =>
@@ -285,30 +246,6 @@ const InsightsPage = () => {
     for (let i = 1; i <= daysInMonth; i++) days.push(i);
     return days;
   }, [firstDayOfWeek, daysInMonth]);
-
-  const monthCompletions = useMemo(() =>
-    completions.filter((c) => {
-      const d = new Date(c.date);
-      return d.getMonth() === viewMonth && d.getFullYear() === viewYear && c.completed;
-    }), [completions, viewMonth, viewYear]);
-
-  const monthChallengeRate = useMemo(() => {
-    const catCounts: Record<string, { done: number; total: number }> = {};
-    const monthComps = completions.filter((c) => {
-      const d = new Date(c.date);
-      return d.getMonth() === viewMonth && d.getFullYear() === viewYear;
-    });
-    monthComps.forEach((c) => {
-      const cat = c.challenges?.category ?? "Andere";
-      if (!catCounts[cat]) catCounts[cat] = { done: 0, total: 0 };
-      catCounts[cat].total++;
-      if (c.completed) catCounts[cat].done++;
-    });
-    return Object.entries(catCounts).map(([cat, { done, total }]) => ({
-      cat: cat.charAt(0).toUpperCase() + cat.slice(1),
-      pct: Math.round((done / total) * 100),
-    }));
-  }, [completions, viewMonth, viewYear]);
 
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
@@ -349,16 +286,9 @@ const InsightsPage = () => {
         return longest.charAt(0).toUpperCase() + longest.slice(1);
       }
     }
-    // 2) Completed challenges of the day
-    const dayChallenges = completionTitles.filter((c) => c.date === dateStr && c.title);
-    if (dayChallenges.length > 0) {
-      const t = dayChallenges[0].title!;
-      const firstWord = t.split(/\s+/).find((w) => w.length >= 4) ?? t.split(/\s+/)[0];
-      return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
-    }
-    // 3) Mood-derived fallback
+    // Mood-derived fallback
     return MOOD_FALLBACK(val);
-  }, [journalSnippets, completionTitles]);
+  }, [journalSnippets]);
 
   // Custom tooltip renderer for the Area chart
   const MoodTooltip = ({ active, payload }: any) => {
@@ -605,13 +535,6 @@ const InsightsPage = () => {
             </div>
           )}
 
-          {/* ARKIE'S INSIGHTS RADAR */}
-          <ArkieInsightsRadar
-            moods={moods}
-            completions={completions}
-            userId={user?.id}
-          />
-
           {/* PATTERN INSIGHTS */}
           <div className="mb-4">
             <p className="font-bold text-foreground text-sm mb-3">Arkie hat etwas bemerkt 🔮</p>
@@ -726,35 +649,11 @@ const InsightsPage = () => {
             })()}
           </div>
 
-          {/* CHALLENGE COMPLETION RATE */}
-          {monthChallengeRate.length > 0 && (
-            <div className="glass-card p-4 mb-4">
-              <p className="font-bold text-foreground text-sm mb-3">Deine Challenges diesen Monat</p>
-              <div className="space-y-3">
-                {monthChallengeRate.map(({ cat, pct }) => (
-                  <div key={cat}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-foreground">{cat}</span>
-                      <span className="text-muted-foreground">{pct}%</span>
-                    </div>
-                    <div className="w-full h-[6px] rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
-                      <div className="h-full rounded-full gradient-primary transition-all" style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* MONTH STATS */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
+          <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">📝 {journalCount}</p>
               <p className="text-[11px] text-muted-foreground">Einträge</p>
-            </div>
-            <div className="glass-card p-3 text-center">
-              <p className="text-lg font-bold text-foreground">✅ {monthCompletions.length}</p>
-              <p className="text-[11px] text-muted-foreground">Challenges</p>
             </div>
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">🔥 {streak}</p>

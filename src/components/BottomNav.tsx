@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, BarChart3, Target, Plus, X } from "lucide-react";
+import { Home, BookOpen, BarChart3, FlaskConical, Plus, X } from "lucide-react";
 import {
   Drawer,
   DrawerContent,
@@ -15,7 +15,7 @@ const navItems = [
   { icon: BookOpen, label: "Journal", path: "/journal" },
   { icon: null, label: "", path: "" }, // center placeholder
   { icon: BarChart3, label: "Insights", path: "/insights" },
-  { icon: Target, label: "Goals", path: "/goals" },
+  { icon: FlaskConical, label: "Experiment", path: "/experiment" },
 ];
 
 const BottomNav = () => {
@@ -30,8 +30,6 @@ const BottomNav = () => {
   });
 
   const quickActions = [
-    { label: "🎯 Vibe hinzufügen", path: "/vibe" },
-    { label: "⚡ Challenge hinzufügen", path: "/challenges" },
     { label: "📝 Tagebuch schreiben", path: "/journal/new" },
     { label: "💜 Mood eintragen", path: "/moodtracker" },
   ];
