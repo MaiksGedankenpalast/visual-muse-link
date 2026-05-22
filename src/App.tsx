@@ -17,16 +17,13 @@ import OnboardingGoals from "@/pages/onboarding/OnboardingGoals";
 import OnboardingReady from "@/pages/onboarding/OnboardingReady";
 import HomePage from "@/pages/HomePage";
 import HomeSwiper from "@/pages/HomeSwiper";
-import VibePage from "@/pages/VibePage";
-import ChallengesPage from "@/pages/ChallengesPage";
-import ChallengeDetailPage from "@/pages/ChallengeDetailPage";
 import JournalPage from "@/pages/JournalPage";
 import JournalNewPage from "@/pages/JournalNewPage";
 import JournalDetailPage from "@/pages/JournalDetailPage";
 import JournalDayPage from "@/pages/JournalDayPage";
 import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
-import GoalsPage from "@/pages/GoalsPage";
+import ExperimentPage from "@/pages/ExperimentPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SanctuaryPage from "@/pages/SanctuaryPage";
 import NotFound from "@/pages/NotFound";
@@ -58,9 +55,6 @@ const App = () => (
           <Route element={<AuthGuard />}>
             <Route element={<AppLayout />}>
               <Route path="/home" element={<HomeSwiper />} />
-              <Route path="/vibe" element={<VibePage />} />
-              <Route path="/challenges" element={<ChallengesPage />} />
-              <Route path="/challenges/:id" element={<ChallengeDetailPage />} />
               <Route path="/journal" element={<JournalPage />} />
               <Route path="/journal/new" element={<JournalNewPage />} />
               <Route path="/journal/day/:date" element={<JournalDayPage />} />
@@ -68,7 +62,7 @@ const App = () => (
               <Route path="/moodtracker" element={<MoodTrackerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
               <Route path="/sanctuary" element={<SanctuaryPage />} />
-              <Route path="/goals" element={<GoalsPage />} />
+              <Route path="/experiment" element={<ExperimentPage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
