@@ -23,6 +23,15 @@ const HomeSwiper = () => {
 
   const goTo = (i: number) => setIndex(Math.max(0, Math.min(1, i)));
 
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (typeof detail === "number") goTo(detail);
+    };
+    window.addEventListener("swiper:go-to", handler);
+    return () => window.removeEventListener("swiper:go-to", handler);
+  }, []);
+
   return (
     <div ref={containerRef} className="relative overflow-hidden">
       {/* Page indicator */}
