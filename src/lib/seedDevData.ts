@@ -1,23 +1,19 @@
 import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * Seeds 14 days of mood entries for the dev user (dev@mindark.app).
+ * Skips if any data already exists.
+ */
 export async function seedDevData(userId: string) {
-  // Check ALL tables — only seed if user has zero data
-  const [{ count: moodCount }, { count: journalCount }, { count: completionCount }, { count: vibeCount }] =
-    await Promise.all([
-      supabase.from("mood_entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("daily_completions").select("id", { count: "exact", head: true }).eq("user_id", userId),
-      supabase.from("vibe_items").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    ]);
-  if (
-    (moodCount && moodCount > 0) ||
-    (journalCount && journalCount > 0) ||
-    (completionCount && completionCount > 0) ||
-    (vibeCount && vibeCount > 0)
-  )
+  const [{ count: moodCount }, { count: journalCount }, { count: vibeCount }] = await Promise.all([
+    supabase.from("mood_entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("journal_entries").select("id", { count: "exact", head: true }).eq("user_id", userId),
+    supabase.from("vibe_items").select("id", { count: "exact", head: true }).eq("user_id", userId),
+  ]);
+  if ((moodCount && moodCount > 0) || (journalCount && journalCount > 0) || (vibeCount && vibeCount > 0)) {
     return;
+  }
 
-  // Update profile
   await supabase
     .from("profiles")
     .update({
@@ -28,17 +24,14 @@ export async function seedDevData(userId: string) {
     .eq("id", userId);
 
   const today = new Date();
-
-  // 14 days of mood entries
   const moodEntries = [];
   for (let i = 0; i < 14; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() - i);
     const dateStr = d.toISOString().slice(0, 10);
-    const base = 30 + Math.floor(Math.random() * 40); // 30-70 range
-    const tags = [["Dankbar", "Ruhig"], ["Motiviert"], ["Erschöpft", "Gestresst"], ["Glücklich"], ["Ruhig", "Dankbar"]][
-      i % 5
-    ];
+    const base = 30 + Math.floor(Math.random() * 40);
+    const tagsPool = [["Dankbar", "Ruhig"], ["Motiviert"], ["Erschöpft", "Gestresst"], ["Glücklich"], ["Ruhig", "Dankbar"]];
+    const tags = tagsPool[i % tagsPool.length];
     moodEntries.push({
       user_id: userId,
       date: dateStr,
@@ -51,54 +44,4 @@ export async function seedDevData(userId: string) {
     });
   }
   await supabase.from("mood_entries").insert(moodEntries);
-
-  // 8 journal entries
-  const journals = [];
-  const journalEntries = journals.map((j) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() - j.daysAgo);
-    const moodEntry = moodEntries.find((m) => m.date === d.toISOString().slice(0, 10));
-    const moodSnapshot = moodEntry
-      ? Math.round(
-          (moodEntry.happy_sad +
-            moodEntry.calm_anxious +
-            moodEntry.confident_insecure +
-            moodEntry.excited_bored +
-            moodEntry.rested_tired) /
-            5,
-        )
-      : null;
-    return {
-      user_id: userId,
-      title: j.title,
-      content: j.content,
-      category: j.category,
-      date: d.toISOString().slice(0, 10),
-      mood_snapshot: moodSnapshot,
-    };
-  });
-  await supabase.from("journal_entries").insert(journalEntries);
-
-  // Get preset challenges and add completions
-  const { data: challenges } = await supabase.from("challenges").select("id, category").eq("is_preset", true).limit(10);
-  if (challenges && challenges.length > 0) {
-    const completionEntries = [];
-    for (let i = 0; i < 14; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() - i);
-      const dateStr = d.toISOString().slice(0, 10);
-      // 1-3 challenges per day
-      const numChallenges = 1 + Math.floor(Math.random() * 3);
-      for (let j = 0; j < numChallenges && j < challenges.length; j++) {
-        completionEntries.push({
-          user_id: userId,
-          challenge_id: challenges[j].id,
-          date: dateStr,
-          completed: Math.random() > 0.2, // 80% completed
-        });
-      }
-    }
-    // limit to ~20
-    await supabase.from("daily_completions").insert(completionEntries.slice(0, 20));
-  }
 }

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowLeft, Pencil, Trash2, X, Mail, ChefHat } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "@/components/Arkie";
@@ -33,13 +33,6 @@ interface MoodData {
   tags: string[] | null;
 }
 
-interface DayChallenge {
-  challenge_id: string;
-  title: string;
-  icon: string | null;
-  status: "completed" | "partial" | "missed" | "pending";
-}
-
 interface DayMoment {
   id: string;
   photo_url: string;
@@ -61,11 +54,6 @@ const JournalDayPage = () => {
   const [editTitle, setEditTitle] = useState("");
   const [editContent, setEditContent] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [dayChallenges, setDayChallenges] = useState<DayChallenge[]>([]);
-  const [smartChallenge, setSmartChallenge] = useState<{
-    text: string;
-    completed: boolean;
-  } | null>(null);
   const [dayMoment, setDayMoment] = useState<DayMoment | null>(null);
 
   useEffect(() => {
@@ -74,25 +62,12 @@ const JournalDayPage = () => {
       const [
         { data: entryData },
         { data: moodData },
-        { data: logData },
-        { data: smartData },
         { data: momentData },
       ] = await Promise.all([
         supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }),
         supabase.from("mood_entries")
           .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
-          .eq("user_id", user.id).eq("date", date).maybeSingle(),
-        supabase
-          .from("daily_completions")
-          .select("challenge_id, status, challenges!inner(title, icon)")
-          .eq("user_id", user.id)
-          .eq("date", date),
-        supabase
-          .from("smart_challenges")
-          .select("challenge_text, completed")
-          .eq("user_id", user.id)
-          .eq("date", date)
-          .maybeSingle(),
+          .eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase
           .from("moments")
           .select("id, photo_url, caption, prompt_used")
@@ -102,29 +77,8 @@ const JournalDayPage = () => {
           .limit(1)
           .maybeSingle(),
       ]);
-      // Sort: regular entries first (newest → oldest), then Challenge-mirrors at the end (chronologically).
-      const all = (entryData ?? []) as JournalEntry[];
-      const isChallengeMirror = (e: JournalEntry) =>
-        e.category === "Challenge-Brief" || e.category === "Challenge-Rezept";
-      const regular = all.filter((e) => !isChallengeMirror(e));
-      const challengeMirrors = all
-        .filter(isChallengeMirror)
-        .sort((a, b) => a.created_at.localeCompare(b.created_at));
-      setEntries([...regular, ...challengeMirrors]);
+      setEntries((entryData ?? []) as JournalEntry[]);
       if (moodData) setMood(moodData as MoodData);
-      const dc: DayChallenge[] = (logData ?? []).map((l: any) => ({
-        challenge_id: l.challenge_id,
-        title: l.challenges?.title ?? "Challenge",
-        icon: l.challenges?.icon ?? null,
-        status: l.status,
-      }));
-      setDayChallenges(dc);
-      if (smartData) {
-        setSmartChallenge({
-          text: (smartData as any).challenge_text,
-          completed: (smartData as any).completed,
-        });
-      }
       if (momentData) {
         const m = momentData as any;
         const path = (m.photo_url as string).startsWith(`${user.id}/`)
