@@ -6,6 +6,7 @@ import Arkie from "@/components/Arkie";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { awardPoints } from "@/lib/treeProgress";
+import { haptic } from "@/lib/haptics";
 
 const SLIDERS = [
   { key: "happy_sad", left: "Glücklich", right: "Traurig" },
@@ -60,28 +61,8 @@ const MoodTrackerPage = () => {
   const [customTag, setCustomTag] = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const [journalText, setJournalText] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [existingEntry, setExistingEntry] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase.from("mood_entries")
-        .select("*").eq("user_id", user.id).eq("date", todayStr()).maybeSingle();
-      if (data) {
-        setExistingEntry(true);
-        setValues({
-          happy_sad: data.happy_sad, calm_anxious: data.calm_anxious,
-          confident_insecure: data.confident_insecure, excited_bored: data.excited_bored,
-          rested_tired: data.rested_tired,
-        });
-        setSelectedTags((data.tags as string[]) ?? []);
-      }
-    })();
-  }, [user]);
 
   const avg = useMemo(() => {
     return Object.values(values).reduce((a, b) => a + b, 0) / 5;
@@ -108,6 +89,7 @@ const MoodTrackerPage = () => {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
+    haptic("success");
 
     const moodData = {
       user_id: user.id,
@@ -116,12 +98,8 @@ const MoodTrackerPage = () => {
       tags: selectedTags.length > 0 ? selectedTags : null,
     };
 
-    if (existingEntry) {
-      await supabase.from("mood_entries").update(moodData).eq("user_id", user.id).eq("date", todayStr());
-    } else {
-      await supabase.from("mood_entries").insert(moodData);
-      awardPoints(user.id, 15, "mood");
-    }
+    await supabase.from("mood_entries").insert(moodData);
+    awardPoints(user.id, 15, "mood");
 
     if (journalText.trim()) {
       await supabase.from("journal_entries").insert({
@@ -150,7 +128,7 @@ const MoodTrackerPage = () => {
     }, 1500);
   };
 
-  const showSliders = !existingEntry || editMode;
+  const showSliders = true;
 
   return (
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
@@ -162,13 +140,6 @@ const MoodTrackerPage = () => {
         <p className="text-sm text-muted-foreground">{germanDateFull()}</p>
         <div className="w-6" />
       </div>
-
-      {existingEntry && !editMode && (
-        <button onClick={() => setEditMode(true)}
-          className="text-xs text-muted-foreground mb-3 block mx-auto">
-          Heute bereits eingetragen — bearbeiten?
-        </button>
-      )}
 
       {/* ARKIE */}
       <div className="flex flex-col items-center mb-6">
@@ -186,28 +157,6 @@ const MoodTrackerPage = () => {
           </p>
         )}
       </div>
-
-      {/* CAPSULE VISUALIZATION (read-only) */}
-      {existingEntry && !editMode && (
-        <div className="flex justify-between gap-2 mb-8 px-2">
-          {SLIDERS.map((s) => {
-            const val = values[s.key];
-            const pct = 100 - val; // invert: low value = positive = high fill
-            return (
-              <div key={s.key} className="flex flex-col items-center flex-1">
-                <div className="relative w-full rounded-full overflow-hidden"
-                  style={{ height: 130, background: "rgba(255,255,255,0.08)", borderRadius: 26 }}>
-                  <div className="absolute bottom-0 left-0 right-0 gradient-primary flex items-center justify-center"
-                    style={{ height: `${pct}%`, borderRadius: "0 0 26px 26px" }}>
-                    <span className="text-foreground font-bold text-xs">{pct}%</span>
-                  </div>
-                </div>
-                <span className="text-[11px] text-muted-foreground mt-2 text-center leading-tight">{s.left}</span>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* SLIDERS */}
       {showSliders && (
