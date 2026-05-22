@@ -131,16 +131,29 @@ const InsightsPage = () => {
     return days;
   }, []);
 
+  // Build per-day mood average (multiple entries per day → AVG)
+  const dayAvgMap = useMemo(() => {
+    const map = new Map<string, { sum: number; n: number }>();
+    moods.forEach((m) => {
+      const e = map.get(m.date) ?? { sum: 0, n: 0 };
+      e.sum += avg(m); e.n += 1;
+      map.set(m.date, e);
+    });
+    const out = new Map<string, number>();
+    map.forEach((v, k) => out.set(k, v.sum / v.n));
+    return out;
+  }, [moods]);
+
   const weekChartData = useMemo(() => last7Days.map((dateStr) => {
-    const m = moods.find((x) => x.date === dateStr);
+    const v = dayAvgMap.get(dateStr);
     const d = new Date(dateStr);
     return {
       label: WEEKDAYS_SHORT[d.getDay() === 0 ? 6 : d.getDay() - 1],
-      value: m ? Math.round(100 - avg(m)) : null, // invert: higher = better
+      value: v !== undefined ? Math.round(100 - v) : null,
       date: dateStr,
       isToday: dateStr === todayStr,
     };
-  }), [last7Days, moods, todayStr]);
+  }), [last7Days, dayAvgMap, todayStr]);
 
   const weekMoods = useMemo(() => moods.filter((m) => last7Days.includes(m.date)), [moods, last7Days]);
 
