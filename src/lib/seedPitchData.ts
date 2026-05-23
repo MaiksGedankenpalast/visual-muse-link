@@ -19,127 +19,42 @@ export async function seedPitchData(userId: string) {
     .eq("id", userId);
 
   // ── 14 days of mood entries with POSITIVE PROGRESSION ──
-  // Day 0 = today, Day 13 = oldest
-  // Start negative/mixed → end positive
-  const moodProgression = [
-    // Day 13 (oldest) - stressed, overwhelmed
-    {
-      happy_sad: 30,
-      calm_anxious: 25,
-      confident_insecure: 35,
-      excited_bored: 40,
-      rested_tired: 25,
-      tags: ["Gestresst", "Erschöpft"],
-    },
-    // Day 12
-    {
-      happy_sad: 28,
-      calm_anxious: 30,
-      confident_insecure: 30,
-      excited_bored: 35,
-      rested_tired: 30,
-      tags: ["Überfordert", "Nachdenklich"],
-    },
-    // Day 11
-    {
-      happy_sad: 35,
-      calm_anxious: 32,
-      confident_insecure: 38,
-      excited_bored: 42,
-      rested_tired: 35,
-      tags: ["Gestresst"],
-    },
-    // Day 10 - first small improvement
-    {
-      happy_sad: 40,
-      calm_anxious: 38,
-      confident_insecure: 42,
-      excited_bored: 45,
-      rested_tired: 40,
-      tags: ["Nachdenklich", "Hoffnungsvoll"],
-    },
-    // Day 9
-    { happy_sad: 42, calm_anxious: 45, confident_insecure: 40, excited_bored: 48, rested_tired: 42, tags: ["Ruhig"] },
-    // Day 8
-    { happy_sad: 48, calm_anxious: 50, confident_insecure: 45, excited_bored: 50, rested_tired: 48, tags: ["Dankbar"] },
-    // Day 7 - one week mark, noticeable improvement
-    {
-      happy_sad: 52,
-      calm_anxious: 55,
-      confident_insecure: 50,
-      excited_bored: 55,
-      rested_tired: 50,
-      tags: ["Motiviert", "Dankbar"],
-    },
-    // Day 6
-    {
-      happy_sad: 55,
-      calm_anxious: 52,
-      confident_insecure: 55,
-      excited_bored: 58,
-      rested_tired: 55,
-      tags: ["Ruhig", "Zufrieden"],
-    },
-    // Day 5
-    {
-      happy_sad: 60,
-      calm_anxious: 58,
-      confident_insecure: 60,
-      excited_bored: 62,
-      rested_tired: 58,
-      tags: ["Glücklich"],
-    },
-    // Day 4
-    {
-      happy_sad: 58,
-      calm_anxious: 62,
-      confident_insecure: 58,
-      excited_bored: 55,
-      rested_tired: 60,
-      tags: ["Nachdenklich", "Ruhig"],
-    },
-    // Day 3
-    {
-      happy_sad: 65,
-      calm_anxious: 65,
-      confident_insecure: 62,
-      excited_bored: 68,
-      rested_tired: 62,
-      tags: ["Motiviert", "Selbstsicher"],
-    },
-    // Day 2
-    {
-      happy_sad: 68,
-      calm_anxious: 70,
-      confident_insecure: 65,
-      excited_bored: 70,
-      rested_tired: 68,
-      tags: ["Dankbar", "Glücklich"],
-    },
-    // Day 1 (yesterday)
-    {
-      happy_sad: 72,
-      calm_anxious: 68,
-      confident_insecure: 70,
-      excited_bored: 72,
-      rested_tired: 70,
-      tags: ["Zufrieden", "Motiviert"],
-    },
-    // Day 0 (today)
-    {
-      happy_sad: 75,
-      calm_anxious: 72,
-      confident_insecure: 73,
-      excited_bored: 75,
-      rested_tired: 72,
-      tags: ["Glücklich", "Dankbar", "Selbstsicher"],
-    },
+  // Day 0 = today (most recent), Day 13 = oldest
+  // New schema: 0 = bad, 100 = good for stimmung/energie/stress
+  const moodProgression: Array<{
+    stimmung: number;
+    energie: number;
+    stress: number;
+    tags: string[];
+  }> = [
+    { stimmung: 30, energie: 28, stress: 25, tags: ["Gestresst", "Erschöpft"] },
+    { stimmung: 32, energie: 30, stress: 28, tags: ["Überfordert", "Nachdenklich"] },
+    { stimmung: 38, energie: 35, stress: 32, tags: ["Gestresst"] },
+    { stimmung: 42, energie: 40, stress: 40, tags: ["Nachdenklich", "Hoffnungsvoll"] },
+    { stimmung: 45, energie: 45, stress: 48, tags: ["Ruhig"] },
+    { stimmung: 52, energie: 50, stress: 52, tags: ["Dankbar"] },
+    { stimmung: 58, energie: 55, stress: 55, tags: ["Motiviert", "Dankbar"] },
+    { stimmung: 60, energie: 58, stress: 58, tags: ["Ruhig", "Zufrieden"] },
+    { stimmung: 65, energie: 62, stress: 60, tags: ["Glücklich"] },
+    { stimmung: 63, energie: 60, stress: 65, tags: ["Nachdenklich", "Ruhig"] },
+    { stimmung: 70, energie: 68, stress: 65, tags: ["Motiviert", "Selbstsicher"] },
+    { stimmung: 72, energie: 70, stress: 70, tags: ["Dankbar", "Glücklich"] },
+    { stimmung: 75, energie: 72, stress: 72, tags: ["Zufrieden", "Motiviert"] },
+    { stimmung: 78, energie: 75, stress: 75, tags: ["Glücklich", "Dankbar", "Selbstsicher"] },
   ];
 
   const moodEntries = moodProgression.map((m, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (13 - i));
-    return { user_id: userId, date: d.toISOString().slice(0, 10), ...m };
+    return {
+      user_id: userId,
+      date: d.toISOString().slice(0, 10),
+      eingabe_typ: "schnell" as const,
+      stimmung: m.stimmung,
+      energie: m.energie,
+      stress: m.stress,
+      tags: m.tags,
+    };
   });
   await supabase.from("mood_entries").insert(moodEntries);
 
