@@ -119,7 +119,7 @@ export function nextDueDate(firstSeenAt: string, type: ReviewType, today: string
 
 // ─────────────────────── Stats snapshot builder ───────────────────────
 
-const SLIDERS = ["happy_sad", "calm_anxious", "confident_insecure", "excited_bored", "rested_tired"] as const;
+const CORE = ["stimmung", "energie", "stress"] as const;
 
 export async function buildStatsSnapshot(
   userId: string,
@@ -129,7 +129,7 @@ export async function buildStatsSnapshot(
   const [moodRes, journalRes, sessionsRes] = await Promise.all([
     supabase
       .from("mood_entries")
-      .select("date, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired")
+      .select("date, stimmung, energie, stress")
       .eq("user_id", userId)
       .gte("date", periodStart)
       .lte("date", periodEnd)
@@ -149,11 +149,11 @@ export async function buildStatsSnapshot(
       .lte("created_at", `${periodEnd}T23:59:59Z`),
   ]);
 
-  // Mood: score is invert of slider avg to align with "higher = better"
+  // Mood: new schema — higher = better directly
   const moodRows = (moodRes.data ?? []) as any[];
   const scored = moodRows.map((m) => {
-    const avg = SLIDERS.reduce((s, k) => s + (m[k] ?? 50), 0) / SLIDERS.length;
-    return { date: m.date as string, score: Math.round(100 - avg) };
+    const avg = CORE.reduce((s, k) => s + (m[k] ?? 50), 0) / CORE.length;
+    return { date: m.date as string, score: Math.round(avg) };
   });
   let avg_score: number | null = null;
   let highest: { date: string; score: number } | null = null;

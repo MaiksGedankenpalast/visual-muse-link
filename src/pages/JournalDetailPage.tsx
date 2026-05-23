@@ -10,7 +10,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const SLIDERS = ["Glücklich", "Ruhig", "Selbstsicher", "Aufgeregt", "Ausgeruht"];
+const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
 const WEEKDAYS_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
@@ -20,8 +20,8 @@ interface Entry {
 }
 
 interface MoodDay {
-  happy_sad: number; calm_anxious: number; confident_insecure: number;
-  excited_bored: number; rested_tired: number; tags: string[] | null;
+  stimmung: number; energie: number; stress: number;
+  tags: string[] | null;
 }
 
 const JournalDetailPage = () => {
@@ -46,9 +46,12 @@ const JournalDetailPage = () => {
         setEditContent(data.content ?? "");
         // fetch mood for that date
         const { data: moodData } = await supabase.from("mood_entries")
-          .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
-          .eq("user_id", user.id).eq("date", data.date).maybeSingle();
-        if (moodData) setMood(moodData as MoodDay);
+          .select("stimmung, energie, stress, tags")
+          .eq("user_id", user.id).eq("date", data.date)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (moodData) setMood(moodData as unknown as MoodDay);
       }
       setLoading(false);
     })();
@@ -89,9 +92,10 @@ const JournalDetailPage = () => {
   const d = new Date(entry.date);
   const dateStr = `${WEEKDAYS_DE[d.getDay()]}, ${d.getDate()}. ${MONTHS_DE[d.getMonth()]} ${d.getFullYear()}`;
   const moodTag = mood?.tags?.[0] ?? null;
-  const moodAvg = mood ? (mood.happy_sad + mood.calm_anxious + mood.confident_insecure + mood.excited_bored + mood.rested_tired) / 5 : null;
-  const moodColorDot = moodAvg === null ? "#9B6FD4" : moodAvg < 40 ? "#4ade80" : moodAvg > 60 ? "#ef4444" : "#9B6FD4";
-  const moodValues = mood ? [mood.happy_sad, mood.calm_anxious, mood.confident_insecure, mood.excited_bored, mood.rested_tired] : null;
+  const moodAvg = mood ? (mood.stimmung + mood.energie + mood.stress) / 3 : null;
+  // higher = better in new schema
+  const moodColorDot = moodAvg === null ? "#9B6FD4" : moodAvg > 60 ? "#4ade80" : moodAvg < 40 ? "#ef4444" : "#9B6FD4";
+  const moodValues = mood ? [mood.stimmung, mood.energie, mood.stress] : null;
 
   return (
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
@@ -170,7 +174,7 @@ const JournalDetailPage = () => {
           <p className="text-[13px] text-muted-foreground mb-3">Mood an diesem Tag</p>
           <div className="flex justify-between gap-2">
             {moodValues.map((val, i) => {
-              const pct = 100 - val;
+              const pct = val;
               return (
                 <div key={i} className="flex flex-col items-center flex-1">
                   <div className="relative w-full rounded-full overflow-hidden"
@@ -180,7 +184,7 @@ const JournalDetailPage = () => {
                       <span className="text-foreground font-bold text-[10px]">{pct}%</span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-muted-foreground mt-1 text-center">{SLIDERS[i]}</span>
+                  <span className="text-[10px] text-muted-foreground mt-1 text-center">{CORE_LABELS[i]}</span>
                 </div>
               );
             })}

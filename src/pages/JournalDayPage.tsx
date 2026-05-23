@@ -11,7 +11,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const SLIDER_LABELS = ["Glücklich", "Ruhig", "Selbstsicher", "Aufgeregt", "Ausgeruht"];
+const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
 
 interface JournalEntry {
@@ -25,11 +25,9 @@ interface JournalEntry {
 }
 
 interface MoodData {
-  happy_sad: number;
-  calm_anxious: number;
-  confident_insecure: number;
-  excited_bored: number;
-  rested_tired: number;
+  stimmung: number;
+  energie: number;
+  stress: number;
   tags: string[] | null;
 }
 
@@ -66,7 +64,7 @@ const JournalDayPage = () => {
       ] = await Promise.all([
         supabase.from("journal_entries").select("*").eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }),
         supabase.from("mood_entries")
-          .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
+          .select("stimmung, energie, stress, tags")
           .eq("user_id", user.id).eq("date", date).order("created_at", { ascending: false }).limit(1).maybeSingle(),
         supabase
           .from("moments")
@@ -78,7 +76,7 @@ const JournalDayPage = () => {
           .maybeSingle(),
       ]);
       setEntries((entryData ?? []) as JournalEntry[]);
-      if (moodData) setMood(moodData as MoodData);
+      if (moodData) setMood(moodData as unknown as MoodData);
       if (momentData) {
         const m = momentData as any;
         const path = (m.photo_url as string).startsWith(`${user.id}/`)
@@ -106,7 +104,7 @@ const JournalDayPage = () => {
   const d = date ? new Date(date + "T00:00:00") : new Date();
   const dateFormatted = `${d.getDate()}. ${MONTHS_DE[d.getMonth()]} ${d.getFullYear()}`;
 
-  const moodValues = mood ? [mood.happy_sad, mood.calm_anxious, mood.confident_insecure, mood.excited_bored, mood.rested_tired] : null;
+  const moodValues = mood ? [mood.stimmung, mood.energie, mood.stress] : null;
 
   const handleDelete = async (id: string) => {
     await supabase.from("journal_entries").delete().eq("id", id);
@@ -137,7 +135,7 @@ const JournalDayPage = () => {
     <div className="px-4 pt-6 pb-32 min-h-screen">
       <Skeleton className="h-6 w-40 mx-auto mb-6" />
       <div className="flex justify-between gap-2 mb-6">
-        {[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="flex-1 h-36 rounded-2xl" />)}
+        {[1, 2, 3].map((i) => <Skeleton key={i} className="flex-1 h-36 rounded-2xl" />)}
       </div>
       <Skeleton className="h-32 rounded-2xl" />
     </div>
@@ -225,8 +223,8 @@ const JournalDayPage = () => {
       {moodValues ? (
         <div className="mb-6">
           <div className="flex justify-between gap-2">
-            {moodValues.map((val, i) => {
-              const pct = 100 - val;
+              {moodValues.map((val, i) => {
+              const pct = val;
               return (
                 <div key={i} className="flex flex-col items-center flex-1">
                   <div className="relative w-full overflow-hidden"
@@ -240,7 +238,7 @@ const JournalDayPage = () => {
                       <span className="text-foreground font-bold text-[13px]">{pct}%</span>
                     </div>
                   </div>
-                  <span className="text-[11px] text-muted-foreground mt-2 text-center leading-tight">{SLIDER_LABELS[i]}</span>
+                  <span className="text-[11px] text-muted-foreground mt-2 text-center leading-tight">{CORE_LABELS[i]}</span>
                 </div>
               );
             })}
@@ -249,7 +247,7 @@ const JournalDayPage = () => {
       ) : (
         <div className="mb-6 text-center py-6">
           <div className="flex justify-between gap-2 mb-3">
-            {SLIDER_LABELS.map((label, i) => (
+            {CORE_LABELS.map((label, i) => (
               <div key={i} className="flex flex-col items-center flex-1">
                 <div className="w-full flex items-center justify-center"
                   style={{ height: 140, background: "rgba(255,255,255,0.06)", borderRadius: 24 }}>

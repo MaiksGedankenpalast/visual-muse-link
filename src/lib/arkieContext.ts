@@ -22,13 +22,7 @@ export interface ReviewsCtx {
   fourWeekly: ReviewCtx | null;
 }
 
-const SLIDER_KEYS = [
-  "happy_sad",
-  "calm_anxious",
-  "confident_insecure",
-  "excited_bored",
-  "rested_tired",
-] as const;
+const CORE_KEYS = ["stimmung", "energie", "stress"] as const;
 
 function moodLabel(score: number): string {
   if (score >= 75) return "sehr gut";
@@ -55,7 +49,7 @@ export async function fetchArkieContext(userId: string): Promise<{
   const [moodRes, journalRes, weeklyRes, fourWeeklyRes] = await Promise.all([
     supabase
       .from("mood_entries")
-      .select("date, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags")
+      .select("date, stimmung, energie, stress, tags")
       .eq("user_id", userId)
       .order("date", { ascending: false })
       .order("created_at", { ascending: false })
@@ -87,7 +81,7 @@ export async function fetchArkieContext(userId: string): Promise<{
 
   const moods: MoodCtx[] = (moodRes.data ?? []).map((m: any) => {
     const avg =
-      SLIDER_KEYS.reduce((sum, k) => sum + (m[k] ?? 50), 0) / SLIDER_KEYS.length;
+      CORE_KEYS.reduce((sum, k) => sum + (m[k] ?? 50), 0) / CORE_KEYS.length;
     const score = Math.round(avg);
     return {
       date: m.date,
