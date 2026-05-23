@@ -394,6 +394,36 @@ export type Database = {
         }
         Relationships: []
       }
+      user_memory: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          memory_type: string
+          periode_end: string
+          periode_start: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          memory_type: string
+          periode_end: string
+          periode_start: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          memory_type?: string
+          periode_end?: string
+          periode_start?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vibe_items: {
         Row: {
           completed: boolean
