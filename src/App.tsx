@@ -23,6 +23,7 @@ import JournalDetailPage from "@/pages/JournalDetailPage";
 import JournalDayPage from "@/pages/JournalDayPage";
 import MoodTrackerPage from "@/pages/MoodTrackerPage";
 import InsightsPage from "@/pages/InsightsPage";
+import StreakDetailPage from "@/pages/StreakDetailPage";
 import ExperimentPage from "@/pages/ExperimentPage";
 import VibePage from "@/pages/VibePage";
 import SettingsPage from "@/pages/SettingsPage";
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="/journal/:id" element={<JournalDetailPage />} />
               <Route path="/moodtracker" element={<MoodTrackerPage />} />
               <Route path="/insights" element={<InsightsPage />} />
+              <Route path="/insights/streak-detail" element={<StreakDetailPage />} />
               <Route path="/sanctuary" element={<SanctuaryPage />} />
               <Route path="/experiment" element={<ExperimentPage />} />
               <Route path="/experiment/vibe" element={<VibePage />} />
