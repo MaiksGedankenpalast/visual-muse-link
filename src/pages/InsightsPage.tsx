@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import ReviewsPanel from "@/components/ReviewsPanel";
+import ResilienceCard from "@/components/ResilienceCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import {
@@ -508,6 +509,8 @@ const InsightsPage = () => {
           )}
 
           {/* ARKIE INSIGHTS */}
+          <ResilienceCard moods={moods} />
+
           <div className="mb-4">
             <p className="font-bold text-foreground text-sm mb-3">Arkie hat etwas bemerkt 🔮</p>
             {moods.length < 7 ? (
