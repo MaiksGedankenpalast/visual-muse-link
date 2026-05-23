@@ -138,6 +138,78 @@ export type Database = {
       }
       mood_entries: {
         Row: {
+          created_at: string
+          date: string
+          eingabe_typ: string
+          energie: number
+          id: string
+          neg_angst: number | null
+          neg_einsamkeit: number | null
+          neg_erschoepfung: number | null
+          neg_traurigkeit: number | null
+          opt_slot_1_name: string | null
+          opt_slot_1_wert: number | null
+          opt_slot_2_name: string | null
+          opt_slot_2_wert: number | null
+          pos_dankbarkeit: number | null
+          pos_motivation: number | null
+          pos_verbundenheit: number | null
+          pos_zufriedenheit: number | null
+          stimmung: number
+          stress: number
+          tags: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          eingabe_typ?: string
+          energie?: number
+          id?: string
+          neg_angst?: number | null
+          neg_einsamkeit?: number | null
+          neg_erschoepfung?: number | null
+          neg_traurigkeit?: number | null
+          opt_slot_1_name?: string | null
+          opt_slot_1_wert?: number | null
+          opt_slot_2_name?: string | null
+          opt_slot_2_wert?: number | null
+          pos_dankbarkeit?: number | null
+          pos_motivation?: number | null
+          pos_verbundenheit?: number | null
+          pos_zufriedenheit?: number | null
+          stimmung?: number
+          stress?: number
+          tags?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          eingabe_typ?: string
+          energie?: number
+          id?: string
+          neg_angst?: number | null
+          neg_einsamkeit?: number | null
+          neg_erschoepfung?: number | null
+          neg_traurigkeit?: number | null
+          opt_slot_1_name?: string | null
+          opt_slot_1_wert?: number | null
+          opt_slot_2_name?: string | null
+          opt_slot_2_wert?: number | null
+          pos_dankbarkeit?: number | null
+          pos_motivation?: number | null
+          pos_verbundenheit?: number | null
+          pos_zufriedenheit?: number | null
+          stimmung?: number
+          stress?: number
+          tags?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mood_entries_backup: {
+        Row: {
           calm_anxious: number
           confident_insecure: number
           created_at: string
@@ -182,6 +254,8 @@ export type Database = {
           name: string | null
           onboarding_complete: boolean
           onboarding_goals: string[] | null
+          opt_slot_1_name: string | null
+          opt_slot_2_name: string | null
         }
         Insert: {
           created_at?: string
@@ -189,6 +263,8 @@ export type Database = {
           name?: string | null
           onboarding_complete?: boolean
           onboarding_goals?: string[] | null
+          opt_slot_1_name?: string | null
+          opt_slot_2_name?: string | null
         }
         Update: {
           created_at?: string
@@ -196,6 +272,8 @@ export type Database = {
           name?: string | null
           onboarding_complete?: boolean
           onboarding_goals?: string[] | null
+          opt_slot_1_name?: string | null
+          opt_slot_2_name?: string | null
         }
         Relationships: []
       }
