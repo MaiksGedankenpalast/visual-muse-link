@@ -7,7 +7,7 @@ import { ArrowLeft, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { awardPoints } from "@/lib/treeProgress";
 
-const CATEGORIES = ["Persönlich", "Work", "Ideen", "Mood", "Dankbarkeit", "Reflexion"];
+const FIXED_CATEGORIES = ["Persönlich", "Arbeit"];
 
 const PROMPTS_POSITIVE = [
   "Was hat dich heute wirklich zum Lächeln gebracht?",
@@ -42,6 +42,12 @@ const JournalNewPage = () => {
   const [moodAvg, setMoodAvg] = useState<number | null>(null);
   const [moodValues, setMoodValues] = useState<number[] | null>(null);
   const [showPrompt, setShowPrompt] = useState(true);
+  const [customCategory, setCustomCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user || typeof window === "undefined") return;
+    setCustomCategory(window.localStorage.getItem(`journal_custom_cat_${user.id}`));
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -122,16 +128,23 @@ const JournalNewPage = () => {
 
       {/* CATEGORY */}
       <div className="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-hide">
-        {CATEGORIES.map((c) => (
-          <button key={c} onClick={() => setCategory(c)}
-            className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors"
-            style={{
-              background: category === c ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.08)",
-              color: category === c ? "white" : "rgba(255,255,255,0.5)",
-            }}>
-            {c}
-          </button>
-        ))}
+        {[...FIXED_CATEGORIES, ...(customCategory ? [customCategory] : [])].map((c) => {
+          const active = category === c;
+          const isArbeit = c === "Arbeit";
+          return (
+            <button key={c} onClick={() => setCategory(c)}
+              className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors"
+              style={{
+                background: active
+                  ? (isArbeit ? "rgba(99,102,241,0.4)" : "var(--mindark-accent-start)")
+                  : "rgba(255,255,255,0.08)",
+                border: active && isArbeit ? "1px solid rgba(99,102,241,0.5)" : "1px solid transparent",
+                color: active ? "white" : "rgba(255,255,255,0.5)",
+              }}>
+              {c}
+            </button>
+          );
+        })}
       </div>
 
       {/* TITLE */}

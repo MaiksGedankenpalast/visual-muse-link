@@ -49,9 +49,11 @@ const JournalPage = () => {
   const [calendarView, setCalendarView] = useState(false);
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
-  const [categories, setCategories] = useState<string[]>([]);
+  const [customCategory, setCustomCategory] = useState<string | null>(null);
   const [newCat, setNewCat] = useState(false);
   const [newCatText, setNewCatText] = useState("");
+
+  const FIXED_CATEGORIES = ["Persönlich", "Arbeit"];
 
   const fetchData = useCallback(async () => {
     if (!user) return;
@@ -63,8 +65,12 @@ const JournalPage = () => {
     ]);
     const e = (entryData ?? []) as JournalEntry[];
     setEntries(e);
-    const cats = [...new Set(e.map((x) => x.category))];
-    setCategories(cats);
+    // Find custom category: anything not in fixed list (only 1 allowed)
+    const stored = typeof window !== "undefined"
+      ? window.localStorage.getItem(`journal_custom_cat_${user.id}`)
+      : null;
+    const fromEntries = e.map((x) => x.category).find((c) => !FIXED_CATEGORIES.includes(c)) ?? null;
+    setCustomCategory(stored || fromEntries);
     setMoodDays((moodData ?? []).map((m: any) => ({
       date: m.date,
       tags: m.tags,
@@ -126,8 +132,12 @@ const JournalPage = () => {
   };
 
   const addCategory = () => {
-    if (newCatText.trim() && !categories.includes(newCatText.trim())) {
-      setCategories((prev) => [...prev, newCatText.trim()]);
+    const t = newCatText.trim();
+    if (t && !FIXED_CATEGORIES.includes(t) && !customCategory) {
+      setCustomCategory(t);
+      if (typeof window !== "undefined" && user) {
+        window.localStorage.setItem(`journal_custom_cat_${user.id}`, t);
+      }
     }
     setNewCatText("");
     setNewCat(false);
@@ -157,29 +167,26 @@ const JournalPage = () => {
 
       {/* CATEGORY FILTER */}
       <div className="flex gap-2 overflow-x-auto pb-3 mb-3 scrollbar-hide">
-        <button onClick={() => setFilter("Alle")}
-          className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors flex flex-col items-center"
-          style={{
-            background: filter === "Alle" ? "#5B2D9E" : "rgba(255,255,255,0.1)",
-            color: filter === "Alle" ? "white" : "rgba(255,255,255,0.5)",
-            minWidth: 70,
-          }}>
-          <span className="font-medium">Alle</span>
-          <span className="text-[11px] opacity-70">{catCounts.Alle || 0} Entries</span>
-        </button>
-        {categories.map((c) => (
-          <button key={c} onClick={() => setFilter(c)}
-            className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors flex flex-col items-center"
-            style={{
-              background: filter === c ? "#5B2D9E" : "rgba(255,255,255,0.1)",
-              color: filter === c ? "white" : "rgba(255,255,255,0.5)",
-              minWidth: 70,
-            }}>
-            <span className="font-medium">{c}</span>
-            <span className="text-[11px] opacity-70">{catCounts[c] || 0} Entries</span>
-          </button>
-        ))}
-        {newCat ? (
+        {(["Alle", "Persönlich", "Arbeit", ...(customCategory ? [customCategory] : [])]).map((c) => {
+          const active = filter === c;
+          const isArbeit = c === "Arbeit";
+          const bgActive = isArbeit ? "rgba(99,102,241,0.4)" : "#5B2D9E";
+          const borderActive = isArbeit ? "1px solid rgba(99,102,241,0.5)" : "1px solid transparent";
+          return (
+            <button key={c} onClick={() => setFilter(c)}
+              className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors flex flex-col items-center"
+              style={{
+                background: active ? bgActive : "rgba(255,255,255,0.1)",
+                color: active ? "white" : "rgba(255,255,255,0.5)",
+                border: active ? borderActive : "1px solid transparent",
+                minWidth: 70,
+              }}>
+              <span className="font-medium">{c}</span>
+              <span className="text-[11px] opacity-70">{catCounts[c] || 0} Entries</span>
+            </button>
+          );
+        })}
+        {!customCategory && (newCat ? (
           <input autoFocus value={newCatText} onChange={(e) => setNewCatText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && addCategory()}
             onBlur={addCategory}
@@ -193,7 +200,7 @@ const JournalPage = () => {
             <span>+</span>
             <span className="text-[10px]">Neue Kategorie</span>
           </button>
-        )}
+        ))}
       </div>
 
       {/* SEARCH */}

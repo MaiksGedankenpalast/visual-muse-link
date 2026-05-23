@@ -289,6 +289,11 @@ const HomePage = () => {
                       ? (dominantTag ? `${dominantTag} ✓` : "Mood erfasst ✓")
                       : "Wie fühlst du dich?"}
                   </p>
+                  {latestMood && (
+                    <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
+                      Neu eintragen +
+                    </p>
+                  )}
                 </div>
                 <span className="self-end text-[13px]" style={{ color: "rgba(255,255,255,0.35)" }}>→</span>
               </button>
