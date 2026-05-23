@@ -11,6 +11,7 @@ const ExperimentPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [completedCount, setCompletedCount] = useState(0);
+  const [winsWeekCount, setWinsWeekCount] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -22,6 +23,14 @@ const ExperimentPage = () => {
         .eq("date", todayStr())
         .eq("completed", true);
       setCompletedCount(data?.length ?? 0);
+      const since = new Date(); since.setDate(since.getDate() - 7);
+      const sinceStr = since.toISOString().slice(0, 10);
+      const { count } = await supabase
+        .from("micro_wins")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .gte("date", sinceStr);
+      setWinsWeekCount(count ?? 0);
     })();
   }, [user]);
 
@@ -43,6 +52,24 @@ const ExperimentPage = () => {
           <div className="text-foreground font-bold text-[15px]">Today's Vibe</div>
           <div className="text-muted-foreground text-[12px] mt-0.5">
             {completedCount} {completedCount === 1 ? "Ding" : "Dinge"} heute erledigt
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
+      </button>
+
+      {/* Micro Wins */}
+      <button
+        onClick={() => navigate("/experiment/microwins")}
+        className="w-full text-left p-[14px] rounded-[16px] flex items-center justify-between active:scale-[0.98] active:brightness-90 transition-all duration-150 mb-3"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        <div>
+          <div className="text-foreground font-bold text-[15px]">Micro Wins</div>
+          <div className="text-muted-foreground text-[12px] mt-0.5">
+            {winsWeekCount} {winsWeekCount === 1 ? "Sieg" : "Siege"} diese Woche
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
