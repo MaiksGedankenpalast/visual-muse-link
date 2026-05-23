@@ -11,18 +11,18 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose,
 } from "@/components/ui/drawer";
 
-const SLIDER_LABELS = ["Glücklich", "Ruhig", "Selbstsicher", "Aufgeregt", "Ausgeruht"];
+const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
 
 const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd: () => void }) => {
   const vals = latestMood
-    ? [latestMood.happy_sad, latestMood.calm_anxious, latestMood.confident_insecure, latestMood.excited_bored, latestMood.rested_tired]
+    ? [latestMood.stimmung, latestMood.energie, latestMood.stress]
     : null;
   return (
     <div className="space-y-2">
       <div className="flex items-end gap-2">
-        <div className="flex-1 flex justify-between gap-2">
-          {SLIDER_LABELS.map((label, i) => {
-            const pct = vals ? 100 - vals[i] : 0;
+        <div className="flex-1 flex justify-around gap-3">
+          {CORE_LABELS.map((label, i) => {
+            const pct = vals ? vals[i] : 0;
             return (
               <div key={label} className="flex flex-col items-center flex-1">
                 <div
@@ -83,11 +83,9 @@ const buzz = (pattern: number | number[] = 8) => {
 
 interface MoodRow {
   id: string;
-  happy_sad: number;
-  calm_anxious: number;
-  confident_insecure: number;
-  excited_bored: number;
-  rested_tired: number;
+  stimmung: number;
+  energie: number;
+  stress: number;
   tags: string[] | null;
   created_at: string;
 }
@@ -135,7 +133,7 @@ const HomePage = () => {
     const t = todayStr();
     const [{ data: moods }, { data: journals }] = await Promise.all([
       supabase.from("mood_entries")
-        .select("id, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired, tags, created_at")
+        .select("id, stimmung, energie, stress, tags, created_at")
         .eq("user_id", user.id).eq("date", t)
         .order("created_at", { ascending: false }),
       supabase.from("journal_entries")
@@ -143,7 +141,7 @@ const HomePage = () => {
         .eq("user_id", user.id).eq("date", t)
         .order("created_at", { ascending: false }),
     ]);
-    setTodayMoods((moods as MoodRow[]) ?? []);
+    setTodayMoods(((moods as unknown) as MoodRow[]) ?? []);
     setTodayJournals((journals as JournalRow[]) ?? []);
     setLoading(false);
   }, [user]);
@@ -167,9 +165,9 @@ const HomePage = () => {
 
   const arkieStatus = (() => {
     if (!latestMood) return "Arkie wartet auf deinen ersten Eintrag 🌙";
-    const avg = (latestMood.happy_sad + latestMood.calm_anxious + latestMood.confident_insecure + latestMood.excited_bored + latestMood.rested_tired) / 5;
-    if (avg < 35) return "Arkie freut sich mit dir 💜";
-    if (avg <= 65) return "Arkie ist neugierig auf deinen Tag ✨";
+    const avg = (latestMood.stimmung + latestMood.energie + latestMood.stress) / 3;
+    if (avg > 65) return "Arkie freut sich mit dir 💜";
+    if (avg >= 35) return "Arkie ist neugierig auf deinen Tag ✨";
     return "Arkie denkt an dich 🌙";
   })();
 
@@ -391,15 +389,15 @@ const HomePage = () => {
           <div className="px-4 pb-6 overflow-y-auto scrollbar-hide">
             {expanded?.kind === "mood" && (() => {
               const m = expanded.row as MoodRow;
-              const vals = [m.happy_sad, m.calm_anxious, m.confident_insecure, m.excited_bored, m.rested_tired];
+              const vals = [m.stimmung, m.energie, m.stress];
               return (
                 <>
                   <p className="text-center text-[12px] text-muted-foreground mb-4">
                     {new Date(m.created_at).toLocaleString("de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
                   </p>
-                  <div className="flex justify-between gap-2 mb-4">
+                  <div className="flex justify-around gap-3 mb-4">
                     {vals.map((val, i) => {
-                      const pct = 100 - val;
+                      const pct = val;
                       return (
                         <div key={i} className="flex flex-col items-center flex-1">
                           <div className="relative w-full overflow-hidden"
@@ -409,7 +407,7 @@ const HomePage = () => {
                               <span className="text-foreground font-bold text-[12px]">{pct}%</span>
                             </div>
                           </div>
-                          <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{SLIDER_LABELS[i]}</span>
+                          <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{CORE_LABELS[i]}</span>
                         </div>
                       );
                     })}
