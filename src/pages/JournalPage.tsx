@@ -58,7 +58,7 @@ const JournalPage = () => {
     setLoading(true);
     const [{ data: entryData }, { data: moodData }, { data: momentData }] = await Promise.all([
       supabase.from("journal_entries").select("*").eq("user_id", user.id).order("date", { ascending: false }),
-      supabase.from("mood_entries").select("date, tags, happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired").eq("user_id", user.id),
+      supabase.from("mood_entries").select("date, tags, stimmung, energie, stress").eq("user_id", user.id),
       supabase.from("moments").select("date").eq("user_id", user.id),
     ]);
     const e = (entryData ?? []) as JournalEntry[];
@@ -68,7 +68,8 @@ const JournalPage = () => {
     setMoodDays((moodData ?? []).map((m: any) => ({
       date: m.date,
       tags: m.tags,
-      avg: (m.happy_sad + m.calm_anxious + m.confident_insecure + m.excited_bored + m.rested_tired) / 5,
+      // new schema: higher = better → invert for legacy moodColor helper that expects "lower = better"
+      avg: 100 - (m.stimmung + m.energie + m.stress) / 3,
     })));
     setMomentDates(new Set(((momentData ?? []) as MomentDay[]).map((m) => m.date)));
     setLoading(false);
