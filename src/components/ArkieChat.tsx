@@ -7,6 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "./Arkie";
 import { ChatMessage, sendMessageToArkie } from "@/lib/arkieChat";
 import { fetchArkieContext, MoodCtx, JournalCtx, ReviewsCtx } from "@/lib/arkieContext";
+import { buildArkieContext } from "@/lib/arkieRichContext";
 import {
   ChatSession,
   StoredMessage,
@@ -45,6 +46,18 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const richContextRef = useRef<string | null>(null);
+  const richContextPromiseRef = useRef<Promise<string> | null>(null);
+
+  // Preload rich context as soon as drawer opens, with 3s max wait
+  useEffect(() => {
+    if (open && user) {
+      richContextRef.current = null;
+      const p = buildArkieContext(user.id, userName);
+      richContextPromiseRef.current = p;
+      p.then((s) => { richContextRef.current = s; }).catch(() => { /* ignore */ });
+    }
+  }, [open, user, userName]);
 
   const fetchSessions = useCallback(async () => {
     if (!user) return;
@@ -209,6 +222,18 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       /* fall back to empty context */
     }
 
+    // Resolve rich context: wait at most 3s if not ready
+    let richSystem: string | null = richContextRef.current;
+    if (!richSystem && richContextPromiseRef.current) {
+      try {
+        richSystem = await Promise.race([
+          richContextPromiseRef.current,
+          new Promise<string>((resolve) => setTimeout(() => resolve(""), 3000)),
+        ]);
+        if (richSystem) richContextRef.current = richSystem;
+      } catch { /* ignore */ }
+    }
+
     // Token-aware history slice
     const stored: StoredMessage[] = priorMessagesForApi.map((m, i) => ({
       id: String(i),
@@ -250,7 +275,8 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
           if (crossMemory) parts.push(crossMemory);
           if (safety?.rule === "REGEL_2_DIAGNOSE") parts.push(diagnoseHint());
           return parts.length ? { role: "system", content: parts.join("\n\n") } : null;
-        })()
+        })(),
+        richSystem || null
       );
 
       // Persist assistant reply

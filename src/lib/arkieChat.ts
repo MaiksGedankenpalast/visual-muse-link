@@ -27,7 +27,8 @@ export async function sendMessageToArkie(
   userName?: string,
   onDelta?: (chunk: string) => void,
   context?: ArkieContextPayload,
-  extraSystem?: ExtraSystemMessage | null
+  extraSystem?: ExtraSystemMessage | null,
+  systemOverride?: string | null
 ): Promise<string> {
   const messages = [
     ...(extraSystem ? [extraSystem] : []),
@@ -47,6 +48,7 @@ export async function sendMessageToArkie(
       moods: context?.moods ?? [],
       journals: context?.journals ?? [],
       reviews: context?.reviews ?? { weekly: null, fourWeekly: null },
+      systemOverride: systemOverride ?? undefined,
     }),
   });
 
