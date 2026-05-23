@@ -7,11 +7,9 @@ import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 const SLIDERS = [
-  { key: "happy_sad", left: "Glücklich", right: "Traurig" },
-  { key: "calm_anxious", left: "Ruhig", right: "Ängstlich" },
-  { key: "confident_insecure", left: "Selbstsicher", right: "Unsicher" },
-  { key: "excited_bored", left: "Aufgeregt", right: "Gelangweilt" },
-  { key: "rested_tired", left: "Ausgeruht", right: "Erschöpft" },
+  { key: "stimmung", left: "Belastet", right: "Zufrieden" },
+  { key: "energie", left: "Erschöpft", right: "Energiegeladen" },
+  { key: "stress", left: "Angespannt", right: "Entspannt" },
 ] as const;
 
 const TAG_OPTIONS = [
@@ -22,7 +20,7 @@ const OnboardingMood = () => {
   const navigate = useNavigate();
   const { user, profileName } = useAuth();
   const [values, setValues] = useState<Record<string, number>>({
-    happy_sad: 50, calm_anxious: 50, confident_insecure: 50, excited_bored: 50, rested_tired: 50,
+    stimmung: 50, energie: 50, stress: 50,
   });
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState("");
@@ -49,16 +47,15 @@ const OnboardingMood = () => {
     if (!user) return;
     setLoading(true);
     const today = new Date().toISOString().split("T")[0];
-    await supabase.from("mood_entries").upsert({
+    await supabase.from("mood_entries").insert({
       user_id: user.id,
       date: today,
-      happy_sad: values.happy_sad,
-      calm_anxious: values.calm_anxious,
-      confident_insecure: values.confident_insecure,
-      excited_bored: values.excited_bored,
-      rested_tired: values.rested_tired,
+      eingabe_typ: "schnell",
+      stimmung: values.stimmung,
+      energie: values.energie,
+      stress: values.stress,
       tags: selectedTags.length > 0 ? selectedTags : null,
-    }, { onConflict: "user_id,date" });
+    });
     navigate("/onboarding/goals");
   };
 

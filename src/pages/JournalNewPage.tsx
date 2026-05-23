@@ -46,20 +46,24 @@ const JournalNewPage = () => {
   useEffect(() => {
     if (!user) return;
     supabase.from("mood_entries")
-      .select("happy_sad, calm_anxious, confident_insecure, excited_bored, rested_tired")
-      .eq("user_id", user.id).eq("date", todayStr()).maybeSingle()
+      .select("stimmung, energie, stress")
+      .eq("user_id", user.id).eq("date", todayStr())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          const vals = [data.happy_sad, data.calm_anxious, data.confident_insecure, data.excited_bored, data.rested_tired];
+          const vals = [data.stimmung, data.energie, data.stress];
           setMoodValues(vals);
-          setMoodAvg(vals.reduce((a, b) => a + b, 0) / 5);
+          setMoodAvg(vals.reduce((a, b) => a + b, 0) / 3);
         }
       });
   }, [user]);
 
   const prompt = useMemo(() => {
     if (moodAvg === null) return PROMPTS_NEUTRAL[0];
-    const pool = moodAvg < 40 ? PROMPTS_POSITIVE : moodAvg > 60 ? PROMPTS_DIFFICULT : PROMPTS_NEUTRAL;
+    // new schema: higher = better
+    const pool = moodAvg > 60 ? PROMPTS_POSITIVE : moodAvg < 40 ? PROMPTS_DIFFICULT : PROMPTS_NEUTRAL;
     return pool[Math.floor(Math.random() * pool.length)];
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moodAvg !== null]);
@@ -148,7 +152,7 @@ const JournalNewPage = () => {
           <div className="flex gap-1">
             {moodValues.map((v, i) => (
               <div key={i} className="w-6 h-3 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.1)" }}>
-                <div className="h-full rounded-full gradient-primary" style={{ width: `${100 - v}%` }} />
+                <div className="h-full rounded-full gradient-primary" style={{ width: `${v}%` }} />
               </div>
             ))}
           </div>
