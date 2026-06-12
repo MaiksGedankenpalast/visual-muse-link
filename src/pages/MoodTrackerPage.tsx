@@ -231,6 +231,9 @@ const MoodTrackerPage = () => {
 
     await supabase.from("mood_entries").insert(payload as never);
     awardPoints(user.id, 15, "mood");
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("mood:saved"));
+    }
 
     if (journalText.trim()) {
       await supabase.from("journal_entries").insert({
