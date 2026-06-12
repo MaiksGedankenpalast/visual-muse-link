@@ -153,10 +153,18 @@ const HomePage = () => {
     if (!user) return;
     const channel = supabase
       .channel(`home-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "mood_entries", filter: `user_id=eq.${user.id}` }, fetchAll)
       .on("postgres_changes", { event: "*", schema: "public", table: "journal_entries", filter: `user_id=eq.${user.id}` }, fetchAll)
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    const onMoodSaved = () => { fetchAll(); };
+    const onVisible = () => { if (document.visibilityState === "visible") fetchAll(); };
+    window.addEventListener("mood:saved", onMoodSaved);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener("mood:saved", onMoodSaved);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [user, fetchAll]);
 
   const latestMood = todayMoods[0] ?? null;
