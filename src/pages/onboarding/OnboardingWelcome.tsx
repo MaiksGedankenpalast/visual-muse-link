@@ -13,7 +13,7 @@ const OnboardingWelcome = () => {
       <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <div className="w-full flex items-center justify-between mb-6">
-          <button onClick={() => navigate("/onboarding/name")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+          <button onClick={() => navigate("/onboarding/name")} aria-label="Zurück" className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
             <span className="text-foreground text-lg">◀</span>
           </button>
           <OnboardingProgress currentStep={1} />
