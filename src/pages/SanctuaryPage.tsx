@@ -89,6 +89,7 @@ const SanctuaryPage = () => {
       style={{ x, opacity }}
       className="relative min-h-[100dvh] overflow-hidden select-none"
     >
+      <h1 className="sr-only">Dein Sanctuary — Wachstum deines Bewusstseinsbaums</h1>
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 pt-6">
         <button

@@ -37,6 +37,7 @@ const Splash = () => {
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <h1 style={{ fontSize: 36, fontWeight: 300, letterSpacing: 4, marginTop: 40 }} className="text-foreground">
           MindArk
+          <span className="sr-only"> — Dein sicherer Raum für Gedanken, Gefühle und Wachstum</span>
         </h1>
 
         <div className="relative w-full mt-8">
