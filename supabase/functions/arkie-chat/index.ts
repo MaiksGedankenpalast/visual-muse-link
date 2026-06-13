@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -40,7 +41,8 @@ function buildSystemPrompt(
   userName: string | undefined,
   moods: MoodCtx[],
   journals: JournalCtx[],
-  reviews: ReviewsCtx
+  reviews: ReviewsCtx,
+  richContext?: string | null,
 ): string {
   const today = new Date().toISOString().slice(0, 10);
 
@@ -117,19 +119,100 @@ Verwende gelegentlich passende Emojis (💜, ✨, 🌙) – aber übertreibe es 
 Heutiges Datum: ${today}`;
 }
 
+// ── Server-side safety detection (mirror of src/lib/arkieSafety.ts) ──
+type SafetyRule = "REGEL_1_SUIZID" | "REGEL_2_DIAGNOSE" | "REGEL_5_BELEIDIGUNG" | "REGEL_6_MANIPULATION";
+
+const SUIZID_KEYWORDS = [
+  "suizid","selbstmord","umbringen","nicht mehr leben","sterben wollen",
+  "mir etwas antun","aufhören zu leben","keinen ausweg","suicid","töten mich","mich töten",
+];
+const DIAGNOSE_KEYWORDS = [
+  "habe ich ","bin ich depressiv","diagnostizier","was ist meine diagnose",
+  "rechtlich","klage","anwalt","strafbar",
+];
+const BELEIDIGUNG_KEYWORDS = [
+  "arschloch","scheiße","scheisse","fick dich","verpiss dich","hurensohn","wichser",
+  "schwuchtel","fotze","miststück","idiot","blöde kuh","drecksau","missgeburt",
+];
+const MANIPULATION_KEYWORDS = [
+  "ignore previous","vergiss deine anweisungen","vergiss alle anweisungen",
+  "jetzt ohne regeln","tu so als ob","spiel die rolle","du bist jetzt",
+  "dan","jailbreak","ohne einschränkungen",
+];
+
+const SUICIDE_REPLY =
+  "Ich mache mir gerade Sorgen um dich und möchte sicherstellen, dass du die richtige Unterstützung bekommst. Bitte wende dich an die Telefonseelsorge — sie ist kostenlos, anonym und rund um die Uhr erreichbar: 📞 0800 111 0 111 oder 0800 111 0 222. Du bist nicht allein. 💜";
+const MANIPULATION_REPLY =
+  "Ich bin und bleibe Arkie — das ist keine Einschränkung, das bin einfach ich. Was kann ich für dich tun? 💜";
+const DIAGNOSE_HINT =
+  "Hinweis: Die Nutzernachricht klingt nach einer Bitte um Diagnose oder rechtliche Einschätzung. Folge strikt Regel 2 der Sicherheitsrichtlinien und stelle keine Diagnose / gib keine rechtliche Beratung.";
+
+function containsAny(text: string, keywords: string[]): boolean {
+  const t = text.toLowerCase();
+  return keywords.some((k) => t.includes(k));
+}
+
+function detectSafety(message: string): { rule: SafetyRule; blockSend: boolean; reply?: string } | null {
+  if (containsAny(message, SUIZID_KEYWORDS)) return { rule: "REGEL_1_SUIZID", blockSend: true, reply: SUICIDE_REPLY };
+  if (containsAny(message, MANIPULATION_KEYWORDS)) return { rule: "REGEL_6_MANIPULATION", blockSend: true, reply: MANIPULATION_REPLY };
+  if (containsAny(message, DIAGNOSE_KEYWORDS)) return { rule: "REGEL_2_DIAGNOSE", blockSend: false };
+  if (containsAny(message, BELEIDIGUNG_KEYWORDS)) return { rule: "REGEL_5_BELEIDIGUNG", blockSend: false };
+  return null;
+}
+
+function sseFromString(text: string): Response {
+  // Synthesize a one-chunk SSE stream that the client SSE parser already handles.
+  const stream = new ReadableStream({
+    start(controller) {
+      const chunk = `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
+      controller.enqueue(new TextEncoder().encode(chunk));
+      controller.enqueue(new TextEncoder().encode(`data: [DONE]\n\n`));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // ── Auth: require a valid user JWT ─────────────────────────────────
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUser = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const token = authHeader.replace("Bearer ", "");
+    const { data: claims, error: claimsErr } = await supabaseUser.auth.getClaims(token);
+    const userId = claims?.claims?.sub;
+    if (claimsErr || !userId) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const {
       messages,
       userName,
       moods = [],
       journals = [],
       reviews = { weekly: null, fourWeekly: null },
-      systemOverride,
+      richContext,
+      sessionId,
     } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -138,15 +221,59 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    if (messages.length > 200) {
+      return new Response(
+        JSON.stringify({ error: "messages history too long" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    // Cap individual message size to limit prompt-injection payload size
+    const safeMessages = messages
+      .filter((m: any) => m && (m.role === "user" || m.role === "assistant" || m.role === "system"))
+      .map((m: any) => ({
+        role: m.role,
+        content: typeof m.content === "string" ? m.content.slice(0, 8000) : "",
+      }));
+
+    // ── Server-side safety enforcement (do NOT trust the client) ───────
+    const lastUserMsg = [...safeMessages].reverse().find((m: any) => m.role === "user")?.content ?? "";
+    const safety = detectSafety(lastUserMsg);
+    let extraSafetySystem: string | null = null;
+    if (safety) {
+      // service-role insert into safety_logs so it cannot be suppressed by a modified client
+      try {
+        const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+          auth: { persistSession: false },
+        });
+        await admin.from("safety_logs").insert({
+          user_id: userId,
+          triggered_rule: safety.rule,
+          user_message: lastUserMsg.slice(0, 200),
+          session_id: sessionId ?? null,
+        });
+      } catch (e) {
+        console.error("safety_logs insert failed", e);
+      }
+      if (safety.blockSend && safety.reply) {
+        // short-circuit: never reach the LLM
+        return sseFromString(safety.reply);
+      }
+      if (safety.rule === "REGEL_2_DIAGNOSE") {
+        extraSafetySystem = DIAGNOSE_HINT;
+      }
+    }
 
     const MISTRAL_API_KEY = Deno.env.get("MISTRAL_API_KEY");
     if (!MISTRAL_API_KEY) {
       throw new Error("MISTRAL_API_KEY is not configured");
     }
 
-    const systemContent = typeof systemOverride === "string" && systemOverride.trim().length > 0
-      ? systemOverride
-      : buildSystemPrompt(userName, moods, journals, reviews);
+    // System prompt is ALWAYS the safety-bearing buildSystemPrompt.
+    // The optional `richContext` (string) is APPENDED — it can never replace
+    // or disable REGEL 1–6.
+    const safeRichContext = typeof richContext === "string" ? richContext.slice(0, 16000) : null;
+    const baseSystem = buildSystemPrompt(userName, moods, journals, reviews, safeRichContext);
+    const systemContent = extraSafetySystem ? `${baseSystem}\n\n${extraSafetySystem}` : baseSystem;
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
@@ -158,9 +285,10 @@ serve(async (req) => {
         model: "mistral-medium-latest",
         messages: [
           { role: "system", content: systemContent },
-          ...messages,
+          ...safeMessages,
         ],
         stream: true,
+        max_tokens: 1200,
       }),
     });
 
