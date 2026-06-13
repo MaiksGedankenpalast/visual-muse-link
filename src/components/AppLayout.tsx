@@ -20,11 +20,11 @@ const AppLayout = () => {
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto">
       <StarBackground />
-      <div className="relative z-10 pb-24">
+      <main className="relative z-10 pb-24">
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>
-      </div>
+      </main>
 
       {/* Arkie floating button */}
       <div

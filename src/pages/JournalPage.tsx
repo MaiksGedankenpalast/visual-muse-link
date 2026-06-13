@@ -156,7 +156,7 @@ const JournalPage = () => {
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-5">
-        <button onClick={() => navigate("/home")}
+        <button onClick={() => navigate("/home")} aria-label="Zurück"
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{ background: "rgba(139,92,246,0.3)" }}>
           <ArrowLeft className="w-5 h-5 text-foreground" />
@@ -188,6 +188,7 @@ const JournalPage = () => {
         })}
         {!customCategory && (newCat ? (
           <input autoFocus value={newCatText} onChange={(e) => setNewCatText(e.target.value)}
+            aria-label="Neue Kategorie"
             onKeyDown={(e) => e.key === "Enter" && addCategory()}
             onBlur={addCategory}
             placeholder="Kategorie..."
@@ -207,11 +208,12 @@ const JournalPage = () => {
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input value={search} onChange={(e) => setSearch(e.target.value)}
+          aria-label="Journaleinträge durchsuchen"
           placeholder="Suchen..."
           className="w-full pl-9 pr-9 py-2.5 rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none"
           style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.08)" }} />
         {search && (
-          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+          <button onClick={() => setSearch("")} aria-label="Suche löschen" className="absolute right-3 top-1/2 -translate-y-1/2">
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
@@ -220,7 +222,7 @@ const JournalPage = () => {
       {/* CALENDAR TOGGLE */}
       <div className="flex items-center justify-between mb-4">
         <span className="font-bold text-foreground text-sm">Kalender</span>
-        <button onClick={() => setCalendarView((v) => !v)}
+        <button onClick={() => setCalendarView((v) => !v)} aria-label="Kalenderansicht umschalten"
           className="w-9 h-9 rounded-lg flex items-center justify-center"
           style={{ background: calendarView ? "#5B2D9E" : "rgba(255,255,255,0.08)" }}>
           <CalendarDays className="w-4 h-4 text-foreground" />

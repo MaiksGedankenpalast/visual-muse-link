@@ -94,6 +94,7 @@ const MoodSlider = ({ value, onChange, left, right, variant = "core" }: MoodSlid
           style={{ width: `${value}%`, background: fillBg }} />
         <input
           type="range" min="0" max="100"
+          aria-label={`Skala von ${left} bis ${right}`}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className="mood-slider relative z-10 w-full"
