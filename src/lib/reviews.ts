@@ -326,7 +326,7 @@ export async function generateWeeklyReview(userId: string, period: Period): Prom
   try {
     const userPrompt = buildWeeklyUserPrompt(stats, period);
     const { data: fnData, error: fnErr } = await supabase.functions.invoke("generate-review", {
-      body: { type: "weekly", systemPrompt: WEEKLY_SYSTEM, userPrompt },
+      body: { type: "weekly", userPrompt },
     });
     if (fnErr) throw new Error(fnErr.message);
     const narrative: string = fnData?.narrative ?? "";
@@ -419,7 +419,7 @@ export async function generateFourWeeklyReview(
     const periodNumber = Math.floor(daysBetween(firstSeenAt, period.start) / 28) + 1;
     const userPrompt = buildFourWeeklyUserPrompt(weeklies, period, periodNumber);
     const { data: fnData, error: fnErr } = await supabase.functions.invoke("generate-review", {
-      body: { type: "four_weekly", systemPrompt: FOUR_WEEKLY_SYSTEM, userPrompt },
+      body: { type: "four_weekly", userPrompt },
     });
     if (fnErr) throw new Error(fnErr.message);
     const narrative: string = fnData?.narrative ?? "";

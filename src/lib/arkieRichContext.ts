@@ -434,86 +434,20 @@ async function fetchBriefData(userId: string, days: number) {
   };
 }
 
-async function callMistralOnce(systemPrompt: string, userPrompt: string): Promise<string> {
-  const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/arkie-chat`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-    },
-    body: JSON.stringify({
-      messages: [{ role: "user", content: userPrompt }],
-      systemOverride: systemPrompt,
-    }),
-  });
-  if (!resp.ok || !resp.body) throw new Error(`Mistral error ${resp.status}`);
-  const reader = resp.body.getReader();
-  const decoder = new TextDecoder();
-  let buf = "";
-  let full = "";
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += decoder.decode(value, { stream: true });
-    let nl: number;
-    while ((nl = buf.indexOf("\n")) !== -1) {
-      const line = buf.slice(0, nl).trim();
-      buf = buf.slice(nl + 1);
-      if (!line.startsWith("data: ")) continue;
-      const j = line.slice(6).trim();
-      if (j === "[DONE]") continue;
-      try {
-        const parsed = JSON.parse(j);
-        const c = parsed.choices?.[0]?.delta?.content;
-        if (c) full += c;
-      } catch { /* ignore */ }
-    }
-  }
-  return full.trim();
+// NOTE: The previous client-side `callMistralOnce` helper used the public
+// `arkie-chat` endpoint with a `systemOverride` to fully replace the safety
+// system prompt. That bypassed REGEL 1–6 and has been removed for security.
+//
+// Weekly/monthly briefs that need a different system prompt must be generated
+// by a separate, service-role-authenticated edge function (cron-triggered).
+// Until that function exists, these helpers are no-ops.
+
+export async function generateWeeklyBrief(_userId: string): Promise<string | null> {
+  console.warn("[generateWeeklyBrief] disabled — needs a dedicated server-side function");
+  return null;
 }
 
-// TODO DEV: Diese Funktion als Supabase Edge Function mit wöchentlichem Cron Job einrichten.
-// Aufruf: jeden Sonntag um 23:00 Uhr für alle aktiven User.
-export async function generateWeeklyBrief(userId: string): Promise<string | null> {
-  try {
-    const { since, moods, journals } = await fetchBriefData(userId, 7);
-    const systemPrompt = `Du bist Arkie. Du erstellst einen kurzen internen Wochenbrief über einen User basierend auf seinen Daten. Nutze die Daten unten.\n\nMOOD (7 Tage): ${JSON.stringify(moods).slice(0, 4000)}\n\nJOURNAL (7 Tage): ${JSON.stringify(journals).slice(0, 4000)}`;
-    const content = await callMistralOnce(systemPrompt, WEEKLY_PROMPT);
-    if (!content) return null;
-    const today = new Date().toISOString().slice(0, 10);
-    await supabase.from("user_memory").insert({
-      user_id: userId,
-      memory_type: "wochenbrief",
-      content,
-      periode_start: since,
-      periode_end: today,
-    });
-    return content;
-  } catch (e) {
-    console.error("[generateWeeklyBrief]", e);
-    return null;
-  }
-}
-
-// TODO DEV: Monatlich am letzten Tag des Monats aufrufen.
-export async function generateMonthlyBrief(userId: string): Promise<string | null> {
-  try {
-    const { since, moods, journals } = await fetchBriefData(userId, 28);
-    const systemPrompt = `Du bist Arkie. Du erstellst einen internen Monatsbrief über einen User basierend auf seinen Daten. Nutze die Daten unten.\n\nMOOD (28 Tage): ${JSON.stringify(moods).slice(0, 6000)}\n\nJOURNAL (28 Tage): ${JSON.stringify(journals).slice(0, 6000)}`;
-    const content = await callMistralOnce(systemPrompt, MONTHLY_PROMPT);
-    if (!content) return null;
-    const today = new Date().toISOString().slice(0, 10);
-    await supabase.from("user_memory").insert({
-      user_id: userId,
-      memory_type: "monatsbrief",
-      content,
-      periode_start: since,
-      periode_end: today,
-    });
-    return content;
-  } catch (e) {
-    console.error("[generateMonthlyBrief]", e);
-    return null;
-  }
+export async function generateMonthlyBrief(_userId: string): Promise<string | null> {
+  console.warn("[generateMonthlyBrief] disabled — needs a dedicated server-side function");
+  return null;
 }
