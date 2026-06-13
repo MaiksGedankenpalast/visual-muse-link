@@ -29,7 +29,7 @@ const OnboardingName = () => {
       <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <div className="w-full flex items-center justify-between mb-6">
-          <button onClick={() => navigate("/splash")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+          <button onClick={() => navigate("/splash")} aria-label="Zurück" className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
             <span className="text-foreground text-lg">◀</span>
           </button>
           <OnboardingProgress currentStep={1} />
@@ -40,7 +40,7 @@ const OnboardingName = () => {
           <Arkie size="large" />
         </div>
 
-        <h2 className="text-2xl font-bold text-center mb-2">Wie soll ich dich nennen?</h2>
+        <h1 className="text-2xl font-bold text-center mb-2">Wie soll ich dich nennen?</h1>
         <p className="text-muted-foreground text-sm text-center mb-8">
           Arkie merkt sich deinen Namen — versprochen.
         </p>
@@ -48,6 +48,7 @@ const OnboardingName = () => {
         <input
           type="text"
           placeholder="Dein Name..."
+          aria-label="Dein Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground mb-8"

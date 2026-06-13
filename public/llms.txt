@@ -1,0 +1,12 @@
+# MindArk
+
+> MindArk ist eine deutschsprachige PWA für mentales Wohlbefinden: digitales Tagebuch, Stimmungstracking und Arkie — ein einfühlsamer KI-Begleiter für Reflexion.
+
+MindArk hilft Menschen, ihre Gefühle und tägliche Stimmung achtsam zu beobachten. Inhalte sind privat und nur für angemeldete Nutzer:innen zugänglich.
+
+## Pages
+
+- [Start](/): Einstieg in die App.
+- [Willkommen](/splash): Willkommensseite mit Anmeldung und Registrierung.
+- [Anmelden](/login): Login für bestehende Nutzer:innen.
+- [Registrieren](/signup): Kostenlosen Account erstellen.
