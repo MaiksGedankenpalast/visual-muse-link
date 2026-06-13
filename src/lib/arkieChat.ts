@@ -28,7 +28,8 @@ export async function sendMessageToArkie(
   onDelta?: (chunk: string) => void,
   context?: ArkieContextPayload,
   extraSystem?: ExtraSystemMessage | null,
-  systemOverride?: string | null
+  richContext?: string | null,
+  sessionId?: string | null,
 ): Promise<string> {
   const messages = [
     ...(extraSystem ? [extraSystem] : []),
@@ -36,11 +37,17 @@ export async function sendMessageToArkie(
     { role: "user" as const, content: userMessage },
   ];
 
+  // Use the user's access token so the edge function can verify auth.
+  const { supabase } = await import("@/integrations/supabase/client");
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+
   const resp = await fetch(CHAT_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      Authorization: `Bearer ${token}`,
+      apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
     },
     body: JSON.stringify({
       messages,
@@ -48,7 +55,8 @@ export async function sendMessageToArkie(
       moods: context?.moods ?? [],
       journals: context?.journals ?? [],
       reviews: context?.reviews ?? { weekly: null, fourWeekly: null },
-      systemOverride: systemOverride ?? undefined,
+      richContext: richContext ?? undefined,
+      sessionId: sessionId ?? undefined,
     }),
   });
 
