@@ -6,6 +6,13 @@ import Arkie from "@/components/Arkie";
 import { ArrowLeft, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { awardPoints } from "@/lib/treeProgress";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { useRef } from "react";
 
 const FIXED_CATEGORIES = ["Persönlich", "Arbeit"];
 
@@ -43,6 +50,8 @@ const JournalNewPage = () => {
   const [moodValues, setMoodValues] = useState<number[] | null>(null);
   const [showPrompt, setShowPrompt] = useState(true);
   const [customCategory, setCustomCategory] = useState<string | null>(null);
+  const [showNoTitleDialog, setShowNoTitleDialog] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!user || typeof window === "undefined") return;
@@ -74,26 +83,50 @@ const JournalNewPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moodAvg !== null]);
 
-  const handleSave = async () => {
-    if (!user || !title.trim()) return;
+  const persistEntry = async (finalTitle: string) => {
+    if (!user) return;
     setSaving(true);
     await supabase.from("journal_entries").insert({
       user_id: user.id,
-      title: title.trim(),
+      title: finalTitle,
       content: content.trim() || null,
       category,
       mood_snapshot: moodAvg !== null ? Math.round(moodAvg) : null,
     });
     awardPoints(user.id, 50, "journal");
-    toast({ title: "Eintrag gespeichert 💜" });
+    toast({ title: "Gespeichert 💜" });
     setSaving(false);
     navigate("/journal");
   };
 
-  const hasContent = title.trim().length > 0;
+  const handleSave = async () => {
+    if (!user) return;
+    if (!title.trim()) {
+      setShowNoTitleDialog(true);
+      return;
+    }
+    await persistEntry(title.trim());
+  };
+
+  const handleSaveWithoutTitle = async () => {
+    const dateStr = new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long" });
+    setShowNoTitleDialog(false);
+    await persistEntry(`Eintrag vom ${dateStr}`);
+  };
+
+  const focusTitle = () => {
+    setShowNoTitleDialog(false);
+    setTimeout(() => titleInputRef.current?.focus(), 100);
+  };
 
   return (
-    <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
+    <div
+      className="px-4 onboarding-slide min-h-screen"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top, 16px) + 24px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 16px) + 200px)",
+      }}
+    >
       {/* HEADER */}
       <div className="flex items-center justify-between mb-5">
         <button onClick={() => {
@@ -104,11 +137,7 @@ const JournalNewPage = () => {
           <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
         <h1 className="font-bold text-foreground text-lg">Neuer Eintrag</h1>
-        <button onClick={handleSave} disabled={!hasContent || saving}
-          className="text-sm font-medium transition-opacity"
-          style={{ color: "var(--mindark-accent-start)", opacity: hasContent ? 1 : 0.3 }}>
-          Speichern
-        </button>
+        <span className="w-6" />
       </div>
 
       {/* ARKIE + PROMPT */}
@@ -148,7 +177,7 @@ const JournalNewPage = () => {
       </div>
 
       {/* TITLE */}
-      <input value={title} onChange={(e) => setTitle(e.target.value)}
+      <input ref={titleInputRef} value={title} onChange={(e) => setTitle(e.target.value)}
         placeholder="Titel..."
         className="w-full text-[22px] font-bold text-foreground placeholder:text-muted-foreground bg-transparent outline-none mb-4" />
 
@@ -176,8 +205,64 @@ const JournalNewPage = () => {
           </button>
         )}
       </div>
+
+      {/* FIXED SAVE BUTTON */}
+      <div
+        className="fixed left-1/2 -translate-x-1/2 w-full max-w-[430px] z-40 px-4"
+        style={{
+          bottom: "calc(80px + env(safe-area-inset-bottom, 0px) + 12px)",
+          pointerEvents: "none",
+        }}
+      >
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full h-[52px] rounded-full font-bold text-white uppercase tracking-wide gradient-primary disabled:opacity-60"
+          style={{
+            boxShadow: "0 4px 20px rgba(139,92,246,0.3)",
+            pointerEvents: "auto",
+          }}
+        >
+          Speichern
+        </button>
+      </div>
+
+      {/* NO-TITLE DIALOG */}
+      <Dialog open={showNoTitleDialog} onOpenChange={setShowNoTitleDialog}>
+        <DialogContent
+          className="max-w-[340px] border-0 p-6 rounded-[16px]"
+          style={{ background: "rgba(20,15,35,0.98)" }}
+        >
+          <div className="flex flex-col items-center">
+            <div className="w-10 h-10 mb-3"><Arkie size="small" /></div>
+            <DialogTitle className="text-white text-[18px] font-bold text-center">
+              Ohne Titel speichern?
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground text-[14px] text-center mt-2">
+              Kein Problem — Arkie speichert trotzdem alles. 💜
+            </DialogDescription>
+            <div className="w-full mt-5 space-y-2">
+              <button
+                onClick={handleSaveWithoutTitle}
+                className="w-full h-[48px] rounded-full font-bold text-white gradient-primary"
+                style={{ boxShadow: "0 4px 20px rgba(139,92,246,0.3)" }}
+              >
+                Ja, speichern
+              </button>
+              <button
+                onClick={focusTitle}
+                className="w-full h-[48px] rounded-full font-medium text-white bg-transparent"
+              >
+                Titel hinzufügen
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
+
+const hasContentHelper = () => true; // not used
 
 export default JournalNewPage;
