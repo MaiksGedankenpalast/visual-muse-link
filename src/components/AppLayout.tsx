@@ -20,7 +20,10 @@ const AppLayout = () => {
   return (
     <div className="relative min-h-screen max-w-[430px] mx-auto">
       <StarBackground />
-      <main className="relative z-10 pb-24">
+      <main
+        className="relative z-10 pb-24"
+        style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+      >
         <div key={location.pathname} className="page-transition">
           <Outlet />
         </div>

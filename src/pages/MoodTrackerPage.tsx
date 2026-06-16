@@ -265,7 +265,7 @@ const MoodTrackerPage = () => {
     <div
       className="px-4 onboarding-slide min-h-screen"
       style={{
-        paddingTop: "calc(env(safe-area-inset-top, 16px) + 24px)",
+        paddingTop: "24px",
         paddingBottom: "calc(env(safe-area-inset-bottom, 16px) + 128px)",
       }}
     >
