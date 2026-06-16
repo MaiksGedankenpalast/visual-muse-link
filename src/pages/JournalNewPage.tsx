@@ -130,7 +130,7 @@ const JournalNewPage = () => {
       {/* HEADER */}
       <div className="flex items-center justify-between mb-5">
         <button onClick={() => {
-          if (hasContent && content.trim()) {
+          if (title.trim() || content.trim()) {
             if (confirm("Ungespeicherte Änderungen verwerfen?")) navigate("/journal");
           } else navigate("/journal");
         }}>
