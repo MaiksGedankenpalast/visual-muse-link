@@ -262,7 +262,13 @@ const MoodTrackerPage = () => {
   };
 
   return (
-    <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
+    <div
+      className="px-4 onboarding-slide min-h-screen"
+      style={{
+        paddingTop: "calc(env(safe-area-inset-top, 16px) + 24px)",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 16px) + 128px)",
+      }}
+    >
       {/* HEADER */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={() => navigate("/home")} aria-label="Zurück">

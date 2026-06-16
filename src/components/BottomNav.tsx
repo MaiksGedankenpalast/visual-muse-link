@@ -82,7 +82,10 @@ const BottomNav = () => {
           borderTop: "1px solid var(--mindark-card-border)",
         }}
       >
-        <div className="relative flex items-end justify-around px-2 pb-5 pt-2">
+        <div
+          className="relative flex items-end justify-around px-2 pt-2"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 20px)" }}
+        >
           {indicator.visible && (
             <span
               aria-hidden="true"
