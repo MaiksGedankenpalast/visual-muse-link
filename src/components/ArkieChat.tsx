@@ -577,10 +577,11 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
 };
 
 const SessionRow = ({ session, onClick }: { session: ChatSession; onClick: () => void }) => {
-  const title = session.title?.trim() || "Unbenanntes Gespräch";
+  const { t, i18n } = useTranslation();
+  const title = session.title?.trim() || t("Unbenanntes Gespräch");
   const relative = formatDistanceToNow(new Date(session.last_message_at), {
     addSuffix: true,
-    locale: de,
+    locale: i18n.language === "en" ? enUS : de,
   });
   return (
     <button
@@ -599,7 +600,7 @@ const SessionRow = ({ session, onClick }: { session: ChatSession; onClick: () =>
         <div className="text-muted-foreground text-xs">
           {relative}
           {typeof session.message_count === "number" && session.message_count > 0
-            ? ` · ${session.message_count} Nachrichten`
+            ? ` · ${session.message_count} ${t("Nachrichten")}`
             : ""}
         </div>
       </div>
