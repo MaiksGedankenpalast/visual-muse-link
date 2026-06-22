@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Info } from "lucide-react";
 import Arkie from "@/components/Arkie";
 
@@ -67,6 +68,7 @@ function computeWindow(moods: MoodEntry[], fromOffset: number, toOffset: number)
 }
 
 const ResilienceCard = ({ moods }: Props) => {
+  const { t } = useTranslation();
   const [showInfo, setShowInfo] = useState(false);
 
   const overall = useMemo(() => computeResilience(moods), [moods]);
@@ -82,18 +84,18 @@ const ResilienceCard = ({ moods }: Props) => {
   })();
 
   const verdict = (() => {
-    if (overall.rate > 80) return "Sehr stark 💪";
-    if (overall.rate >= 60) return "Gut 🌱";
-    if (overall.rate >= 40) return "Im Aufbau ✨";
-    return "Arkie ist für dich da 💜";
+    if (overall.rate > 80) return t("Sehr stark 💪");
+    if (overall.rate >= 60) return t("Gut 🌱");
+    if (overall.rate >= 40) return t("Im Aufbau ✨");
+    return t("Arkie ist für dich da 💜");
   })();
 
   const arkieMsg = (() => {
     if (overall.rate > 70)
-      return "Du findest deinen Weg zurück — immer wieder. Das ist echte Stärke.";
+      return t("Du findest deinen Weg zurück — immer wieder. Das ist echte Stärke.");
     if (overall.rate >= 40)
-      return "Resilienz wächst mit der Zeit. Arkie sieht deinen Fortschritt.";
-    return "Schwierige Zeiten brauchen Raum. Arkie ist dabei wenn du schreiben möchtest.";
+      return t("Resilienz wächst mit der Zeit. Arkie sieht deinen Fortschritt.");
+    return t("Schwierige Zeiten brauchen Raum. Arkie ist dabei wenn du schreiben möchtest.");
   })();
 
   return (
@@ -102,10 +104,10 @@ const ResilienceCard = ({ moods }: Props) => {
       style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
     >
       <div className="flex items-center justify-between mb-3">
-        <p className="font-bold text-white text-[16px]">Deine Resilienz</p>
+        <p className="font-bold text-white text-[16px]">{t("Deine Resilienz")}</p>
         <button
           onClick={() => setShowInfo((s) => !s)}
-          aria-label="Info"
+          aria-label={t("Info")}
           className="text-muted-foreground hover:text-foreground transition-colors relative"
         >
           <Info className="w-4 h-4" />
@@ -114,7 +116,7 @@ const ResilienceCard = ({ moods }: Props) => {
               className="absolute right-0 top-6 z-10 w-56 text-left text-[12px] text-foreground p-3 rounded-lg"
               style={{ background: "rgba(20,15,35,0.96)", border: "1px solid rgba(167,139,250,0.4)" }}
             >
-              Wie schnell erholst du dich nach schwierigen Tagen?
+              {t("Wie schnell erholst du dich nach schwierigen Tagen?")}
             </div>
           )}
         </button>
@@ -124,14 +126,14 @@ const ResilienceCard = ({ moods }: Props) => {
         <div className="text-center py-4">
           <div className="arkie-float inline-block mb-2"><Arkie size="small" /></div>
           <p className="text-muted-foreground text-[13px] mb-3">
-            Arkie braucht noch etwas Zeit um deine Resilienz zu verstehen.
-            Komm in {Math.max(1, 14 - overall.distinctDays)} Tagen wieder.
+            {t("Arkie braucht noch etwas Zeit um deine Resilienz zu verstehen.")}{" "}
+            {t("Komm in {{days}} Tagen wieder.", { days: Math.max(1, 14 - overall.distinctDays) })}
           </p>
           <div className="w-full h-[6px] rounded-full" style={{ background: "rgba(255,255,255,0.1)" }}>
             <div className="h-full rounded-full gradient-primary"
               style={{ width: `${Math.min(100, (overall.distinctDays / 14) * 100)}%` }} />
           </div>
-          <p className="text-muted-foreground text-xs mt-1">{overall.distinctDays}/14 Tage erfasst</p>
+          <p className="text-muted-foreground text-xs mt-1">{t("{{n}}/14 Tage erfasst", { n: overall.distinctDays })}</p>
         </div>
       ) : (
         <>
@@ -144,15 +146,15 @@ const ResilienceCard = ({ moods }: Props) => {
 
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div className="text-center">
-              <p className="text-muted-foreground text-[11px]">Erholungszeit</p>
+              <p className="text-muted-foreground text-[11px]">{t("Erholungszeit")}</p>
               <p className="text-foreground text-[14px] font-medium mt-0.5">
-                Ø {overall.avgRecovery || "–"} Tage
+                {t("Ø {{days}} Tage", { days: overall.avgRecovery || "–" })}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-muted-foreground text-[11px]">Schwierige Tage</p>
+              <p className="text-muted-foreground text-[11px]">{t("Schwierige Tage")}</p>
               <p className="text-foreground text-[14px] font-medium mt-0.5">
-                {overall.hardDays} in 30 Tagen
+                {t("{{n}} in 30 Tagen", { n: overall.hardDays })}
               </p>
             </div>
           </div>
@@ -160,13 +162,13 @@ const ResilienceCard = ({ moods }: Props) => {
           {trend !== null && (
             <div className="mt-3 text-center text-[12px]">
               {trend > 5 && (
-                <span style={{ color: "#4ade80" }}>↑ +{trend}% besser als letzten Monat</span>
+                <span style={{ color: "#4ade80" }}>{t("↑ +{{pct}}% besser als letzten Monat", { pct: trend })}</span>
               )}
               {trend < -5 && (
-                <span style={{ color: "#f87171" }}>↓ {trend}% schwieriger als letzten Monat</span>
+                <span style={{ color: "#f87171" }}>{t("↓ {{pct}}% schwieriger als letzten Monat", { pct: trend })}</span>
               )}
               {trend >= -5 && trend <= 5 && (
-                <span className="text-muted-foreground">→ Ähnlich wie letzten Monat</span>
+                <span className="text-muted-foreground">{t("→ Ähnlich wie letzten Monat")}</span>
               )}
             </div>
           )}
