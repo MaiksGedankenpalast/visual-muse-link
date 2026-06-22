@@ -264,11 +264,11 @@ const InsightsPage = () => {
     const gradId = `grad-${label}`;
     return (
       <div className="glass-card p-4 mb-3">
-        <p className="font-bold text-foreground text-[14px] mb-3">{label}</p>
+        <p className="font-bold text-foreground text-[14px] mb-3">{t(label)}</p>
         {!hasData ? (
           <div className="text-center py-6">
             <div className="arkie-float inline-block mb-2"><Arkie size="small" /></div>
-            <p className="text-muted-foreground text-[13px]">Noch keine Daten für diese Woche.</p>
+            <p className="text-muted-foreground text-[13px]">{t("Noch keine Daten für diese Woche.")}</p>
           </div>
         ) : (
           <div className="h-[150px]">
@@ -308,7 +308,7 @@ const InsightsPage = () => {
                   labelFormatter={(_l, payload) => {
                     const p = payload?.[0]?.payload as { date?: string } | undefined;
                     if (!p?.date) return "";
-                    return new Date(p.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+                    return new Date(p.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
                   }}
                 />
                 <Area
