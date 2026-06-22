@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import StarBackground from "@/components/StarBackground";
 
-const translateError = (msg: string) => {
-  if (msg.includes("Invalid login")) return "E-Mail oder Passwort falsch.";
-  if (msg.includes("Email already")) return "Diese E-Mail ist bereits registriert.";
-  if (msg.includes("Password") && msg.includes("short")) return "Passwort muss mindestens 6 Zeichen haben.";
-  if (msg.includes("network") || msg.includes("fetch")) return "Keine Verbindung. Bitte prüfe dein Internet.";
+const translateError = (msg: string, t: (k: string) => string) => {
+  if (msg.includes("Invalid login")) return t("E-Mail oder Passwort falsch.");
+  if (msg.includes("Email already")) return t("Diese E-Mail ist bereits registriert.");
+  if (msg.includes("Password") && msg.includes("short")) return t("Passwort muss mindestens 6 Zeichen haben.");
+  if (msg.includes("network") || msg.includes("fetch")) return t("Keine Verbindung. Bitte prüfe dein Internet.");
   return msg;
 };
 
 const Login = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, onboardingComplete } = useAuth();
   const [email, setEmail] = useState("");
@@ -36,7 +38,7 @@ const Login = () => {
     setError("");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(translateError(error.message));
+      setError(translateError(error.message, t));
       setLoading(false);
     }
   };
@@ -77,20 +79,20 @@ const Login = () => {
         <div className="mt-8 mb-10"><Arkie size="large" /></div>
 
         <form onSubmit={handleLogin} className="space-y-4 w-full">
-          <input type="email" placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)}
+          <input type="email" placeholder={t("E-Mail")} value={email} onChange={(e) => setEmail(e.target.value)}
             className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground" style={inputStyle} required />
-          <input type="password" placeholder="Passwort" value={password} onChange={(e) => setPassword(e.target.value)}
+          <input type="password" placeholder={t("Passwort")} value={password} onChange={(e) => setPassword(e.target.value)}
             className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground" style={inputStyle} required />
           {error && <p className="text-destructive text-sm text-center">{error}</p>}
           <button type="submit" className="btn-pill mt-6" disabled={loading}>
-            {loading ? "..." : "ANMELDEN"}
+            {loading ? "..." : t("ANMELDEN")}
           </button>
         </form>
 
         <p className="text-center text-muted-foreground text-sm mt-6">
-          Noch kein Account?{" "}
+          {t("Noch kein Account?")}{" "}
           <button onClick={() => navigate("/signup")} className="underline" style={{ color: "var(--mindark-accent-start)" }}>
-            Registrieren
+            {t("Registrieren")}
           </button>
         </p>
 
@@ -105,7 +107,7 @@ const Login = () => {
               color: "rgba(216,180,254,0.95)",
             }}
           >
-            {pitchLoading ? "Wird vorbereitet..." : "🎯 Testzugang BSS-Pitch"}
+            {pitchLoading ? t("Wird vorbereitet...") : t("🎯 Testzugang BSS-Pitch")}
           </button>
         </div>
       </div>

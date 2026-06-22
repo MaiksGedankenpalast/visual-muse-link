@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -18,6 +19,7 @@ const PAGE_SIZE = 20;
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const MicroWinsPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -54,22 +56,22 @@ const MicroWinsPage = () => {
   };
 
   const handleSend = async () => {
-    const t = text.trim();
-    if (!t || !user || saving) return;
+    const trimmed = text.trim();
+    if (!trimmed || !user || saving) return;
     setSaving(true);
     const { error } = await supabase
       .from("micro_wins")
-      .insert({ user_id: user.id, content: t.slice(0, 120), date: todayStr() });
+      .insert({ user_id: user.id, content: trimmed.slice(0, 120), date: todayStr() });
     setSaving(false);
     if (error) {
-      toast.error("Konnte nicht gespeichert werden");
+      toast.error(t("Konnte nicht gespeichert werden"));
       return;
     }
     setText("");
     setBounce(true);
     setTimeout(() => setBounce(false), 600);
     haptic("selection");
-    toast.success("Gespeichert! Arkie ist stolz. ✨");
+    toast.success(t("Gespeichert! Arkie ist stolz. ✨"));
     fetchWins();
   };
 
@@ -110,22 +112,21 @@ const MicroWinsPage = () => {
           <button
             onClick={dismissIntro}
             className="absolute top-2 right-2 text-foreground/40"
-            aria-label="Schließen"
+            aria-label={t("Schließen")}
           >
             <X className="w-4 h-4" />
           </button>
           <div className="shrink-0 mt-0.5"><Arkie size="small" /></div>
           <div className="flex-1 pr-4">
             <p className="text-foreground text-[14px] leading-relaxed mb-3">
-              Kleine Siege zählen. Was hast du heute geschafft — auch wenn es winzig wirkt?
-              Arkie sammelt sie für dich. 💜
+              {t("Kleine Siege zählen. Was hast du heute geschafft — auch wenn es winzig wirkt? Arkie sammelt sie für dich. 💜")}
             </p>
             <button
               onClick={dismissIntro}
               className="text-[12px] px-3 py-1.5 rounded-full font-medium text-white"
               style={{ background: "rgba(255,255,255,0.15)" }}
             >
-              Verstanden
+              {t("Verstanden")}
             </button>
           </div>
         </div>
@@ -138,7 +139,7 @@ const MicroWinsPage = () => {
           style={{ background: "linear-gradient(135deg, rgba(139,92,246,0.4), rgba(99,102,241,0.3))" }}
         >
           <p className="text-foreground font-bold text-[15px] mb-2">
-            Diese Woche: {winsThisWeek.length} kleine Siege 🎉
+            {t("Diese Woche: {{count}} kleine Siege 🎉", { count: winsThisWeek.length })}
           </p>
           <div className="space-y-1">
             {lastThree.map((w) => (
@@ -154,14 +155,14 @@ const MicroWinsPage = () => {
           <Arkie size="small" />
         </div>
         <div className="flex-1">
-          <p className="text-muted-foreground text-[14px] mb-2">Was war dein kleiner Sieg heute?</p>
+          <p className="text-muted-foreground text-[14px] mb-2">{t("Was war dein kleiner Sieg heute?")}</p>
           <div className="relative">
             <input
               value={text}
               maxLength={120}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder="Auch Kleinigkeiten zählen..."
+              placeholder={t("Auch Kleinigkeiten zählen...")}
               className="w-full pl-4 pr-12 py-3 rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none"
               style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.1)" }}
             />
@@ -172,7 +173,7 @@ const MicroWinsPage = () => {
               style={{
                 background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
               }}
-              aria-label="Senden"
+              aria-label={t("Senden")}
             >
               <Send className="w-4 h-4 text-foreground" />
             </button>
@@ -182,12 +183,12 @@ const MicroWinsPage = () => {
       </div>
 
       {/* FEED */}
-      <p className="font-bold text-foreground text-[15px] mb-3">Deine bisherigen Siege</p>
+      <p className="font-bold text-foreground text-[15px] mb-3">{t("Deine bisherigen Siege")}</p>
       {wins.length === 0 ? (
         <div className="text-center py-10 flex flex-col items-center gap-3">
           <Arkie size="small" />
           <p className="text-muted-foreground text-sm">
-            Noch keine Siege eingetragen.<br />Dein erster wartet auf dich. 💜
+            {t("Noch keine Siege eingetragen.")}<br />{t("Dein erster wartet auf dich. 💜")}
           </p>
         </div>
       ) : (
@@ -210,7 +211,7 @@ const MicroWinsPage = () => {
               className="w-full py-2.5 text-[13px] text-muted-foreground rounded-full"
               style={{ background: "rgba(255,255,255,0.05)" }}
             >
-              Mehr laden
+              {t("Mehr laden")}
             </button>
           )}
         </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -7,6 +8,7 @@ import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 const OnboardingName = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [name, setName] = useState("");
@@ -29,7 +31,7 @@ const OnboardingName = () => {
       <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <div className="w-full flex items-center justify-between mb-6">
-          <button onClick={() => navigate("/splash")} aria-label="Zurück" className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+          <button onClick={() => navigate("/splash")} aria-label={t("Zurück")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
             <span className="text-foreground text-lg">◀</span>
           </button>
           <OnboardingProgress currentStep={1} />
@@ -40,15 +42,15 @@ const OnboardingName = () => {
           <Arkie size="large" />
         </div>
 
-        <h1 className="text-2xl font-bold text-center mb-2">Wie soll ich dich nennen?</h1>
+        <h1 className="text-2xl font-bold text-center mb-2">{t("Wie soll ich dich nennen?")}</h1>
         <p className="text-muted-foreground text-sm text-center mb-8">
-          Arkie merkt sich deinen Namen — versprochen.
+          {t("Arkie merkt sich deinen Namen — versprochen.")}
         </p>
 
         <input
           type="text"
-          placeholder="Dein Name..."
-          aria-label="Dein Name"
+          placeholder={t("Dein Name...")}
+          aria-label={t("Dein Name")}
           value={name}
           onChange={(e) => setName(e.target.value)}
           className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground mb-8"
@@ -63,7 +65,7 @@ const OnboardingName = () => {
             className="btn-pill"
             style={{ opacity: name.trim() ? 1 : 0.4 }}
           >
-            {loading ? "..." : "WEITER"}
+            {loading ? "..." : t("WEITER")}
           </button>
         </div>
       </div>

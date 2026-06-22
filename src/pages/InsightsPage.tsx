@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -13,11 +14,14 @@ import {
 import { motion, type PanInfo } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 
-const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
-const WEEKDAYS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAYS_DE = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
+const WEEKDAYS_EN = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+const WEEKDAYS_SHORT_DE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAYS_SHORT_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
+const CORE_LABEL_KEYS = ["Stimmung", "Energie", "Entspannung"];
 
 const COLORS = {
   stimmung: "#9B6FD4",
@@ -43,8 +47,15 @@ interface MoodEntry {
 }
 
 const InsightsPage = () => {
+  const { t, i18n } = useTranslation();
+  const isEN = i18n.language === "en";
+  const WEEKDAYS = isEN ? WEEKDAYS_EN : WEEKDAYS_DE;
+  const WEEKDAYS_SHORT = isEN ? WEEKDAYS_SHORT_EN : WEEKDAYS_SHORT_DE;
+  const MONTHS = isEN ? MONTHS_EN : MONTHS_DE;
+  const CORE_LABELS = CORE_LABEL_KEYS.map((k) => t(k));
+  const locale = isEN ? "en-US" : "de-DE";
   const { user, profileName } = useAuth();
-  const name = profileName || "du";
+  const name = profileName || t("du");
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<"week" | "month" | "weekly_review" | "four_weekly_review">("week");
@@ -196,17 +207,17 @@ const InsightsPage = () => {
     const ax = avgOf("neg_angst");
     const tr = avgOf("neg_traurigkeit");
     const ei = avgOf("neg_einsamkeit");
-    if (er !== null && er > 60) insights.push("Diese Woche zeigt Arkie erhöhte Erschöpfungswerte. Gönn dir Pausen. 🌙");
-    if (ax !== null && ax > 50) insights.push("Arkie hat bemerkt: Diese Woche war Sorge ein Thema. Das ist okay — du bist nicht allein. 💜");
-    if (tr !== null && tr > 50) insights.push("Es gab traurige Momente diese Woche. Sei sanft mit dir. ✨");
-    if (ei !== null && ei > 50) insights.push("Einsamkeit war spürbar. Vielleicht heute jemandem schreiben? 💜");
+    if (er !== null && er > 60) insights.push(t("Diese Woche zeigt Arkie erhöhte Erschöpfungswerte. Gönn dir Pausen. 🌙"));
+    if (ax !== null && ax > 50) insights.push(t("Arkie hat bemerkt: Diese Woche war Sorge ein Thema. Das ist okay — du bist nicht allein. 💜"));
+    if (tr !== null && tr > 50) insights.push(t("Es gab traurige Momente diese Woche. Sei sanft mit dir. ✨"));
+    if (ei !== null && ei > 50) insights.push(t("Einsamkeit war spürbar. Vielleicht heute jemandem schreiben? 💜"));
     if (insights.length === 0 && weekMoods.length >= 4) {
       const avg = weekMoods.reduce((a, m) => a + score(m), 0) / weekMoods.length;
-      if (avg > 65) insights.push(`Schöne Woche, ${name}. Deine Stimmung ist insgesamt stark. ✨`);
-      else if (avg < 40) insights.push(`Diese Woche war schwer, ${name}. Arkie ist bei dir. 💜`);
+      if (avg > 65) insights.push(t("Schöne Woche, {{name}}. Deine Stimmung ist insgesamt stark. ✨", { name }));
+      else if (avg < 40) insights.push(t("Diese Woche war schwer, {{name}}. Arkie ist bei dir. 💜", { name }));
     }
     return insights;
-  }, [weekMoods, name]);
+  }, [weekMoods, name, t]);
 
   // ── Month data ──
   const monthMoods = useMemo(() =>
@@ -253,11 +264,11 @@ const InsightsPage = () => {
     const gradId = `grad-${label}`;
     return (
       <div className="glass-card p-4 mb-3">
-        <p className="font-bold text-foreground text-[14px] mb-3">{label}</p>
+        <p className="font-bold text-foreground text-[14px] mb-3">{t(label)}</p>
         {!hasData ? (
           <div className="text-center py-6">
             <div className="arkie-float inline-block mb-2"><Arkie size="small" /></div>
-            <p className="text-muted-foreground text-[13px]">Noch keine Daten für diese Woche.</p>
+            <p className="text-muted-foreground text-[13px]">{t("Noch keine Daten für diese Woche.")}</p>
           </div>
         ) : (
           <div className="h-[150px]">
@@ -297,7 +308,7 @@ const InsightsPage = () => {
                   labelFormatter={(_l, payload) => {
                     const p = payload?.[0]?.payload as { date?: string } | undefined;
                     if (!p?.date) return "";
-                    return new Date(p.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "short" });
+                    return new Date(p.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
                   }}
                 />
                 <Area
@@ -329,16 +340,16 @@ const InsightsPage = () => {
       onDragEnd={handleSwipe}
       className="px-4 pt-6 pb-32 onboarding-slide min-h-screen"
     >
-      <h1 className="font-bold text-foreground text-[24px] mb-5">Deine Insights</h1>
+      <h1 className="font-bold text-foreground text-[24px] mb-5">{t("Deine Insights")}</h1>
 
       {/* MODE TOGGLE */}
       <div className="flex justify-center mb-6 overflow-x-auto scrollbar-hide">
         <div className="flex rounded-full p-1 gap-0.5 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
           {([
-            { k: "week", label: "Woche" },
-            { k: "month", label: "Monat" },
-            { k: "weekly_review", label: "7-Tage" },
-            { k: "four_weekly_review", label: "28-Tage" },
+            { k: "week", label: t("Woche") },
+            { k: "month", label: t("Monat") },
+            { k: "weekly_review", label: t("7-Tage") },
+            { k: "four_weekly_review", label: t("28-Tage") },
           ] as const).map(({ k, label }) => (
             <button key={k} onClick={() => setMode(k)}
               className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
@@ -367,15 +378,15 @@ const InsightsPage = () => {
               <div>
                 {streak > 0 ? (
                   <>
-                    <p className="text-foreground font-bold text-[18px]">🔥 {streak} Tage in Folge</p>
-                    <p className="text-foreground/60 text-[12px] mt-0.5">Rekord: {maxStreak} Tage</p>
+                    <p className="text-foreground font-bold text-[18px]">{t("🔥 {{streak}} Tage in Folge", { streak })}</p>
+                    <p className="text-foreground/60 text-[12px] mt-0.5">{t("Rekord: {{max}} Tage", { max: maxStreak })}</p>
                   </>
                 ) : (
-                  <p className="text-foreground text-[14px]">Starte heute deinen ersten Streak 💜</p>
+                  <p className="text-foreground text-[14px]">{t("Starte heute deinen ersten Streak 💜")}</p>
                 )}
               </div>
               <div className="flex items-center gap-1 text-foreground/70 text-[12px]">
-                Mehr Details <ArrowRight className="w-3.5 h-3.5" />
+                {t("Mehr Details")} <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
           </button>
@@ -383,33 +394,33 @@ const InsightsPage = () => {
           {/* BEST / WORST DAY */}
           <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="glass-card p-3 text-center">
-              <p className="text-[13px] text-muted-foreground mb-1">🌟 Bester Tag</p>
+              <p className="text-[13px] text-muted-foreground mb-1">{t("🌟 Bester Tag")}</p>
               {bestDay ? (
                 <>
                   <p className="text-foreground font-bold text-sm">
-                    {new Date(bestDay.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}
+                    {new Date(bestDay.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "numeric" })}
                   </p>
                   <p className="text-sm font-bold" style={{ color: "#4ade80" }}>{Math.round(score(bestDay))}%</p>
                 </>
-              ) : <p className="text-muted-foreground text-xs">Noch zu wenig Daten</p>}
+              ) : <p className="text-muted-foreground text-xs">{t("Noch zu wenig Daten")}</p>}
             </div>
             <div className="glass-card p-3 text-center">
-              <p className="text-[13px] text-muted-foreground mb-1">🌙 Schwieriger Tag</p>
+              <p className="text-[13px] text-muted-foreground mb-1">{t("🌙 Schwieriger Tag")}</p>
               {worstDay ? (
                 <>
                   <p className="text-foreground font-bold text-sm">
-                    {new Date(worstDay.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}
+                    {new Date(worstDay.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "numeric" })}
                   </p>
                   <p className="text-sm font-bold" style={{ color: "#ef4444" }}>{Math.round(score(worstDay))}%</p>
                 </>
-              ) : <p className="text-muted-foreground text-xs">Noch zu wenig Daten</p>}
+              ) : <p className="text-muted-foreground text-xs">{t("Noch zu wenig Daten")}</p>}
             </div>
           </div>
 
           {/* WEEK CAPSULES */}
           {weekCapsules && (
             <div className="glass-card p-4 mb-4">
-              <p className="font-bold text-foreground text-sm mb-3">Deine Woche im Überblick</p>
+              <p className="font-bold text-foreground text-sm mb-3">{t("Deine Woche im Überblick")}</p>
               <div className="flex justify-around gap-3">
                 {weekCapsules.map((pct, i) => (
                   <div key={i} className="flex flex-col items-center flex-1">
@@ -435,7 +446,7 @@ const InsightsPage = () => {
           {/* COMBINED CHART */}
           {totalDimPoints >= 5 && (
             <div className="glass-card p-4 mb-3">
-              <p className="font-bold text-foreground text-[14px] mb-3">Alle auf einen Blick</p>
+              <p className="font-bold text-foreground text-[14px] mb-3">{t("Alle auf einen Blick")}</p>
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={combinedData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
@@ -459,9 +470,9 @@ const InsightsPage = () => {
               </div>
               <div className="flex justify-center gap-4 mt-3">
                 {[
-                  { c: COLORS.stimmung, l: "Stimmung" },
-                  { c: COLORS.energie, l: "Energie" },
-                  { c: COLORS.stress, l: "Stress" },
+                  { c: COLORS.stimmung, l: t("Stimmung") },
+                  { c: COLORS.energie, l: t("Energie") },
+                  { c: COLORS.stress, l: t("Stress") },
                 ].map(({ c, l }) => (
                   <div key={l} className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full" style={{ background: c }} />
@@ -475,7 +486,7 @@ const InsightsPage = () => {
           {/* HOUR PATTERN */}
           {hourData && (
             <div className="glass-card p-4 mb-4">
-              <p className="font-bold text-foreground text-[14px] mb-3">Wann schreibst du?</p>
+              <p className="font-bold text-foreground text-[14px] mb-3">{t("Wann schreibst du?")}</p>
               <div className="h-[140px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={hourData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
@@ -498,8 +509,8 @@ const InsightsPage = () => {
                         borderRadius: 8,
                         color: "white",
                       }}
-                      formatter={(v: number | string) => [`${v} Einträge`, ""]}
-                      labelFormatter={(h) => `${h}:00 Uhr`}
+                      formatter={(v: number | string) => [`${v} ${t("Einträge")}`, ""]}
+                      labelFormatter={(h) => isEN ? `${h}:00` : `${h}:00 Uhr`}
                     />
                     <Bar dataKey="count" fill="url(#barGrad)" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={800} />
                   </BarChart>
@@ -512,18 +523,18 @@ const InsightsPage = () => {
           <ResilienceCard moods={moods} />
 
           <div className="mb-4">
-            <p className="font-bold text-foreground text-sm mb-3">Arkie hat etwas bemerkt 🔮</p>
+            <p className="font-bold text-foreground text-sm mb-3">{t("Arkie hat etwas bemerkt 🔮")}</p>
             {moods.length < 7 ? (
               <div className="glass-card p-5 text-center">
                 <div className="arkie-float inline-block mb-3"><Arkie size="small" /></div>
                 <p className="text-muted-foreground text-sm">
-                  Arkie sammelt noch Daten für dich. Komm in ein paar Tagen wieder! 🔮
+                  {t("Arkie sammelt noch Daten für dich. Komm in ein paar Tagen wieder! 🔮")}
                 </p>
                 <div className="w-full h-[6px] rounded-full mt-3" style={{ background: "rgba(255,255,255,0.1)" }}>
                   <div className="h-full rounded-full gradient-primary transition-all"
                     style={{ width: `${Math.min(100, (moods.length / 7) * 100)}%` }} />
                 </div>
-                <p className="text-muted-foreground text-xs mt-1">{moods.length}/7 Einträge erfasst</p>
+                <p className="text-muted-foreground text-xs mt-1">{t("{{n}}/7 Einträge erfasst", { n: moods.length })}</p>
               </div>
             ) : arkieInsights.length > 0 ? (
               <div className="space-y-2">
@@ -537,7 +548,7 @@ const InsightsPage = () => {
               </div>
             ) : (
               <div className="glass-card p-4 text-center">
-                <p className="text-muted-foreground text-sm">Noch keine Muster erkannt. Mach weiter so! ✨</p>
+                <p className="text-muted-foreground text-sm">{t("Noch keine Muster erkannt. Mach weiter so! ✨")}</p>
               </div>
             )}
           </div>
@@ -547,7 +558,7 @@ const InsightsPage = () => {
       {mode === "month" && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-foreground text-lg">{MONTHS_DE[viewMonth]} {viewYear}</h2>
+            <h2 className="font-bold text-foreground text-lg">{MONTHS[viewMonth]} {viewYear}</h2>
             <div className="flex gap-2">
               <button onClick={() => { viewMonth === 0 ? (setViewMonth(11), setViewYear((y) => y - 1)) : setViewMonth((m) => m - 1); setSelectedDay(null); }}
                 className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -561,7 +572,7 @@ const InsightsPage = () => {
           </div>
 
           <div className="glass-card p-4 mb-4">
-            <p className="font-bold text-foreground text-sm mb-3">Mood Heatmap</p>
+            <p className="font-bold text-foreground text-sm mb-3">{t("Mood Heatmap")}</p>
             <div className="grid grid-cols-7 gap-1 mb-2">
               {WEEKDAYS.map((d) => <div key={d} className="text-center text-[11px] text-muted-foreground">{d}</div>)}
             </div>
@@ -599,7 +610,7 @@ const InsightsPage = () => {
               const vals = [m.stimmung, m.energie, m.stress];
               return (
                 <div className="mt-3 p-3 rounded-[14px]" style={{ background: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-xs text-muted-foreground mb-2">{selectedDay}. {MONTHS_DE[viewMonth]}</p>
+                  <p className="text-xs text-muted-foreground mb-2">{isEN ? `${MONTHS[viewMonth]} ${selectedDay}` : `${selectedDay}. ${MONTHS[viewMonth]}`}</p>
                   <div className="flex justify-around gap-3">
                     {vals.map((val, j) => (
                       <div key={j} className="flex flex-col items-center flex-1">
@@ -620,11 +631,11 @@ const InsightsPage = () => {
           <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">📝 {journalCount}</p>
-              <p className="text-[11px] text-muted-foreground">Einträge</p>
+              <p className="text-[11px] text-muted-foreground">{t("Einträge")}</p>
             </div>
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">🔥 {streak}</p>
-              <p className="text-[11px] text-muted-foreground">Streak</p>
+              <p className="text-[11px] text-muted-foreground">{t("Streak")}</p>
             </div>
           </div>
         </>

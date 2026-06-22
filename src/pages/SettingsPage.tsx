@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Loader2, LogOut, Camera, Image as ImageIcon, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -27,6 +28,7 @@ async function queryPermission(name: PermissionName): Promise<PermState> {
 }
 
 const SettingsPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +49,7 @@ const SettingsPage = () => {
     setError(null);
     const { error: signOutError } = await supabase.auth.signOut();
     if (signOutError) {
-      setError("Abmeldung fehlgeschlagen. Bitte erneut versuchen.");
+      setError(t("Abmeldung fehlgeschlagen. Bitte erneut versuchen."));
       setLoading(false);
       return;
     }
@@ -56,11 +58,11 @@ const SettingsPage = () => {
 
   const requestCamera = async () => {
     if (cameraState === "granted") {
-      setInfo("Kamera-Zugriff ist aktiv. Um ihn zu entziehen, gehe zu deinen Geräte-Einstellungen → MindArk → Kamera ausschalten.");
+      setInfo(t("Kamera-Zugriff ist aktiv. Um ihn zu entziehen, gehe zu deinen Geräte-Einstellungen → MindArk → Kamera ausschalten."));
       return;
     }
     if (cameraState === "denied") {
-      setInfo("Kamera-Zugriff wurde verweigert. Bitte aktiviere ihn in deinen Geräte-Einstellungen → MindArk → Kamera.");
+      setInfo(t("Kamera-Zugriff wurde verweigert. Bitte aktiviere ihn in deinen Geräte-Einstellungen → MindArk → Kamera."));
       return;
     }
     try {
@@ -73,10 +75,10 @@ const SettingsPage = () => {
   };
 
   const subtitleFor = (s: PermState) => {
-    if (s === "granted") return { text: "Zugriff erlaubt ✓", color: "#4ade80" };
-    if (s === "denied") return { text: "Zugriff verweigert", color: "#f87171" };
-    if (s === "prompt") return { text: "Noch nicht festgelegt", color: "rgba(255,255,255,0.5)" };
-    return { text: "Noch nicht festgelegt", color: "rgba(255,255,255,0.5)" };
+    if (s === "granted") return { text: t("Zugriff erlaubt ✓"), color: "#4ade80" };
+    if (s === "denied") return { text: t("Zugriff verweigert"), color: "#f87171" };
+    if (s === "prompt") return { text: t("Noch nicht festgelegt"), color: "rgba(255,255,255,0.5)" };
+    return { text: t("Noch nicht festgelegt"), color: "rgba(255,255,255,0.5)" };
   };
 
   return (
@@ -86,17 +88,17 @@ const SettingsPage = () => {
           onClick={() => navigate(-1)}
           className="w-9 h-9 rounded-full flex items-center justify-center"
           style={{ background: "rgba(255,255,255,0.06)" }}
-          aria-label="Zurück"
+          aria-label={t("Zurück")}
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="text-[28px] font-bold text-foreground">Settings</h1>
+        <h1 className="text-[28px] font-bold text-foreground">{t("Settings")}</h1>
       </div>
 
       {/* PRIVACY & PERMISSIONS */}
       <section className="space-y-3 mb-6">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground px-1">
-          Privatsphäre
+          {t("Privatsphäre")}
         </h2>
         <div
           className="rounded-2xl overflow-hidden divide-y"
@@ -113,7 +115,7 @@ const SettingsPage = () => {
           >
             <Camera className="w-5 h-5 text-foreground/80 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground">Kamera</p>
+              <p className="text-sm font-bold text-foreground">{t("Kamera")}</p>
               <p className="text-xs" style={{ color: subtitleFor(cameraState).color }}>
                 {subtitleFor(cameraState).text}
               </p>
@@ -122,12 +124,12 @@ const SettingsPage = () => {
           </button>
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }} />
           <button
-            onClick={() => setInfo("Galerie-Zugriff wird beim Auswählen eines Fotos abgefragt. iOS/Android steuern das systemweit.")}
+            onClick={() => setInfo(t("Galerie-Zugriff wird beim Auswählen eines Fotos abgefragt. iOS/Android steuern das systemweit."))}
             className="w-full flex items-center gap-3 px-4 py-3 text-left"
           >
             <ImageIcon className="w-5 h-5 text-foreground/80 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground">Galerie-Zugriff</p>
+              <p className="text-sm font-bold text-foreground">{t("Galerie-Zugriff")}</p>
               <p className="text-xs" style={{ color: subtitleFor(galleryState).color }}>
                 {subtitleFor(galleryState).text}
               </p>
@@ -139,7 +141,7 @@ const SettingsPage = () => {
 
       <section className="space-y-3">
         <h2 className="text-xs uppercase tracking-wider text-muted-foreground px-1">
-          Account
+          {t("Account")}
         </h2>
         <div
           className="rounded-2xl p-4"
@@ -157,12 +159,12 @@ const SettingsPage = () => {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Abmelden …
+                {t("Abmelden …")}
               </>
             ) : (
               <>
                 <LogOut className="w-4 h-4" />
-                Log Out
+                {t("Log Out")}
               </>
             )}
           </button>
@@ -177,11 +179,11 @@ const SettingsPage = () => {
       <AlertDialog open={info !== null} onOpenChange={(o) => !o && setInfo(null)}>
         <AlertDialogContent style={{ background: "#0D0B14", borderColor: "rgba(255,255,255,0.1)" }}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Berechtigung verwalten</AlertDialogTitle>
+            <AlertDialogTitle className="text-foreground">{t("Berechtigung verwalten")}</AlertDialogTitle>
             <AlertDialogDescription>{info}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="text-foreground">Schließen</AlertDialogCancel>
+            <AlertDialogCancel className="text-foreground">{t("Schließen")}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 const OnboardingWelcome = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { profileName } = useAuth();
 
@@ -13,7 +15,7 @@ const OnboardingWelcome = () => {
       <StarBackground />
       <div className="relative z-10 flex flex-col items-center w-full flex-1">
         <div className="w-full flex items-center justify-between mb-6">
-          <button onClick={() => navigate("/onboarding/name")} aria-label="Zurück" className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
+          <button onClick={() => navigate("/onboarding/name")} aria-label={t("Zurück")} className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center">
             <span className="text-foreground text-lg">◀</span>
           </button>
           <OnboardingProgress currentStep={1} />
@@ -25,21 +27,21 @@ const OnboardingWelcome = () => {
         </div>
 
         <h2 className="text-2xl font-bold text-center mb-4">
-          Schön, dich kennenzulernen,{" "}
-          <span style={{ color: "#C99EF0" }}>{profileName || "du"}</span>!
+          {t("Schön, dich kennenzulernen,")}{" "}
+          <span style={{ color: "#C99EF0" }}>{profileName || t("du")}</span>!
         </h2>
 
         <p className="text-center text-foreground mb-3" style={{ fontSize: 15, lineHeight: 1.6, opacity: 0.9 }}>
-          Ich bin Arkie — und ich bin hier um zuzuhören, mitzufühlen, und dabei zu sein wenn du schreibst.
+          {t("Ich bin Arkie — und ich bin hier um zuzuhören, mitzufühlen, und dabei zu sein wenn du schreibst.")}
         </p>
 
         <p className="text-muted-foreground text-center text-sm" style={{ opacity: 0.6 }}>
-          Dein persönlicher Begleiter. Immer da.
+          {t("Dein persönlicher Begleiter. Immer da.")}
         </p>
 
         <div className="w-full mt-auto">
           <button onClick={() => navigate("/onboarding/mood")} className="btn-pill">
-            LOS GEHT'S
+            {t("LOS GEHT'S")}
           </button>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Send, History, Plus, ArrowLeft, MessageSquare } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { Drawer, DrawerContent } from "@/components/ui/drawer";
 import { Skeleton } from "@/components/ui/skeleton";
 import Arkie from "./Arkie";
@@ -32,6 +33,7 @@ interface ArkieChatProps {
 type View = "home" | "list" | "active";
 
 const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [view, setView] = useState<View>("home");
   const [sessions, setSessions] = useState<ChatSession[]>([]);
@@ -67,7 +69,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       const list = await listSessions(user.id);
       setSessions(list);
     } catch {
-      setSessionsError("Konnte Verlauf nicht laden.");
+      setSessionsError(t("Konnte Verlauf nicht laden."));
     } finally {
       setSessionsLoading(false);
     }
@@ -99,7 +101,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
   const greetingMessage = (): ChatMessage => ({
     id: "welcome",
     role: "assistant",
-    content: `Hey${userName ? ` ${userName}` : ""}! Ich bin Arkie 💜 Was beschäftigt dich gerade?`,
+    content: t("Hey{{suffix}}! Ich bin Arkie 💜 Was beschäftigt dich gerade?", { suffix: userName ? ` ${userName}` : "" }),
     timestamp: new Date(),
   });
 
@@ -111,7 +113,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
       setMessages([greetingMessage()]);
       setView("active");
     } catch {
-      setSessionsError("Konnte neuen Chat nicht starten.");
+      setSessionsError(t("Konnte neuen Chat nicht starten."));
     }
   };
 
@@ -133,7 +135,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
         {
           id: "err",
           role: "assistant",
-          content: "Konnte den Chatverlauf nicht laden 😔",
+          content: t("Konnte den Chatverlauf nicht laden 😔"),
           timestamp: new Date(),
         },
       ]);
@@ -276,7 +278,9 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
           if (safety?.rule === "REGEL_2_DIAGNOSE") parts.push(diagnoseHint());
           return parts.length ? { role: "system", content: parts.join("\n\n") } : null;
         })(),
-        richSystem || null
+        richSystem || null,
+        activeSession.id,
+        (i18n.language as "de" | "en") || "de"
       );
 
       // Persist assistant reply
@@ -291,7 +295,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: "Hmm, da ist etwas schiefgelaufen. Versuch es nochmal 💜",
+          content: t("Hmm, da ist etwas schiefgelaufen. Versuch es nochmal 💜"),
           timestamp: new Date(),
         },
       ]);
@@ -301,9 +305,9 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
   };
 
   const headerTitle =
-    view === "home" ? "Rede mit Arkie" :
-    view === "list" ? "Bisherige Gespräche" :
-    "Rede mit Arkie";
+    view === "home" ? t("Rede mit Arkie") :
+    view === "list" ? t("Bisherige Gespräche") :
+    t("Rede mit Arkie");
 
   return (
     <Drawer open={open} onOpenChange={onOpenChange}>
@@ -324,7 +328,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
               <button
                 onClick={() => setView(activeSession ? "active" : "home")}
                 className="text-muted-foreground p-1 -ml-1"
-                aria-label="Zurück"
+                aria-label={t("Zurück")}
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -339,7 +343,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
               <button
                 onClick={() => { setView("list"); fetchSessions(); }}
                 className="text-muted-foreground p-2"
-                aria-label="Verlauf"
+                aria-label={t("Verlauf")}
               >
                 <History className="w-5 h-5" />
               </button>
@@ -347,7 +351,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
             <button
               onClick={() => onOpenChange(false)}
               className="text-muted-foreground p-1"
-              aria-label="Schließen"
+              aria-label={t("Schließen")}
             >
               <X className="w-5 h-5" />
             </button>
@@ -360,10 +364,10 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
             <div className="text-center pt-2">
               <Arkie size={64} />
               <h2 className="text-foreground font-semibold text-lg mt-4">
-                Willkommen{userName ? `, ${userName}` : ""} 💜
+                {t("Willkommen{{suffix}} 💜", { suffix: userName ? `, ${userName}` : "" })}
               </h2>
               <p className="text-muted-foreground text-sm mt-1">
-                Starte ein neues Gespräch oder setze ein vergangenes fort.
+                {t("Starte ein neues Gespräch oder setze ein vergangenes fort.")}
               </p>
             </div>
 
@@ -375,20 +379,20 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
               }}
             >
               <Plus className="w-4 h-4" />
-              Neues Gespräch
+              {t("Neues Gespräch")}
             </button>
 
             <div>
               <div className="flex items-center justify-between mb-3 px-1">
                 <span className="text-muted-foreground text-xs uppercase tracking-wider">
-                  Bisherige Gespräche
+                  {t("Bisherige Gespräche")}
                 </span>
                 {sessions.length > 3 && (
                   <button
                     onClick={() => setView("list")}
                     className="text-xs text-muted-foreground"
                   >
-                    Alle anzeigen
+                    {t("Alle anzeigen")}
                   </button>
                 )}
               </div>
@@ -411,7 +415,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                     onClick={fetchSessions}
                     className="text-xs underline text-muted-foreground"
                   >
-                    Erneut versuchen
+                    {t("Erneut versuchen")}
                   </button>
                 </div>
               )}
@@ -421,7 +425,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                   className="p-5 rounded-xl text-sm text-muted-foreground text-center"
                   style={{ background: "rgba(255,255,255,0.04)" }}
                 >
-                  Noch keine vergangenen Gespräche.<br />Starte dein erstes 💜
+                  {t("Noch keine vergangenen Gespräche.")}<br />{t("Starte dein erstes 💜")}
                 </div>
               )}
 
@@ -453,13 +457,13 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
               >
                 <span>{sessionsError}</span>
                 <button onClick={fetchSessions} className="text-xs underline">
-                  Erneut versuchen
+                  {t("Erneut versuchen")}
                 </button>
               </div>
             )}
             {!sessionsLoading && !sessionsError && sessions.length === 0 && (
               <div className="p-6 text-center text-sm text-muted-foreground">
-                Noch keine Gespräche. Starte dein erstes 💜
+                {t("Noch keine Gespräche. Starte dein erstes 💜")}
               </div>
             )}
             {!sessionsLoading && sessions.map((s) => (
@@ -474,7 +478,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
               }}
             >
               <Plus className="w-4 h-4" />
-              Neues Gespräch
+              {t("Neues Gespräch")}
             </button>
           </div>
         )}
@@ -544,7 +548,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                  placeholder="Schreib Arkie..."
+                  placeholder={t("Schreibe eine Nachricht...")}
                   className="flex-1 px-4 py-3 rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none"
                   style={{ background: "rgba(255,255,255,0.08)" }}
                 />
@@ -555,7 +559,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                   style={{
                     background: "linear-gradient(135deg, var(--mindark-accent-start), var(--mindark-accent-end))",
                   }}
-                  aria-label="Senden"
+                  aria-label={t("Senden")}
                 >
                   <Send className="w-4 h-4 text-foreground" />
                 </button>
@@ -564,7 +568,7 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
                 className="text-center mt-2 text-muted-foreground"
                 style={{ fontSize: 10, lineHeight: 1.4 }}
               >
-                Arkie ersetzt keine professionelle Beratung. Bei Krisen: 📞 0800 111 0 111 (kostenlos, 24/7)
+                {t("Arkie ersetzt keine professionelle Beratung. Bei Krisen: 📞 0800 111 0 111 (kostenlos, 24/7)")}
               </p>
             </div>
           </>
@@ -575,10 +579,11 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
 };
 
 const SessionRow = ({ session, onClick }: { session: ChatSession; onClick: () => void }) => {
-  const title = session.title?.trim() || "Unbenanntes Gespräch";
+  const { t, i18n } = useTranslation();
+  const title = session.title?.trim() || t("Unbenanntes Gespräch");
   const relative = formatDistanceToNow(new Date(session.last_message_at), {
     addSuffix: true,
-    locale: de,
+    locale: i18n.language === "en" ? enUS : de,
   });
   return (
     <button
@@ -597,7 +602,7 @@ const SessionRow = ({ session, onClick }: { session: ChatSession; onClick: () =>
         <div className="text-muted-foreground text-xs">
           {relative}
           {typeof session.message_count === "number" && session.message_count > 0
-            ? ` · ${session.message_count} Nachrichten`
+            ? ` · ${session.message_count} ${t("Nachrichten")}`
             : ""}
         </div>
       </div>

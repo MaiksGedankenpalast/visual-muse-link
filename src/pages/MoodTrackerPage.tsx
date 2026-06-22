@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -59,10 +60,10 @@ const PROMPTS_DIFFICULT = [
 ];
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
-const germanDateFull = () =>
-  new Date().toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
-const timeNow = () =>
-  new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+const dateFull = (lang: string) =>
+  new Date().toLocaleDateString(lang === "en" ? "en-US" : "de-DE", { weekday: "long", day: "numeric", month: "long" });
+const timeNow = (lang: string) =>
+  new Date().toLocaleTimeString(lang === "en" ? "en-US" : "de-DE", { hour: "2-digit", minute: "2-digit" });
 
 // ── Slider component ─────────────────────────────────────────────────
 interface MoodSliderProps {
@@ -73,6 +74,7 @@ interface MoodSliderProps {
   variant?: "core" | "positive" | "negative";
 }
 const MoodSlider = ({ value, onChange, left, right, variant = "core" }: MoodSliderProps) => {
+  const { t } = useTranslation();
   const trackBg =
     variant === "positive" ? "rgba(74,222,128,0.3)"
       : variant === "negative" ? "rgba(239,68,68,0.2)"
@@ -84,8 +86,8 @@ const MoodSlider = ({ value, onChange, left, right, variant = "core" }: MoodSlid
   return (
     <div>
       <div className="flex justify-between mb-1.5">
-        <span className="text-[13px] font-bold text-foreground">{left}</span>
-        <span className="text-[13px] text-muted-foreground">{right}</span>
+        <span className="text-[13px] font-bold text-foreground">{t(left)}</span>
+        <span className="text-[13px] text-muted-foreground">{t(right)}</span>
       </div>
       <div className="relative">
         <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-[6px] rounded-full"
@@ -94,7 +96,7 @@ const MoodSlider = ({ value, onChange, left, right, variant = "core" }: MoodSlid
           style={{ width: `${value}%`, background: fillBg }} />
         <input
           type="range" min="0" max="100"
-          aria-label={`Skala von ${left} bis ${right}`}
+          aria-label={`${t(left)} – ${t(right)}`}
           value={value}
           onChange={(e) => onChange(Number(e.target.value))}
           className="mood-slider relative z-10 w-full"
@@ -106,9 +108,10 @@ const MoodSlider = ({ value, onChange, left, right, variant = "core" }: MoodSlid
 
 // ── Page ─────────────────────────────────────────────────────────────
 const MoodTrackerPage = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, profileName } = useAuth();
-  const name = profileName || "du";
+  const name = profileName || t("du");
 
   // Kern (Schnell-Check)
   const [stimmung, setStimmung] = useState(50);
@@ -249,10 +252,10 @@ const MoodTrackerPage = () => {
 
     setShowConfirm(true);
     const toastMsg = coreAvg > 60
-      ? `Schön zu hören, ${name}. Bleib so! 💜`
+      ? t("Schön zu hören, {{name}}. Bleib so! 💜", { name })
       : coreAvg < 40
-        ? `Danke dass du es mit Arkie teilst. Das braucht Mut. 💜`
-        : `Danke, ${name}. Arkie ist immer hier. ✨`;
+        ? t("Danke dass du es mit Arkie teilst. Das braucht Mut. 💜")
+        : t("Danke, {{name}}. Arkie ist immer hier. ✨", { name });
     toast({ title: toastMsg });
 
     setTimeout(() => {
@@ -271,15 +274,15 @@ const MoodTrackerPage = () => {
     >
       {/* HEADER */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={() => navigate("/home")} aria-label="Zurück">
+        <button onClick={() => navigate("/home")} aria-label={t("Zurück")}>
           <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
-        <p className="text-[13px] text-muted-foreground capitalize">{germanDateFull()}</p>
-        <p className="text-[13px] text-muted-foreground">{timeNow()}</p>
+        <p className="text-[13px] text-muted-foreground capitalize">{dateFull(i18n.language)}</p>
+        <p className="text-[13px] text-muted-foreground">{timeNow(i18n.language)}</p>
       </div>
       {todayCount > 0 && (
         <p className="text-[12px] text-muted-foreground text-center mb-3">
-          Eintrag {todayCount + 1} heute
+          {t("Eintrag {{count}} heute", { count: todayCount + 1 })}
         </p>
       )}
 
@@ -287,16 +290,16 @@ const MoodTrackerPage = () => {
       <div className="flex flex-col items-center mb-6">
         <div className="arkie-float"><Arkie size="medium" /></div>
         <h1 className="text-[22px] font-bold text-foreground text-center mt-4">
-          Wie geht's dir gerade, {name}?
+          {t("Wie geht's dir gerade, {{name}}?", { name })}
         </h1>
         <p className="text-[13px] text-muted-foreground text-center mt-1">
-          Sag Arkie wie du dich fühlst — so kurz oder ausführlich wie du möchtest.
+          {t("Sag Arkie wie du dich fühlst — so kurz oder ausführlich wie du möchtest.")}
         </p>
       </div>
 
       {/* SCHNELL-CHECK */}
       <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">
-        Wie fühlst du dich?
+        {t("Wie fühlst du dich?")}
       </p>
       <div className="space-y-5 mb-3">
         <MoodSlider value={stimmung} onChange={setStimmung} left={CORE_SLIDERS[0].left} right={CORE_SLIDERS[0].right} />
@@ -310,7 +313,7 @@ const MoodTrackerPage = () => {
         className="flex items-center gap-2 text-[13px] mb-2"
         style={{ color: "#C084FC" }}
       >
-        {tiefOpen ? "− Weniger anzeigen" : "+ Mehr erfassen"}
+        {tiefOpen ? t("− Weniger anzeigen") : t("+ Mehr erfassen")}
         <ChevronDown
           className="w-4 h-4 transition-transform"
           style={{ transform: tiefOpen ? "rotate(180deg)" : "rotate(0deg)" }}
@@ -326,10 +329,10 @@ const MoodTrackerPage = () => {
           {/* POSITIVE */}
           <div>
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              Was spürst du positiv?
+              {t("Was spürst du positiv?")}
             </p>
             <p className="text-[12px] italic text-muted-foreground mb-3">
-              Auch wenn es gerade wenig ist — was ist da?
+              {t("Auch wenn es gerade wenig ist — was ist da?")}
             </p>
             <div className="space-y-4">
               {POS_SLIDERS.map((s) => (
@@ -337,8 +340,8 @@ const MoodTrackerPage = () => {
                   key={s.key}
                   value={posVals[s.key]}
                   onChange={(v) => setPosVals((p) => ({ ...p, [s.key]: v }))}
-                  left={`${s.label} — Kaum`}
-                  right="Sehr"
+                  left={t("{{label}} — Kaum", { label: t(s.label) })}
+                  right={t("Sehr")}
                   variant="positive"
                 />
               ))}
@@ -348,10 +351,10 @@ const MoodTrackerPage = () => {
           {/* NEGATIVE */}
           <div>
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
-              Was belastet dich?
+              {t("Was belastet dich?")}
             </p>
             <p className="text-[12px] italic text-muted-foreground mb-3">
-              Kein Druck — nur wenn du möchtest.
+              {t("Kein Druck — nur wenn du möchtest.")}
             </p>
             <div className="space-y-4">
               {NEG_SLIDERS.map((s) => (
@@ -359,8 +362,8 @@ const MoodTrackerPage = () => {
                   key={s.key}
                   value={negVals[s.key]}
                   onChange={(v) => setNegVals((p) => ({ ...p, [s.key]: v }))}
-                  left={`${s.label} — Kaum`}
-                  right="Stark"
+                  left={t("{{label}} — Kaum", { label: t(s.label) })}
+                  right={t("Stark")}
                   variant="negative"
                 />
               ))}
@@ -370,7 +373,7 @@ const MoodTrackerPage = () => {
           {/* SLOTS */}
           <div>
             <p className="text-[11px] uppercase tracking-widest text-muted-foreground mb-3">
-              Eigene Dimensionen
+              {t("Eigene Dimensionen")}
             </p>
             <div className="space-y-3">
               {([1, 2] as const).map((n) => {
@@ -385,7 +388,7 @@ const MoodTrackerPage = () => {
                         background: "rgba(255,255,255,0.03)",
                         border: "1px dashed rgba(255,255,255,0.18)",
                       }}>
-                      + Dimension hinzufügen
+                      {t("+ Dimension hinzufügen")}
                     </button>
                   );
                 }
@@ -394,15 +397,15 @@ const MoodTrackerPage = () => {
                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[13px] font-bold text-foreground">{slotName}</span>
-                      <button onClick={() => removeSlot(n)} aria-label="Entfernen">
+                      <button onClick={() => removeSlot(n)} aria-label={t("Entfernen")}>
                         <X className="w-4 h-4 text-muted-foreground" />
                       </button>
                     </div>
                     <MoodSlider
                       value={slotVal}
                       onChange={setVal}
-                      left="Kaum"
-                      right="Sehr"
+                      left={t("Kaum")}
+                      right={t("Sehr")}
                       variant="core"
                     />
                   </div>
@@ -415,24 +418,24 @@ const MoodTrackerPage = () => {
 
       {/* TAGS */}
       <div className="mt-6">
-        <p className="text-[13px] text-muted-foreground mb-2">Noch etwas hinzufügen?</p>
+        <p className="text-[13px] text-muted-foreground mb-2">{t("Noch etwas hinzufügen?")}</p>
         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2">
-          {TAG_OPTIONS.map((t) => (
-            <button key={t} onClick={() => toggleTag(t)}
+          {TAG_OPTIONS.map((tag) => (
+            <button key={tag} onClick={() => toggleTag(tag)}
               className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0 transition-colors"
               style={{
-                background: selectedTags.includes(t) ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.08)",
-                color: selectedTags.includes(t) ? "white" : "rgba(255,255,255,0.5)",
-                border: selectedTags.includes(t) ? "none" : "1px solid rgba(255,255,255,0.12)",
+                background: selectedTags.includes(tag) ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.08)",
+                color: selectedTags.includes(tag) ? "white" : "rgba(255,255,255,0.5)",
+                border: selectedTags.includes(tag) ? "none" : "1px solid rgba(255,255,255,0.12)",
               }}>
-              {t}
+              {t(tag)}
             </button>
           ))}
-          {selectedTags.filter((t) => !TAG_OPTIONS.includes(t)).map((t) => (
-            <button key={t} onClick={() => toggleTag(t)}
+          {selectedTags.filter((tag) => !TAG_OPTIONS.includes(tag)).map((tag) => (
+            <button key={tag} onClick={() => toggleTag(tag)}
               className="px-3 py-1.5 rounded-full text-[13px] whitespace-nowrap shrink-0"
               style={{ background: "var(--mindark-accent-start)", color: "white" }}>
-              {t}
+              {tag}
             </button>
           ))}
           {showCustom ? (
@@ -441,7 +444,7 @@ const MoodTrackerPage = () => {
               onChange={(e) => setCustomTag(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addCustom()}
               onBlur={() => { if (!customTag.trim()) setShowCustom(false); }}
-              placeholder="Eigener Tag..."
+              placeholder={t("Eigener Tag...")}
               className="px-3 py-1.5 rounded-full text-[13px] bg-transparent text-foreground outline-none shrink-0"
               style={{ border: "1px solid rgba(255,255,255,0.2)", width: 120 }}
             />
@@ -457,7 +460,7 @@ const MoodTrackerPage = () => {
 
       {/* PROMPT */}
       <div className="rounded-[20px] p-5 mt-6 mb-4 gradient-primary">
-        <p className="text-[11px] text-foreground/60 uppercase tracking-widest mb-2">Arkies Frage für heute</p>
+        <p className="text-[11px] text-foreground/60 uppercase tracking-widest mb-2">{t("Arkies Frage für heute")}</p>
         <p className="text-foreground text-[16px] italic text-center">{prompt}</p>
       </div>
 
@@ -465,7 +468,7 @@ const MoodTrackerPage = () => {
       <textarea
         value={journalText}
         onChange={(e) => setJournalText(e.target.value)}
-        placeholder="Schreib einfach drauf los... (optional)"
+        placeholder={t("Schreib einfach drauf los... (optional)")}
         className="w-full min-h-[100px] rounded-[16px] p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none"
         style={{ background: "rgba(255,255,255,0.06)" }}
       />
@@ -477,7 +480,7 @@ const MoodTrackerPage = () => {
         className="btn-pill mt-6"
         style={{ opacity: saving ? 0.6 : 1 }}
       >
-        {saving ? "Wird gespeichert..." : "FERTIG"}
+        {saving ? t("Wird gespeichert...") : t("FERTIG")}
       </button>
 
       {/* CONFIRM */}
@@ -498,13 +501,13 @@ const MoodTrackerPage = () => {
             className="relative w-full rounded-t-[24px] p-5 pb-8 max-w-[430px] mx-auto"
             style={{ background: "var(--mindark-bg)", borderTop: "1px solid rgba(255,255,255,0.1)" }}
           >
-            <p className="text-[15px] font-bold text-foreground mb-3">Eigene Dimension wählen</p>
+            <p className="text-[15px] font-bold text-foreground mb-3">{t("Eigene Dimension wählen")}</p>
             <div className="flex flex-wrap gap-2">
               {SLOT_OPTIONS.filter((o) => o !== slot1Name && o !== slot2Name).map((o) => (
                 <button key={o} onClick={() => pickSlot(pickerSlot, o)}
                   className="px-4 py-2 rounded-full text-[13px]"
                   style={{ background: "rgba(139,92,246,0.2)", color: "white", border: "1px solid rgba(139,92,246,0.35)" }}>
-                  {o}
+                  {t(o)}
                 </button>
               ))}
             </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from "framer-motion";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,7 @@ const TREE_ASSETS = [tree1, tree2, tree3, tree4, tree5];
 const FLOOR_VH = 22;
 
 const SanctuaryPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [row, setRow] = useState<TreeRow | null>(null);
@@ -89,17 +91,17 @@ const SanctuaryPage = () => {
       style={{ x, opacity }}
       className="relative min-h-[100dvh] overflow-hidden select-none"
     >
-      <h1 className="sr-only">Dein Sanctuary — Wachstum deines Bewusstseinsbaums</h1>
+      <h1 className="sr-only">{t("Dein Sanctuary — Wachstum deines Bewusstseinsbaums")}</h1>
       {/* Header */}
       <div className="absolute top-0 left-0 right-0 z-30 flex items-center justify-between px-4 pt-6">
         <button
           onClick={() => navigate("/insights")}
           className="w-10 h-10 rounded-full bg-white/5 backdrop-blur-sm border border-white/10 flex items-center justify-center"
-          aria-label="Zurück"
+          aria-label={t("Zurück")}
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
-        <div className="text-xs text-muted-foreground tracking-wider uppercase">Sanctuary</div>
+        <div className="text-xs text-muted-foreground tracking-wider uppercase">{t("Sanctuary")}</div>
         <div className="w-10" />
       </div>
 
@@ -198,7 +200,7 @@ const SanctuaryPage = () => {
           </div>
           <motion.img
             src={moonImg}
-            alt="Mond"
+            alt={t("Mond")}
             width={120}
             height={120}
             loading="lazy"
