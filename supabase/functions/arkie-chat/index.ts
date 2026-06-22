@@ -217,6 +217,7 @@ serve(async (req) => {
       reviews = { weekly: null, fourWeekly: null },
       richContext,
       sessionId,
+      lang,
     } = await req.json();
 
     if (!messages || !Array.isArray(messages)) {
@@ -277,7 +278,10 @@ serve(async (req) => {
     // or disable REGEL 1–6.
     const safeRichContext = typeof richContext === "string" ? richContext.slice(0, 16000) : null;
     const baseSystem = buildSystemPrompt(userName, moods, journals, reviews, safeRichContext);
-    const systemContent = extraSafetySystem ? `${baseSystem}\n\n${extraSafetySystem}` : baseSystem;
+    const langInstruction = lang === "en"
+      ? "\n\nIMPORTANT LANGUAGE INSTRUCTION: Reply ONLY in English. All your responses must be in natural, warm English. Keep the same warm, empathic Arkie tone — just translated."
+      : "";
+    const systemContent = (extraSafetySystem ? `${baseSystem}\n\n${extraSafetySystem}` : baseSystem) + langInstruction;
 
     const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
