@@ -27,7 +27,7 @@ const Splash = () => {
     setLangPicker(false);
     setDevLoading(true);
     const email = lang === "en" ? "dev-en@mindark.app" : "dev@mindark.app";
-    const password = "devtest123";
+    const password = lang === "en" ? "MindArkDemo2026!Pitch" : "devtest123";
     let { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       const { error: signupError } = await supabase.auth.signUp({ email, password });
