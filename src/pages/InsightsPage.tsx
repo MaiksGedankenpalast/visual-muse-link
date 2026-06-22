@@ -558,7 +558,7 @@ const InsightsPage = () => {
       {mode === "month" && (
         <>
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-bold text-foreground text-lg">{MONTHS_DE[viewMonth]} {viewYear}</h2>
+            <h2 className="font-bold text-foreground text-lg">{MONTHS[viewMonth]} {viewYear}</h2>
             <div className="flex gap-2">
               <button onClick={() => { viewMonth === 0 ? (setViewMonth(11), setViewYear((y) => y - 1)) : setViewMonth((m) => m - 1); setSelectedDay(null); }}
                 className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -572,7 +572,7 @@ const InsightsPage = () => {
           </div>
 
           <div className="glass-card p-4 mb-4">
-            <p className="font-bold text-foreground text-sm mb-3">Mood Heatmap</p>
+            <p className="font-bold text-foreground text-sm mb-3">{t("Mood Heatmap")}</p>
             <div className="grid grid-cols-7 gap-1 mb-2">
               {WEEKDAYS.map((d) => <div key={d} className="text-center text-[11px] text-muted-foreground">{d}</div>)}
             </div>
@@ -610,7 +610,7 @@ const InsightsPage = () => {
               const vals = [m.stimmung, m.energie, m.stress];
               return (
                 <div className="mt-3 p-3 rounded-[14px]" style={{ background: "rgba(255,255,255,0.06)" }}>
-                  <p className="text-xs text-muted-foreground mb-2">{selectedDay}. {MONTHS_DE[viewMonth]}</p>
+                  <p className="text-xs text-muted-foreground mb-2">{isEN ? `${MONTHS[viewMonth]} ${selectedDay}` : `${selectedDay}. ${MONTHS[viewMonth]}`}</p>
                   <div className="flex justify-around gap-3">
                     {vals.map((val, j) => (
                       <div key={j} className="flex flex-col items-center flex-1">
@@ -631,11 +631,11 @@ const InsightsPage = () => {
           <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">📝 {journalCount}</p>
-              <p className="text-[11px] text-muted-foreground">Einträge</p>
+              <p className="text-[11px] text-muted-foreground">{t("Einträge")}</p>
             </div>
             <div className="glass-card p-3 text-center">
               <p className="text-lg font-bold text-foreground">🔥 {streak}</p>
-              <p className="text-[11px] text-muted-foreground">Streak</p>
+              <p className="text-[11px] text-muted-foreground">{t("Streak")}</p>
             </div>
           </div>
         </>
