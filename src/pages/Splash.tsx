@@ -6,6 +6,7 @@ import Arkie from "@/components/Arkie";
 import ArkieScene from "@/components/ArkieScene";
 import StarBackground from "@/components/StarBackground";
 import { seedDevData } from "@/lib/seedDevData";
+import { seedDevDataEN } from "@/lib/seedDevDataEN";
 import { setLang } from "@/i18n";
 import {
   Dialog,
@@ -25,7 +26,7 @@ const Splash = () => {
     setLang(lang);
     setLangPicker(false);
     setDevLoading(true);
-    const email = "dev@mindark.app";
+    const email = lang === "en" ? "dev-en@mindark.app" : "dev@mindark.app";
     const password = "devtest123";
     let { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -36,7 +37,11 @@ const Splash = () => {
     }
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
-      await seedDevData(user.id);
+      if (lang === "en") {
+        await seedDevDataEN(user.id);
+      } else {
+        await seedDevData(user.id);
+      }
     }
     navigate("/home", { replace: true });
   };
