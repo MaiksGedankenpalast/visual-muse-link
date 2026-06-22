@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Camera, Image as ImageIcon, X, Trash2, ArrowLeft, Sparkles, Plus, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,14 +34,14 @@ interface Moment {
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-const germanDate = () => {
+const localDate = (lang: string) => {
   const d = new Date();
-  return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleDateString(lang === "en" ? "en-US" : "de-DE", { weekday: "long", day: "numeric", month: "long" });
 };
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr: string, lang: string) => {
   const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
+  return d.toLocaleDateString(lang === "en" ? "en-US" : "de-DE", { day: "numeric", month: "long", year: "numeric" });
 };
 
 /**
@@ -57,6 +58,7 @@ function pathFromUrl(url: string, userId: string): string | null {
 }
 
 const MomentsPage = () => {
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -144,8 +146,8 @@ const MomentsPage = () => {
       setPreviewUrl(url);
     } catch (e) {
       toast({
-        title: "Ups, das hat nicht geklappt.",
-        description: "Versuch es nochmal? Arkie wartet. 💜",
+        title: t("Ups, das hat nicht geklappt."),
+        description: t("Versuch es nochmal? Arkie wartet. 💜"),
       });
     } finally {
       setUploading(false);
@@ -182,11 +184,11 @@ const MomentsPage = () => {
 
       cancelPreview();
       await fetchMoments();
-      toast({ title: "Moment gespeichert 💜" });
+      toast({ title: t("Moment gespeichert 💜") });
     } catch (e) {
       toast({
-        title: "Ups, das hat nicht geklappt.",
-        description: "Versuch es nochmal? Arkie wartet. 💜",
+        title: t("Ups, das hat nicht geklappt."),
+        description: t("Versuch es nochmal? Arkie wartet. 💜"),
       });
     } finally {
       setUploading(false);
@@ -206,7 +208,7 @@ const MomentsPage = () => {
     if (todayMoment?.id === id) setTodayMoment(null);
     setFullscreenId(null);
     setConfirmDelete(null);
-    toast({ title: "Moment gelöscht" });
+    toast({ title: t("Moment gelöscht") });
   };
 
   const fullscreenMoment = fullscreenId ? moments.find((m) => m.id === fullscreenId) ?? null : null;
@@ -235,19 +237,19 @@ const MomentsPage = () => {
         <button
           onClick={() => window.dispatchEvent(new CustomEvent("swiper:go-to", { detail: 0 }))}
           className="opacity-50 active:opacity-100 transition-opacity duration-150 mt-1"
-          aria-label="Zurück"
+          aria-label={t("Zurück")}
         >
           <ChevronLeft size={20} className="text-white" />
         </button>
         <div className="text-center">
-          <h1 className="text-foreground font-bold text-[22px]">Deine Glücksmomente</h1>
-          <p className="text-xs text-muted-foreground mt-1">{germanDate()}</p>
+          <h1 className="text-foreground font-bold text-[22px]">{t("Deine Glücksmomente")}</h1>
+          <p className="text-xs text-muted-foreground mt-1">{localDate(i18n.language)}</p>
         </div>
         <span
           className="text-[10px] font-bold px-2.5 py-1 rounded-full text-white whitespace-nowrap mt-1"
           style={{ background: "linear-gradient(135deg,#8B5CF6,#C084FC)" }}
         >
-          Premium ✨
+          {t("Premium ✨")}
         </span>
       </div>
 
@@ -261,10 +263,10 @@ const MomentsPage = () => {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mb-1">
-            Arkies Moment-Frage
+            {t("Arkies Moment-Frage")}
           </p>
           <p className="text-foreground text-[16px] italic leading-snug">{dailyPrompt}</p>
-          <p className="text-[11px] text-muted-foreground text-right mt-1.5">{germanDate()}</p>
+          <p className="text-[11px] text-muted-foreground text-right mt-1.5">{localDate(i18n.language)}</p>
         </div>
       </div>
 
@@ -272,10 +274,10 @@ const MomentsPage = () => {
       {previewUrl ? (
         <div className="mb-6">
           <div className="relative w-full overflow-hidden rounded-[20px]" style={{ height: 250 }}>
-            <img src={previewUrl} alt="Vorschau" className="w-full h-full object-cover" />
+            <img src={previewUrl} alt={t("Vorschau")} className="w-full h-full object-cover" />
             <button
               onClick={cancelPreview}
-              aria-label="Vorschau verwerfen"
+              aria-label={t("Vorschau verwerfen")}
               className="absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: "rgba(0,0,0,0.55)" }}
             >
@@ -285,7 +287,7 @@ const MomentsPage = () => {
           <textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
-            placeholder="Was war das für ein Moment?"
+            placeholder={t("Was war das für ein Moment?")}
             rows={3}
             className="w-full mt-3 rounded-[14px] px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground resize-none outline-none"
             style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)" }}
@@ -296,7 +298,7 @@ const MomentsPage = () => {
             className="w-full mt-3 py-3 rounded-full font-bold text-foreground disabled:opacity-60"
             style={{ background: "linear-gradient(135deg,#8B5CF6,#C084FC)" }}
           >
-            {uploading ? "Arkie speichert deinen Moment... 💜" : "Speichern"}
+            {uploading ? t("Arkie speichert deinen Moment... 💜") : t("Speichern")}
           </button>
         </div>
       ) : (
@@ -308,13 +310,13 @@ const MomentsPage = () => {
               className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm text-foreground"
               style={{ background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.5)" }}
             >
-              <Plus className="w-4 h-4" /> Foto hinzufügen
+              <Plus className="w-4 h-4" /> {t("Foto hinzufügen")}
             </button>
           ) : (
             <>
               <button
                 onClick={onPrimaryCapture}
-                aria-label="Moment festhalten"
+                aria-label={t("Moment festhalten")}
                 className="w-20 h-20 rounded-full flex items-center justify-center active:scale-95 transition-transform"
                 style={{
                   background: "linear-gradient(135deg,#8B5CF6,#C084FC)",
@@ -323,7 +325,7 @@ const MomentsPage = () => {
               >
                 <Camera className="w-9 h-9 text-white" />
               </button>
-              <p className="text-foreground text-sm mt-3">Moment festhalten</p>
+              <p className="text-foreground text-sm mt-3">{t("Moment festhalten")}</p>
             </>
           )}
         </div>
@@ -338,13 +340,13 @@ const MomentsPage = () => {
           >
             <Arkie size="large" />
           </motion.div>
-          <p className="text-foreground mt-4 text-sm">Arkie speichert deinen Moment... 💜</p>
+          <p className="text-foreground mt-4 text-sm">{t("Arkie speichert deinen Moment... 💜")}</p>
         </div>
       )}
 
       {/* MOMENTS GRID */}
       <div>
-        <p className="font-bold text-foreground text-[16px] mb-3">Deine Momente</p>
+        <p className="font-bold text-foreground text-[16px] mb-3">{t("Deine Momente")}</p>
         {loading ? (
           <div className="grid grid-cols-2 gap-2.5">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-square rounded-[12px]" />)}
@@ -353,7 +355,7 @@ const MomentsPage = () => {
           <div className="text-center py-10 flex flex-col items-center">
             <Arkie size="medium" />
             <p className="text-muted-foreground text-sm mt-4 max-w-[260px]">
-              Dein erster Moment wartet. Was macht heute deinen Tag besonders? 💜
+              {t("Dein erster Moment wartet. Was macht heute deinen Tag besonders? 💜")}
             </p>
           </div>
         ) : (
@@ -365,7 +367,7 @@ const MomentsPage = () => {
                 className="aspect-square rounded-[12px] overflow-hidden relative"
                 style={{ background: "rgba(255,255,255,0.04)" }}
               >
-                <img src={m.photo_url} alt={m.caption ?? "Moment"} loading="lazy" className="w-full h-full object-cover" />
+                <img src={m.photo_url} alt={m.caption ?? t("Moment hinzufügen")} loading="lazy" className="w-full h-full object-cover" />
               </button>
             ))}
           </div>
@@ -376,9 +378,9 @@ const MomentsPage = () => {
       <Sheet open={permissionAsk} onOpenChange={setPermissionAsk}>
         <SheetContent side="bottom" className="bg-[#0D0B14] border-t border-white/10 rounded-t-[24px]">
           <SheetHeader>
-            <SheetTitle className="text-foreground text-left">Darf Arkie deine Kamera nutzen? 📸</SheetTitle>
+            <SheetTitle className="text-foreground text-left">{t("Darf Arkie deine Kamera nutzen? 📸")}</SheetTitle>
             <SheetDescription className="text-left">
-              Nur um deine Glücksmomente festzuhalten — nichts wird ohne dein Wissen gespeichert.
+              {t("Nur um deine Glücksmomente festzuhalten — nichts wird ohne dein Wissen gespeichert.")}
             </SheetDescription>
           </SheetHeader>
           <div className="space-y-3 mt-5">
@@ -387,14 +389,14 @@ const MomentsPage = () => {
               className="w-full py-3 rounded-full font-bold text-foreground"
               style={{ background: "linear-gradient(135deg,#8B5CF6,#C084FC)" }}
             >
-              Ja, Kamera erlauben
+              {t("Ja, Kamera erlauben")}
             </button>
             <button
               onClick={chooseFromGalleryFromAsk}
               className="w-full py-3 rounded-full text-sm text-foreground"
               style={{ background: "rgba(255,255,255,0.08)" }}
             >
-              Aus Galerie wählen
+              {t("Aus Galerie wählen")}
             </button>
           </div>
         </SheetContent>
@@ -404,7 +406,7 @@ const MomentsPage = () => {
       <Sheet open={pickerOpen} onOpenChange={setPickerOpen}>
         <SheetContent side="bottom" className="bg-[#0D0B14] border-t border-white/10 rounded-t-[24px]">
           <SheetHeader>
-            <SheetTitle className="text-foreground text-left">Moment hinzufügen</SheetTitle>
+            <SheetTitle className="text-foreground text-left">{t("Moment hinzufügen")}</SheetTitle>
           </SheetHeader>
           <div className="space-y-3 mt-5">
             <button
@@ -412,20 +414,20 @@ const MomentsPage = () => {
               className="w-full py-3 rounded-full font-medium text-foreground flex items-center justify-center gap-2"
               style={{ background: "rgba(139,92,246,0.25)", border: "1px solid rgba(139,92,246,0.4)" }}
             >
-              <Camera className="w-4 h-4" /> Foto aufnehmen
+              <Camera className="w-4 h-4" /> {t("Foto aufnehmen")}
             </button>
             <button
               onClick={() => { setPickerOpen(false); setTimeout(() => galleryInputRef.current?.click(), 50); }}
               className="w-full py-3 rounded-full font-medium text-foreground flex items-center justify-center gap-2"
               style={{ background: "rgba(255,255,255,0.08)" }}
             >
-              <ImageIcon className="w-4 h-4" /> Aus Galerie wählen
+              <ImageIcon className="w-4 h-4" /> {t("Aus Galerie wählen")}
             </button>
             <button
               onClick={() => setPickerOpen(false)}
               className="w-full py-3 text-sm text-muted-foreground"
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
           </div>
         </SheetContent>
@@ -442,14 +444,14 @@ const MomentsPage = () => {
           >
             <img
               src={fullscreenMoment.photo_url}
-              alt={fullscreenMoment.caption ?? "Moment"}
+              alt={fullscreenMoment.caption ?? t("Moment hinzufügen")}
               className="w-full h-full object-cover"
             />
             <div
               className="absolute inset-x-0 bottom-0 pt-24 pb-8 px-5"
               style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85), transparent)" }}
             >
-              <p className="text-[12px] text-white/60">{formatDate(fullscreenMoment.date)}</p>
+              <p className="text-[12px] text-white/60">{formatDate(fullscreenMoment.date, i18n.language)}</p>
               {fullscreenMoment.caption && (
                 <p className="text-white text-[16px] mt-1.5">{fullscreenMoment.caption}</p>
               )}
