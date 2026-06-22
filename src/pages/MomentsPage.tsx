@@ -463,7 +463,7 @@ const MomentsPage = () => {
             </div>
             <button
               onClick={() => setFullscreenId(null)}
-              aria-label="Zurück"
+              aria-label={t("Zurück")}
               className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(139,92,246,0.85)" }}
             >
@@ -471,7 +471,7 @@ const MomentsPage = () => {
             </button>
             <button
               onClick={() => setConfirmDelete(fullscreenMoment.id)}
-              aria-label="Löschen"
+              aria-label={t("Löschen")}
               className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "rgba(0,0,0,0.55)" }}
             >
@@ -485,16 +485,16 @@ const MomentsPage = () => {
       <AlertDialog open={confirmDelete !== null} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent style={{ background: "#0D0B14", borderColor: "rgba(255,255,255,0.1)" }}>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-foreground">Moment löschen?</AlertDialogTitle>
-            <AlertDialogDescription>Das kann nicht rückgängig gemacht werden.</AlertDialogDescription>
+            <AlertDialogTitle className="text-foreground">{t("Moment löschen?")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("Das kann nicht rückgängig gemacht werden.")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="text-foreground">Abbrechen</AlertDialogCancel>
+            <AlertDialogCancel className="text-foreground">{t("Abbrechen")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => confirmDelete && deleteMoment(confirmDelete)}
               className="bg-destructive text-destructive-foreground"
             >
-              Löschen
+              {t("Löschen")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
