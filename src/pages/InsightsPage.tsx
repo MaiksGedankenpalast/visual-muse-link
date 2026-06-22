@@ -47,8 +47,15 @@ interface MoodEntry {
 }
 
 const InsightsPage = () => {
+  const { t, i18n } = useTranslation();
+  const isEN = i18n.language === "en";
+  const WEEKDAYS = isEN ? WEEKDAYS_EN : WEEKDAYS_DE;
+  const WEEKDAYS_SHORT = isEN ? WEEKDAYS_SHORT_EN : WEEKDAYS_SHORT_DE;
+  const MONTHS = isEN ? MONTHS_EN : MONTHS_DE;
+  const CORE_LABELS = CORE_LABEL_KEYS.map((k) => t(k));
+  const locale = isEN ? "en-US" : "de-DE";
   const { user, profileName } = useAuth();
-  const name = profileName || "du";
+  const name = profileName || t("du");
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<"week" | "month" | "weekly_review" | "four_weekly_review">("week");
