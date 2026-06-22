@@ -30,6 +30,7 @@ export async function sendMessageToArkie(
   extraSystem?: ExtraSystemMessage | null,
   richContext?: string | null,
   sessionId?: string | null,
+  lang?: "de" | "en",
 ): Promise<string> {
   const messages = [
     ...(extraSystem ? [extraSystem] : []),
@@ -57,6 +58,7 @@ export async function sendMessageToArkie(
       reviews: context?.reviews ?? { weekly: null, fourWeekly: null },
       richContext: richContext ?? undefined,
       sessionId: sessionId ?? undefined,
+      lang: lang ?? "de",
     }),
   });
 
