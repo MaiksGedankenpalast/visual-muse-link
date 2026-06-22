@@ -278,22 +278,22 @@ const ReviewContent = ({
   generating: boolean;
   compact?: boolean;
 }) => {
+  const { t } = useTranslation();
   if (review.status === "generating") {
-    const tg = (k: string) => k;
     return (
       <div className="space-y-2">
         <Skeleton className="h-4 w-2/3" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-5/6" />
         <Skeleton className="h-4 w-3/4" />
-        <p className="text-muted-foreground text-xs mt-2">Dein Rückblick wird geschrieben...</p>
+        <p className="text-muted-foreground text-xs mt-2">{t("Dein Rückblick wird geschrieben...")}</p>
       </div>
     );
   }
   if (review.status === "error") {
     return (
       <div className="text-center py-4">
-        <p className="text-foreground text-sm mb-3">Etwas ist beim Erstellen schiefgelaufen.</p>
+        <p className="text-foreground text-sm mb-3">{t("Etwas ist beim Erstellen schiefgelaufen.")}</p>
         <button
           onClick={onRetry}
           disabled={generating}
@@ -301,7 +301,7 @@ const ReviewContent = ({
           style={{ background: "rgba(255,255,255,0.08)" }}
         >
           <RefreshCw className="w-4 h-4" />
-          Erneut versuchen
+          {t("Erneut versuchen")}
         </button>
       </div>
     );
