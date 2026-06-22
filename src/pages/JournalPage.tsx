@@ -54,6 +54,7 @@ const JournalPage = () => {
   const [filter, setFilter] = useState("Alle");
   const [search, setSearch] = useState("");
   const [calendarView, setCalendarView] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<"journal" | "mood">("journal");
   const [viewMonth, setViewMonth] = useState(new Date().getMonth());
   const [viewYear, setViewYear] = useState(new Date().getFullYear());
   const [customCategory, setCustomCategory] = useState<string | null>(null);
@@ -256,6 +257,28 @@ const JournalPage = () => {
       ) : calendarView ? (
         /* ═══ CALENDAR VIEW ═══ */
         <div>
+          {/* Sub-tabs: Journal Calendar / Mood Calendar */}
+          <div className="flex justify-center mb-3">
+            <div className="flex rounded-full p-1 gap-0.5" style={{ background: "rgba(255,255,255,0.08)" }}>
+              {([
+                { k: "journal" as const, label: t("Kalender") },
+                { k: "mood" as const, label: t("Mood Kalender") },
+              ]).map(({ k, label }) => (
+                <button
+                  key={k}
+                  onClick={() => setCalendarMode(k)}
+                  className="px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors whitespace-nowrap"
+                  style={{
+                    background: calendarMode === k ? "#5B2D9E" : "transparent",
+                    color: calendarMode === k ? "white" : "rgba(255,255,255,0.5)",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-7 gap-1 mb-2">
             {WEEKDAYS.map((d) => <div key={d} className="text-center text-[11px] text-muted-foreground font-medium">{d}</div>)}
           </div>
@@ -268,21 +291,25 @@ const JournalPage = () => {
               const mood = getMoodForDate(dateStr);
               const avg = mood?.avg;
 
-              // Color: entries with good mood = pink/lighter, entries = purple, no entry = dark
               let bg = "rgba(255,255,255,0.06)";
               let textColor = "rgba(255,255,255,0.4)";
               let fontWeight = 400;
               let border = "2px solid transparent";
 
-              if (hasEntry) {
-                bg = "#5B2D9E";
-                textColor = "white";
-                fontWeight = 600;
-                // Highlight positive mood days with a brighter purple/pink
-                if (avg !== undefined && avg < 35) {
-                  bg = "#A855F7";
-                } else if (avg !== undefined && avg < 50) {
-                  bg = "#7C3AED";
+              if (calendarMode === "journal") {
+                if (hasEntry) {
+                  bg = "#5B2D9E";
+                  textColor = "white";
+                  fontWeight = 600;
+                  if (avg !== undefined && avg < 35) bg = "#A855F7";
+                  else if (avg !== undefined && avg < 50) bg = "#7C3AED";
+                }
+              } else {
+                // Mood Calendar: color filled by mood avg (lower avg = better mood in our schema)
+                if (avg !== undefined) {
+                  bg = moodColor(avg);
+                  textColor = "white";
+                  fontWeight = 600;
                 }
               }
               if (isToday) {
@@ -311,6 +338,18 @@ const JournalPage = () => {
               );
             })}
           </div>
+
+          {calendarMode === "mood" && (
+            <div className="glass-card p-3 mb-4">
+              <p className="text-[12px] text-muted-foreground mb-2">{t("Legende")}</p>
+              <div className="flex items-center justify-between gap-2 text-[11px] text-foreground/80">
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: "#4ade80" }} />{t("Gut")}</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: "#facc15" }} />{t("Mittel")}</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: "#fb923c" }} />{t("Schwer")}</div>
+                <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full" style={{ background: "#ef4444" }} />{t("Sehr schwer")}</div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* ═══ LIST VIEW ═══ */
