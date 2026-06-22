@@ -207,17 +207,17 @@ const InsightsPage = () => {
     const ax = avgOf("neg_angst");
     const tr = avgOf("neg_traurigkeit");
     const ei = avgOf("neg_einsamkeit");
-    if (er !== null && er > 60) insights.push("Diese Woche zeigt Arkie erhöhte Erschöpfungswerte. Gönn dir Pausen. 🌙");
-    if (ax !== null && ax > 50) insights.push("Arkie hat bemerkt: Diese Woche war Sorge ein Thema. Das ist okay — du bist nicht allein. 💜");
-    if (tr !== null && tr > 50) insights.push("Es gab traurige Momente diese Woche. Sei sanft mit dir. ✨");
-    if (ei !== null && ei > 50) insights.push("Einsamkeit war spürbar. Vielleicht heute jemandem schreiben? 💜");
+    if (er !== null && er > 60) insights.push(t("Diese Woche zeigt Arkie erhöhte Erschöpfungswerte. Gönn dir Pausen. 🌙"));
+    if (ax !== null && ax > 50) insights.push(t("Arkie hat bemerkt: Diese Woche war Sorge ein Thema. Das ist okay — du bist nicht allein. 💜"));
+    if (tr !== null && tr > 50) insights.push(t("Es gab traurige Momente diese Woche. Sei sanft mit dir. ✨"));
+    if (ei !== null && ei > 50) insights.push(t("Einsamkeit war spürbar. Vielleicht heute jemandem schreiben? 💜"));
     if (insights.length === 0 && weekMoods.length >= 4) {
       const avg = weekMoods.reduce((a, m) => a + score(m), 0) / weekMoods.length;
-      if (avg > 65) insights.push(`Schöne Woche, ${name}. Deine Stimmung ist insgesamt stark. ✨`);
-      else if (avg < 40) insights.push(`Diese Woche war schwer, ${name}. Arkie ist bei dir. 💜`);
+      if (avg > 65) insights.push(t("Schöne Woche, {{name}}. Deine Stimmung ist insgesamt stark. ✨", { name }));
+      else if (avg < 40) insights.push(t("Diese Woche war schwer, {{name}}. Arkie ist bei dir. 💜", { name }));
     }
     return insights;
-  }, [weekMoods, name]);
+  }, [weekMoods, name, t]);
 
   // ── Month data ──
   const monthMoods = useMemo(() =>
