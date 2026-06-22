@@ -1,19 +1,21 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
 import StarBackground from "@/components/StarBackground";
 
-const translateError = (msg: string) => {
-  if (msg.includes("already registered") || msg.includes("already been registered")) return "Diese E-Mail ist bereits registriert.";
-  if (msg.includes("Password") && msg.includes("short")) return "Passwort muss mindestens 6 Zeichen haben.";
-  if (msg.includes("network") || msg.includes("fetch")) return "Keine Verbindung. Bitte prüfe dein Internet.";
-  if (msg.includes("valid email")) return "Bitte gib eine gültige E-Mail-Adresse ein.";
+const translateError = (msg: string, t: (k: string) => string) => {
+  if (msg.includes("already registered") || msg.includes("already been registered")) return t("Diese E-Mail ist bereits registriert.");
+  if (msg.includes("Password") && msg.includes("short")) return t("Passwort muss mindestens 6 Zeichen haben.");
+  if (msg.includes("network") || msg.includes("fetch")) return t("Keine Verbindung. Bitte prüfe dein Internet.");
+  if (msg.includes("valid email")) return t("Bitte gib eine gültige E-Mail-Adresse ein.");
   return msg;
 };
 
 const Signup = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, onboardingComplete } = useAuth();
   const [email, setEmail] = useState("");
@@ -32,11 +34,11 @@ const Signup = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (password !== passwordConfirm) { setError("Passwörter stimmen nicht überein."); return; }
-    if (password.length < 6) { setError("Passwort muss mindestens 6 Zeichen haben."); return; }
+    if (password !== passwordConfirm) { setError(t("Passwörter stimmen nicht überein.")); return; }
+    if (password.length < 6) { setError(t("Passwort muss mindestens 6 Zeichen haben.")); return; }
     setLoading(true);
     const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } });
-    if (error) { setError(translateError(error.message)); setLoading(false); }
+    if (error) { setError(translateError(error.message, t)); setLoading(false); }
   };
 
   const inputStyle = { background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.2)" };
@@ -52,21 +54,21 @@ const Signup = () => {
         </div>
         <div className="mt-8 mb-10"><Arkie size="large" /></div>
         <form onSubmit={handleSignup} className="space-y-4 w-full">
-          <input type="email" placeholder="E-Mail" value={email} onChange={(e) => setEmail(e.target.value)}
+          <input type="email" placeholder={t("E-Mail")} value={email} onChange={(e) => setEmail(e.target.value)}
             className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground" style={inputStyle} required />
-          <input type="password" placeholder="Passwort" value={password} onChange={(e) => setPassword(e.target.value)}
+          <input type="password" placeholder={t("Passwort")} value={password} onChange={(e) => setPassword(e.target.value)}
             className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground" style={inputStyle} required />
-          <input type="password" placeholder="Passwort wiederholen" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
+          <input type="password" placeholder={t("Passwort wiederholen")} value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)}
             className="w-full h-14 rounded-[50px] px-6 text-foreground placeholder:text-muted-foreground" style={inputStyle} required />
           {error && <p className="text-destructive text-sm text-center">{error}</p>}
           <button type="submit" className="btn-pill mt-6" disabled={loading}>
-            {loading ? "..." : "WEITER"}
+            {loading ? "..." : t("WEITER")}
           </button>
         </form>
         <p className="text-center text-muted-foreground text-sm mt-6">
-          Schon ein Konto?{" "}
+          {t("Schon ein Konto?")}{" "}
           <button onClick={() => navigate("/login")} className="underline" style={{ color: "var(--mindark-accent-start)" }}>
-            Anmelden
+            {t("Anmelden")}
           </button>
         </p>
       </div>

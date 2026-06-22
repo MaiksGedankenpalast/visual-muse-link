@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -25,9 +26,10 @@ const SUGGESTIONS = [
 ];
 
 const VibePage = () => {
+  const { t } = useTranslation();
   const { user, profileName } = useAuth();
   const navigate = useNavigate();
-  const name = profileName || "du";
+  const name = profileName || t("du");
 
   const [items, setItems] = useState<VibeItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,17 +89,17 @@ const VibePage = () => {
           onClick={() => navigate("/experiment")}
           className="absolute left-0 w-9 h-9 flex items-center justify-center rounded-full"
           style={{ background: "rgba(255,255,255,0.06)" }}
-          aria-label="Zurück"
+          aria-label={t("Zurück")}
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="font-bold text-foreground text-[18px]">Today's Vibe</h1>
+        <h1 className="font-bold text-foreground text-[18px]">{t("Today's Vibe")}</h1>
       </div>
       <p className="text-center text-muted-foreground text-xs mb-5">{todayLabel()}</p>
 
       <div className="flex items-center gap-3 mb-4">
         <div className="arkie-float shrink-0"><Arkie size="small" /></div>
-        <p className="text-sm text-foreground">Was steht heute an, {name}? 💜</p>
+        <p className="text-sm text-foreground">{t("Was steht heute an, {{name}}? 💜", { name })}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2 mb-5">
@@ -105,7 +107,7 @@ const VibePage = () => {
           type="text"
           value={newText}
           onChange={(e) => setNewText(e.target.value)}
-          placeholder="Was möchtest du heute erledigen?"
+          placeholder={t("Was möchtest du heute erledigen?")}
           className="flex-1 rounded-[14px] px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none"
           style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
         />
@@ -125,7 +127,7 @@ const VibePage = () => {
         </div>
       ) : items.length === 0 ? (
         <div>
-          <p className="text-muted-foreground text-xs mb-3 px-1">Arkies Vorschläge:</p>
+          <p className="text-muted-foreground text-xs mb-3 px-1">{t("Arkies Vorschläge:")}</p>
           <div className="space-y-2">
             {SUGGESTIONS.map((s) => (
               <button
@@ -133,7 +135,7 @@ const VibePage = () => {
                 onClick={() => addItem(s)}
                 className="w-full text-left glass-card px-4 py-3 text-sm text-foreground hover:brightness-110 transition"
               >
-                + {s}
+                + {t(s)}
               </button>
             ))}
           </div>

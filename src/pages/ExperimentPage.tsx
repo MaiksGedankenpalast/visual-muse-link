@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -8,6 +9,7 @@ import { ChevronRight } from "lucide-react";
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const ExperimentPage = () => {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [completedCount, setCompletedCount] = useState(0);
@@ -36,8 +38,8 @@ const ExperimentPage = () => {
 
   return (
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
-      <h1 className="font-bold text-foreground text-[24px] mb-1">Experiment</h1>
-      <p className="text-muted-foreground text-sm mb-6">Entdecke neue Funktionen</p>
+      <h1 className="font-bold text-foreground text-[24px] mb-1">{t("Experiment")}</h1>
+      <p className="text-muted-foreground text-sm mb-6">{t("Entdecke neue Funktionen")}</p>
 
       {/* Today's Vibe */}
       <button
@@ -49,9 +51,11 @@ const ExperimentPage = () => {
         }}
       >
         <div>
-          <div className="text-foreground font-bold text-[15px]">Today's Vibe</div>
+          <div className="text-foreground font-bold text-[15px]">{t("Today's Vibe")}</div>
           <div className="text-muted-foreground text-[12px] mt-0.5">
-            {completedCount} {completedCount === 1 ? "Ding" : "Dinge"} heute erledigt
+            {completedCount === 1
+              ? t("{{count}} Ding heute erledigt", { count: completedCount })
+              : t("{{count}} Dinge heute erledigt", { count: completedCount })}
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
@@ -67,9 +71,11 @@ const ExperimentPage = () => {
         }}
       >
         <div>
-          <div className="text-foreground font-bold text-[15px]">Micro Wins</div>
+          <div className="text-foreground font-bold text-[15px]">{t("Micro Wins")}</div>
           <div className="text-muted-foreground text-[12px] mt-0.5">
-            {winsWeekCount} {winsWeekCount === 1 ? "Sieg" : "Siege"} diese Woche
+            {winsWeekCount === 1
+              ? t("{{count}} Sieg diese Woche", { count: winsWeekCount })
+              : t("{{count}} Siege diese Woche", { count: winsWeekCount })}
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
@@ -81,7 +87,7 @@ const ExperimentPage = () => {
           <Arkie size="small" />
         </div>
         <p className="text-muted-foreground text-sm">
-          Arkie testet hier neue Ideen mit dir. Was hilft dir wirklich?
+          {t("Arkie testet hier neue Ideen mit dir. Was hilft dir wirklich?")}
         </p>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Search, CalendarDays, X, ChevronLeft, ChevronRight } from "lucide-react";
@@ -25,8 +26,10 @@ interface MomentDay {
   date: string;
 }
 
-const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
+const WEEKDAYS_DE = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
+const WEEKDAYS_EN = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 const moodColor = (avg: number | undefined) => {
   if (avg === undefined) return "#9B6FD4";
@@ -37,6 +40,10 @@ const moodColor = (avg: number | undefined) => {
 };
 
 const JournalPage = () => {
+  const { t, i18n } = useTranslation();
+  const isEN = i18n.language === "en";
+  const WEEKDAYS = isEN ? WEEKDAYS_EN : WEEKDAYS_DE;
+  const MONTHS = isEN ? MONTHS_EN : MONTHS_DE;
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -156,12 +163,12 @@ const JournalPage = () => {
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
       {/* HEADER */}
       <div className="flex items-center justify-between mb-5">
-        <button onClick={() => navigate("/home")} aria-label="Zurück"
+        <button onClick={() => navigate("/home")} aria-label={t("Zurück")}
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{ background: "rgba(139,92,246,0.3)" }}>
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
-        <h1 className="font-bold text-foreground text-[22px]">Dein Journal</h1>
+        <h1 className="font-bold text-foreground text-[22px]">{t("Dein Journal")}</h1>
         <div className="w-10" />
       </div>
 
@@ -181,17 +188,17 @@ const JournalPage = () => {
                 border: active ? borderActive : "1px solid transparent",
                 minWidth: 70,
               }}>
-              <span className="font-medium">{c}</span>
-              <span className="text-[11px] opacity-70">{catCounts[c] || 0} Entries</span>
+              <span className="font-medium">{t(c)}</span>
+              <span className="text-[11px] opacity-70">{catCounts[c] || 0} {t("Entries")}</span>
             </button>
           );
         })}
         {!customCategory && (newCat ? (
           <input autoFocus value={newCatText} onChange={(e) => setNewCatText(e.target.value)}
-            aria-label="Neue Kategorie"
+            aria-label={t("Neue Kategorie")}
             onKeyDown={(e) => e.key === "Enter" && addCategory()}
             onBlur={addCategory}
-            placeholder="Kategorie..."
+            placeholder={t("Kategorie...")}
             className="px-3 py-2 rounded-full text-[13px] bg-transparent text-foreground outline-none shrink-0"
             style={{ border: "1px dashed rgba(255,255,255,0.3)", width: 120 }} />
         ) : (
@@ -199,7 +206,7 @@ const JournalPage = () => {
             className="px-4 py-2 rounded-full text-[13px] whitespace-nowrap shrink-0 flex flex-col items-center justify-center"
             style={{ border: "1px dashed rgba(255,255,255,0.3)", color: "rgba(255,255,255,0.4)", minWidth: 70 }}>
             <span>+</span>
-            <span className="text-[10px]">Neue Kategorie</span>
+            <span className="text-[10px]">{t("Neue Kategorie")}</span>
           </button>
         ))}
       </div>
@@ -208,12 +215,12 @@ const JournalPage = () => {
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input value={search} onChange={(e) => setSearch(e.target.value)}
-          aria-label="Journaleinträge durchsuchen"
-          placeholder="Suchen..."
+          aria-label={t("Journaleinträge durchsuchen")}
+          placeholder={t("Suchen...")}
           className="w-full pl-9 pr-9 py-2.5 rounded-full text-sm text-foreground placeholder:text-muted-foreground outline-none"
           style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.08)" }} />
         {search && (
-          <button onClick={() => setSearch("")} aria-label="Suche löschen" className="absolute right-3 top-1/2 -translate-y-1/2">
+          <button onClick={() => setSearch("")} aria-label={t("Suche löschen")} className="absolute right-3 top-1/2 -translate-y-1/2">
             <X className="w-4 h-4 text-muted-foreground" />
           </button>
         )}
@@ -221,8 +228,8 @@ const JournalPage = () => {
 
       {/* CALENDAR TOGGLE */}
       <div className="flex items-center justify-between mb-4">
-        <span className="font-bold text-foreground text-sm">Kalender</span>
-        <button onClick={() => setCalendarView((v) => !v)} aria-label="Kalenderansicht umschalten"
+        <span className="font-bold text-foreground text-sm">{t("Kalender")}</span>
+        <button onClick={() => setCalendarView((v) => !v)} aria-label={t("Kalenderansicht umschalten")}
           className="w-9 h-9 rounded-lg flex items-center justify-center"
           style={{ background: calendarView ? "#5B2D9E" : "rgba(255,255,255,0.08)" }}>
           <CalendarDays className="w-4 h-4 text-foreground" />
@@ -231,7 +238,7 @@ const JournalPage = () => {
 
       {/* MONTH NAVIGATION */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-bold text-foreground text-[20px]">{MONTHS_DE[viewMonth]} {viewYear}</h2>
+        <h2 className="font-bold text-foreground text-[20px]">{MONTHS[viewMonth]} {viewYear}</h2>
         <div className="flex gap-2">
           <button onClick={prevMonth} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "rgba(255,255,255,0.08)" }}>
             <ChevronLeft className="w-4 h-4 text-foreground" />
@@ -293,8 +300,8 @@ const JournalPage = () => {
                     {momentDates.has(dateStr) && (
                       <span
                         className="absolute bottom-0.5 right-0.5 text-[8px] leading-none"
-                        aria-label="Glücksmoment"
-                        title="Glücksmoment"
+                        aria-label={t("Glücksmoment")}
+                        title={t("Glücksmoment")}
                       >
                         📷
                       </span>
@@ -309,10 +316,10 @@ const JournalPage = () => {
         /* ═══ LIST VIEW ═══ */
         filtered.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-sm">Noch keine Einträge in diesem Monat.</p>
+            <p className="text-muted-foreground text-sm">{t("Noch keine Einträge in diesem Monat.")}</p>
             <button onClick={() => navigate("/journal/new")} className="mt-3 btn-pill text-sm"
               style={{ height: 44, width: "auto", padding: "0 28px", display: "inline-flex" }}>
-              Ersten Eintrag schreiben
+              {t("Ersten Eintrag schreiben")}
             </button>
           </div>
         ) : (
@@ -343,12 +350,12 @@ const JournalPage = () => {
                         <span className="text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0 mt-0.5"
                           style={{ background: "rgba(255,255,255,0.08)" }}>
                           <span className="w-1.5 h-1.5 rounded-full" style={{ background: barColor }} />
-                          {tag}
+                          {t(tag)}
                         </span>
                       )}
                     </div>
                     <p className="text-muted-foreground text-[13px] line-clamp-2 mt-1">{entry.content}</p>
-                    <span className="text-[11px] text-muted-foreground mt-1.5 block">• {entry.category}</span>
+                    <span className="text-[11px] text-muted-foreground mt-1.5 block">• {t(entry.category)}</span>
                   </div>
                 </button>
               );

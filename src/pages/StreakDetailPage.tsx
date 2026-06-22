@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft } from "lucide-react";
@@ -13,6 +14,7 @@ interface MoodLite {
 }
 
 const StreakDetailPage = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -56,9 +58,9 @@ const StreakDetailPage = () => {
     let focusMood: { label: string; emoji: string } | null = null;
     if (weekMoods.length > 0) {
       const dims: { key: keyof MoodLite; label: string; emoji: string }[] = [
-        { key: "stimmung", label: "zufrieden", emoji: "😊" },
-        { key: "energie", label: "energiegeladen", emoji: "⚡" },
-        { key: "stress", label: "entspannt", emoji: "🧘" },
+        { key: "stimmung", label: t("zufrieden"), emoji: "😊" },
+        { key: "energie", label: t("energiegeladen"), emoji: "⚡" },
+        { key: "stress", label: t("entspannt"), emoji: "🧘" },
       ];
       const scored = dims.map((d) => {
         const avg = weekMoods.reduce((a, m) => a + (m[d.key] as number), 0) / weekMoods.length;
@@ -110,9 +112,9 @@ const StreakDetailPage = () => {
     const a = stats.wordsThisWeek, b = stats.wordsLastWeek;
     if (b > 0 && a > b) {
       const pct = Math.round(((a - b) / b) * 100);
-      return `Du schreibst ${pct}% mehr als letzte Woche – das tut dir gut! 💜`;
+      return t("Du schreibst {{pct}}% mehr als letzte Woche – das tut dir gut! 💜", { pct });
     }
-    return "Jedes Wort zählt. Arkie ist bereit für deinen nächsten Eintrag! 💜";
+    return t("Jedes Wort zählt. Arkie ist bereit für deinen nächsten Eintrag! 💜");
   })();
 
   const Section = ({ label, children }: { label: string; children: React.ReactNode }) => (
@@ -126,34 +128,34 @@ const StreakDetailPage = () => {
   return (
     <div className="px-4 pt-6 pb-32 onboarding-slide min-h-screen">
       <div className="flex items-center gap-3 mb-5">
-        <button onClick={() => navigate("/insights")} aria-label="Zurück">
+        <button onClick={() => navigate("/insights")} aria-label={t("Zurück")}>
           <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
-        <h1 className="font-bold text-foreground text-[22px]">Deine Statistiken</h1>
+        <h1 className="font-bold text-foreground text-[22px]">{t("Deine Statistiken")}</h1>
       </div>
 
-      <Section label="🔥 Streak">
-        Aktuell <span className="font-bold">{stats.streak}</span> Tage in Folge.
-        Dein bisheriger Rekord: <span className="font-bold">{stats.maxStreak}</span> Tage.
+      <Section label={t("🔥 Streak")}>
+        {t("Aktuell {{streak}} Tage in Folge.", { streak: stats.streak })}{" "}
+        {t("Dein bisheriger Rekord: {{max}} Tage.", { max: stats.maxStreak })}
       </Section>
 
-      <Section label="✍️ Der Expressionist">
-        Du hast diese Woche <span className="font-bold">{stats.wordsThisWeek}</span> Wörter genutzt, um deine Gedanken zu ordnen.
+      <Section label={t("✍️ Der Expressionist")}>
+        {t("Du hast diese Woche {{count}} Wörter genutzt, um deine Gedanken zu ordnen.", { count: stats.wordsThisWeek })}
       </Section>
 
-      <Section label="⏳ Zeit für dich">
-        In den letzten 7 Tagen hast du dir <span className="font-bold">{stats.timeMinutes}</span> Minuten bewusst Zeit für dich genommen.
+      <Section label={t("⏳ Zeit für dich")}>
+        {t("In den letzten 7 Tagen hast du dir {{min}} Minuten bewusst Zeit für dich genommen.", { min: stats.timeMinutes })}
       </Section>
 
-      <Section label="💜 Fokus-Emotion">
+      <Section label={t("💜 Fokus-Emotion")}>
         {stats.focusMood ? (
-          <>Diese Woche fühlst du dich meistens <span className="font-bold">{stats.focusMood.label}</span> {stats.focusMood.emoji}</>
+          <>{t("Diese Woche fühlst du dich meistens {{label}} {{emoji}}", { label: stats.focusMood.label, emoji: stats.focusMood.emoji })}</>
         ) : (
-          <>Noch keine Mood-Daten für diese Woche.</>
+          <>{t("Noch keine Mood-Daten für diese Woche.")}</>
         )}
       </Section>
 
-      <Section label="✨ Arkies Motivation">
+      <Section label={t("✨ Arkies Motivation")}>
         {motivationText}
       </Section>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
@@ -10,9 +11,11 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
+const CORE_LABEL_KEYS = ["Stimmung", "Energie", "Entspannung"];
 const WEEKDAYS_DE = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+const WEEKDAYS_EN = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
 interface Entry {
   id: string; title: string; content: string | null; category: string;
@@ -25,6 +28,10 @@ interface MoodDay {
 }
 
 const JournalDetailPage = () => {
+  const { t, i18n } = useTranslation();
+  const isEN = i18n.language === "en";
+  const WEEKDAYS = isEN ? WEEKDAYS_EN : WEEKDAYS_DE;
+  const MONTHS = isEN ? MONTHS_EN : MONTHS_DE;
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -60,7 +67,7 @@ const JournalDetailPage = () => {
   const handleDelete = async () => {
     if (!id) return;
     await supabase.from("journal_entries").delete().eq("id", id);
-    toast({ title: "Eintrag gelöscht" });
+    toast({ title: t("Eintrag gelöscht") });
     navigate("/journal");
   };
 
@@ -71,7 +78,7 @@ const JournalDetailPage = () => {
     }).eq("id", id);
     setEntry((prev) => prev ? { ...prev, title: editTitle.trim(), content: editContent.trim() || null } : prev);
     setEditing(false);
-    toast({ title: "Gespeichert 💜" });
+    toast({ title: t("Gespeichert 💜") });
   };
 
   if (loading) return (
@@ -84,13 +91,15 @@ const JournalDetailPage = () => {
 
   if (!entry) return (
     <div className="px-4 pt-6 pb-32 min-h-screen text-center">
-      <p className="text-muted-foreground mt-20">Eintrag nicht gefunden.</p>
-      <button onClick={() => navigate("/journal")} className="mt-4 text-sm" style={{ color: "var(--mindark-accent-start)" }}>Zurück</button>
+      <p className="text-muted-foreground mt-20">{t("Eintrag nicht gefunden.")}</p>
+      <button onClick={() => navigate("/journal")} className="mt-4 text-sm" style={{ color: "var(--mindark-accent-start)" }}>{t("Zurück")}</button>
     </div>
   );
 
   const d = new Date(entry.date);
-  const dateStr = `${WEEKDAYS_DE[d.getDay()]}, ${d.getDate()}. ${MONTHS_DE[d.getMonth()]} ${d.getFullYear()}`;
+  const dateStr = isEN
+    ? `${WEEKDAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}, ${d.getFullYear()}`
+    : `${WEEKDAYS[d.getDay()]}, ${d.getDate()}. ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
   const moodTag = mood?.tags?.[0] ?? null;
   const moodAvg = mood ? (mood.stimmung + mood.energie + mood.stress) / 3 : null;
   // higher = better in new schema
@@ -105,8 +114,8 @@ const JournalDetailPage = () => {
         <div className="flex gap-3">
           {editing ? (
             <>
-              <button onClick={() => setEditing(false)} className="text-sm text-muted-foreground">Abbrechen</button>
-              <button onClick={handleSave} className="text-sm font-medium" style={{ color: "var(--mindark-accent-start)" }}>Speichern</button>
+              <button onClick={() => setEditing(false)} className="text-sm text-muted-foreground">{t("Abbrechen")}</button>
+              <button onClick={handleSave} className="text-sm font-medium" style={{ color: "var(--mindark-accent-start)" }}>{t("Speichern")}</button>
             </>
           ) : (
             <>
@@ -117,12 +126,12 @@ const JournalDetailPage = () => {
                 </AlertDialogTrigger>
                 <AlertDialogContent style={{ background: "var(--mindark-bg)", borderColor: "var(--mindark-card-border)" }}>
                   <AlertDialogHeader>
-                    <AlertDialogTitle className="text-foreground">Eintrag löschen?</AlertDialogTitle>
-                    <AlertDialogDescription>Das kann nicht rückgängig gemacht werden.</AlertDialogDescription>
+                    <AlertDialogTitle className="text-foreground">{t("Eintrag löschen?")}</AlertDialogTitle>
+                    <AlertDialogDescription>{t("Das kann nicht rückgängig gemacht werden.")}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="text-foreground">Abbrechen</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">Löschen</AlertDialogAction>
+                    <AlertDialogCancel className="text-foreground">{t("Abbrechen")}</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground">{t("Löschen")}</AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
@@ -138,12 +147,12 @@ const JournalDetailPage = () => {
           <span className="text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1"
             style={{ background: "rgba(255,255,255,0.08)" }}>
             <span className="w-1.5 h-1.5 rounded-full" style={{ background: moodColorDot }} />
-            {moodTag}
+            {t(moodTag)}
           </span>
         )}
         <span className="text-[11px] px-2 py-0.5 rounded-full"
           style={{ background: "rgba(139,92,246,0.2)", color: "var(--mindark-accent-start)" }}>
-          {entry.category}
+          {t(entry.category)}
         </span>
       </div>
 
@@ -164,14 +173,14 @@ const JournalDetailPage = () => {
           className="w-full min-h-[200px] text-[16px] text-foreground leading-relaxed resize-none outline-none bg-transparent" />
       ) : (
         <p className="text-foreground text-[16px] leading-relaxed whitespace-pre-wrap">
-          {entry.content || "Kein Inhalt."}
+          {entry.content || t("Kein Inhalt.")}
         </p>
       )}
 
       {/* MOOD CAPSULES */}
       {moodValues && (
         <div className="mt-8">
-          <p className="text-[13px] text-muted-foreground mb-3">Mood an diesem Tag</p>
+          <p className="text-[13px] text-muted-foreground mb-3">{t("Mood an diesem Tag")}</p>
           <div className="flex justify-between gap-2">
             {moodValues.map((val, i) => {
               const pct = val;
@@ -184,7 +193,7 @@ const JournalDetailPage = () => {
                       <span className="text-foreground font-bold text-[10px]">{pct}%</span>
                     </div>
                   </div>
-                  <span className="text-[10px] text-muted-foreground mt-1 text-center">{CORE_LABELS[i]}</span>
+                  <span className="text-[10px] text-muted-foreground mt-1 text-center">{t(CORE_LABEL_KEYS[i])}</span>
                 </div>
               );
             })}

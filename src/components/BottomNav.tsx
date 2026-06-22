@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Home, BookOpen, BarChart3, FlaskConical, Plus, X } from "lucide-react";
 import {
   Drawer,
@@ -10,15 +11,17 @@ import {
 } from "@/components/ui/drawer";
 import { haptic } from "@/lib/haptics";
 
-const navItems = [
-  { icon: Home, label: "Home", path: "/home" },
-  { icon: BookOpen, label: "Journal", path: "/journal" },
-  { icon: null, label: "", path: "" }, // center placeholder
-  { icon: BarChart3, label: "Insights", path: "/insights" },
-  { icon: FlaskConical, label: "Experiment", path: "/experiment" },
+const NAV_KEYS: { icon: any; labelKey: string; path: string }[] = [
+  { icon: Home, labelKey: "Home", path: "/home" },
+  { icon: BookOpen, labelKey: "Journal", path: "/journal" },
+  { icon: null, labelKey: "", path: "" },
+  { icon: BarChart3, labelKey: "Insights", path: "/insights" },
+  { icon: FlaskConical, labelKey: "Experiment", path: "/experiment" },
 ];
 
 const BottomNav = () => {
+  const { t } = useTranslation();
+  const navItems = NAV_KEYS;
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -30,8 +33,8 @@ const BottomNav = () => {
   });
 
   const quickActions = [
-    { label: "📝 Tagebuch schreiben", path: "/journal/new" },
-    { label: "💜 Mood eintragen", path: "/moodtracker" },
+    { label: t("📝 Tagebuch schreiben"), path: "/journal/new" },
+    { label: t("💜 Mood eintragen"), path: "/moodtracker" },
   ];
 
   // Update indicator position when route changes
@@ -137,7 +140,7 @@ const BottomNav = () => {
                     color: isActive ? "var(--mindark-accent-start)" : "rgba(255,255,255,0.4)",
                   }}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </span>
               </button>
             );
@@ -148,7 +151,7 @@ const BottomNav = () => {
       <Drawer open={open} onOpenChange={setOpen}>
         <DrawerContent className="border-t-0" style={{ background: "var(--mindark-bg)", borderColor: "var(--mindark-card-border)" }}>
           <DrawerHeader className="flex items-center justify-between">
-            <DrawerTitle className="text-foreground">Was möchtest du tun?</DrawerTitle>
+            <DrawerTitle className="text-foreground">{t("Was möchtest du tun?")}</DrawerTitle>
             <DrawerClose asChild>
               <button className="text-muted-foreground"><X className="w-5 h-5" /></button>
             </DrawerClose>
@@ -168,7 +171,7 @@ const BottomNav = () => {
               onClick={() => setOpen(false)}
               className="w-full py-3 text-sm text-muted-foreground text-center mt-2"
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
           </div>
         </DrawerContent>

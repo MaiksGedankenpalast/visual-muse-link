@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -26,6 +27,7 @@ const GOALS = [
 ];
 
 const OnboardingGoals = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, profileName } = useAuth();
   const [selected, setSelected] = useState<string[]>([]);
@@ -57,11 +59,11 @@ const OnboardingGoals = () => {
         <Arkie size="medium" />
 
         <h2 className="text-2xl font-bold text-center mt-4 mb-1">
-          Wofür bist du hier,{" "}
-          <span style={{ color: "#C99EF0" }}>{profileName || "du"}</span>?
+          {t("Wofür bist du hier,")}{" "}
+          <span style={{ color: "#C99EF0" }}>{profileName || t("du")}</span>?
         </h2>
         <p className="text-muted-foreground text-sm text-center mb-6">
-          Wähl alles aus was sich richtig anfühlt.
+          {t("Wähl alles aus was sich richtig anfühlt.")}
         </p>
 
         {/* Goal cards grid */}
@@ -85,8 +87,8 @@ const OnboardingGoals = () => {
                   </div>
                 )}
                 <div style={{ fontSize: 40 }} className="mb-2">{emoji}</div>
-                <div className="text-[15px] font-bold text-foreground mb-1">{title}</div>
-                <div className="text-[12px] text-muted-foreground leading-tight">{subtitle}</div>
+                <div className="text-[15px] font-bold text-foreground mb-1">{t(title)}</div>
+                <div className="text-[12px] text-muted-foreground leading-tight">{t(subtitle)}</div>
               </button>
             );
           })}
@@ -99,7 +101,7 @@ const OnboardingGoals = () => {
             className="btn-pill"
             style={{ opacity: selected.length > 0 ? 1 : 0.4 }}
           >
-            {loading ? "..." : `WEITER (${selected.length} ausgewählt)`}
+            {loading ? "..." : t("WEITER ({{count}} ausgewählt)", { count: selected.length })}
           </button>
         </div>
       </div>

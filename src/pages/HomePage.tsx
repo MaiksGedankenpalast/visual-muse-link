@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { resetPitchData } from "@/lib/seedPitchData";
@@ -11,9 +12,10 @@ import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose,
 } from "@/components/ui/drawer";
 
-const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
+const CORE_LABEL_KEYS = ["Stimmung", "Energie", "Entspannung"];
 
 const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd: () => void }) => {
+  const { t } = useTranslation();
   const vals = latestMood
     ? [latestMood.stimmung, latestMood.energie, latestMood.stress]
     : null;
@@ -21,7 +23,7 @@ const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd
     <div className="space-y-2">
       <div className="flex items-end gap-2">
         <div className="flex-1 flex justify-around gap-3">
-          {CORE_LABELS.map((label, i) => {
+          {CORE_LABEL_KEYS.map((label, i) => {
             const pct = vals ? vals[i] : 0;
             return (
               <div key={label} className="flex flex-col items-center flex-1">
@@ -45,7 +47,7 @@ const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd
                     </div>
                   )}
                 </div>
-                <span className="text-[11px] text-muted-foreground mt-1.5 text-center leading-tight">{label}</span>
+                <span className="text-[11px] text-muted-foreground mt-1.5 text-center leading-tight">{t(label)}</span>
               </div>
             );
           })}
@@ -56,22 +58,22 @@ const MoodCapsules = ({ latestMood, onAdd }: { latestMood: MoodRow | null; onAdd
             className="shrink-0 text-[11px] px-2.5 py-1 rounded-full text-white/70 active:scale-95 transition-transform"
             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)" }}
           >
-            + Neu
+            {t("+ Neu")}
           </button>
         )}
       </div>
       {!vals && (
         <p className="text-center text-[12px] text-muted-foreground">
-          Wie geht's dir heute? Tippe auf Mood ↑
+          {t("Wie geht's dir heute? Tippe auf Mood ↑")}
         </p>
       )}
     </div>
   );
 };
 
-const germanDate = () => {
+const localDate = (lang: string) => {
   const d = new Date();
-  return d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" });
+  return d.toLocaleDateString(lang === "en" ? "en-US" : "de-DE", { weekday: "long", day: "numeric", month: "long" });
 };
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const todayStr = () => new Date().toISOString().slice(0, 10);
@@ -102,9 +104,10 @@ type TimelineItem =
   | { kind: "journal"; row: JournalRow };
 
 const HomePage = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { user, profileName } = useAuth();
-  const name = profileName || "du";
+  const name = profileName || t("du");
 
   const [showMomentsHint, setShowMomentsHint] = useState(false);
 
@@ -130,15 +133,15 @@ const HomePage = () => {
   const fetchAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
-    const t = todayStr();
+    const today = todayStr();
     const [{ data: moods }, { data: journals }] = await Promise.all([
       supabase.from("mood_entries")
         .select("id, stimmung, energie, stress, tags, created_at")
-        .eq("user_id", user.id).eq("date", t)
+        .eq("user_id", user.id).eq("date", today)
         .order("created_at", { ascending: false }),
       supabase.from("journal_entries")
         .select("id, title, content, created_at")
-        .eq("user_id", user.id).eq("date", t)
+        .eq("user_id", user.id).eq("date", today)
         .order("created_at", { ascending: false }),
     ]);
     setTodayMoods(((moods as unknown) as MoodRow[]) ?? []);
@@ -172,11 +175,11 @@ const HomePage = () => {
   const dominantTag = latestMood?.tags?.[0] ?? null;
 
   const arkieStatus = (() => {
-    if (!latestMood) return "Arkie wartet auf deinen ersten Eintrag 🌙";
+    if (!latestMood) return t("Arkie wartet auf deinen ersten Eintrag 🌙");
     const avg = (latestMood.stimmung + latestMood.energie + latestMood.stress) / 3;
-    if (avg > 65) return "Arkie freut sich mit dir 💜";
-    if (avg >= 35) return "Arkie ist neugierig auf deinen Tag ✨";
-    return "Arkie denkt an dich 🌙";
+    if (avg > 65) return t("Arkie freut sich mit dir 💜");
+    if (avg >= 35) return t("Arkie ist neugierig auf deinen Tag ✨");
+    return t("Arkie denkt an dich 🌙");
   })();
 
   const openChat = () => {
@@ -193,15 +196,15 @@ const HomePage = () => {
   ].sort((a, b) => b.row.created_at.localeCompare(a.row.created_at));
 
   const timeStr = (iso: string) =>
-    new Date(iso).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
+    new Date(iso).toLocaleTimeString(i18n.language === "en" ? "en-US" : "de-DE", { hour: "2-digit", minute: "2-digit" });
 
   return (
     <div className="pb-4 space-y-5 onboarding-slide">
       {/* HEADER */}
       <div className="px-4 pt-6 flex items-start justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">{capitalize(germanDate())}</p>
-          <h1 className="text-[28px] font-bold text-foreground mt-1">Hallo {name} 👋</h1>
+          <p className="text-sm text-muted-foreground">{capitalize(localDate(i18n.language))}</p>
+          <h1 className="text-[28px] font-bold text-foreground mt-1">{t("Hallo {{name}} 👋", { name })}</h1>
         </div>
         <div className="flex items-center gap-3 mt-2">
           {user?.email === "pitch@mindark.app" && (
@@ -221,13 +224,13 @@ const HomePage = () => {
             <button
               onClick={goMoments}
               className="opacity-50 active:opacity-100 transition-opacity duration-150"
-              aria-label="Momente"
+              aria-label={t("Momente")}
             >
               <ChevronRight size={20} className="text-white" />
             </button>
             {showMomentsHint && (
               <span className="absolute top-full left-1/2 -translate-x-1/2 mt-0.5 text-[9px] text-muted-foreground/40 whitespace-nowrap">
-                Momente
+                {t("Momente")}
               </span>
             )}
           </div>
@@ -235,7 +238,7 @@ const HomePage = () => {
             onClick={() => navigate("/settings")}
             className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
             style={{ background: "rgba(255,255,255,0.06)" }}
-            aria-label="Settings"
+            aria-label={t("Settings")}
           >
             <SettingsIcon className="w-5 h-5 text-foreground" />
           </button>
@@ -271,9 +274,9 @@ const HomePage = () => {
                 }}
               >
                 <div>
-                  <p className="font-bold text-white text-[17px]">Tagebuch</p>
+                  <p className="font-bold text-white text-[17px]">{t("Tagebuch")}</p>
                   <p className="italic text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>
-                    {journalDone ? "Weiterschreiben" : "Schreib drauf los…"}
+                    {journalDone ? t("Weiterschreiben") : t("Schreib drauf los…")}
                   </p>
                 </div>
                 <span className="self-end text-[13px]" style={{ color: "rgba(255,255,255,0.35)" }}>→</span>
@@ -291,15 +294,15 @@ const HomePage = () => {
                 }}
               >
                 <div>
-                  <p className="font-bold text-white text-[17px]">Mood</p>
+                  <p className="font-bold text-white text-[17px]">{t("Mood")}</p>
                   <p className="italic text-[12px] mt-1" style={{ color: "rgba(255,255,255,0.55)" }}>
                     {latestMood
-                      ? (dominantTag ? `${dominantTag} ✓` : "Mood erfasst ✓")
-                      : "Wie fühlst du dich?"}
+                      ? (dominantTag ? `${t(dominantTag)} ✓` : t("Mood erfasst ✓"))
+                      : t("Wie fühlst du dich?")}
                   </p>
                   {latestMood && (
                     <p className="text-[11px] mt-0.5" style={{ color: "rgba(255,255,255,0.4)" }}>
-                      Neu eintragen +
+                      {t("Neu eintragen +")}
                     </p>
                   )}
                 </div>
@@ -324,9 +327,9 @@ const HomePage = () => {
             >
               <Arkie size={48} className="shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-foreground text-[16px]">Arkie Session</p>
+                <p className="font-bold text-foreground text-[16px]">{t("Arkie Session")}</p>
                 <p className="italic text-[13px] mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>
-                  Gespräch starten →
+                  {t("Gespräch starten →")}
                 </p>
               </div>
               <MessageCircle className="w-5 h-5 shrink-0" style={{ color: "rgba(255,255,255,0.3)" }} />
@@ -334,21 +337,21 @@ const HomePage = () => {
 
             {/* TIMELINE */}
             <div>
-              <p className="font-bold text-foreground text-[16px] mb-3">Heute</p>
+              <p className="font-bold text-foreground text-[16px] mb-3">{t("Heute")}</p>
               {timeline.length === 0 ? (
                 <div className="text-center py-6 flex flex-col items-center gap-2">
                   <Arkie size="small" />
                   <p className="text-muted-foreground text-sm">
-                    Noch nichts heute — wie war dein Tag bisher?
+                    {t("Noch nichts heute — wie war dein Tag bisher?")}
                   </p>
                 </div>
               ) : (
                 <div className="space-y-2">
                   {timeline.map((it) => {
                     const isMood = it.kind === "mood";
-                    const title = isMood ? "Mood" : "Tagebuch";
+                    const title = isMood ? t("Mood") : t("Tagebuch");
                     const preview = isMood
-                      ? ((it.row as MoodRow).tags ?? []).slice(0, 3).join(", ") || "Mood-Eintrag"
+                      ? ((it.row as MoodRow).tags ?? []).map((tg) => t(tg)).slice(0, 3).join(", ") || t("Mood-Eintrag")
                       : (it.row as JournalRow).title;
                     return (
                       <div
@@ -371,7 +374,7 @@ const HomePage = () => {
                           onClick={() => { buzz(8); setExpanded(it); }}
                           className="w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
                           style={{ background: "rgba(139,92,246,0.25)" }}
-                          aria-label="Eintrag öffnen"
+                          aria-label={t("Eintrag öffnen")}
                         >
                           <ChevronRight className="w-4 h-4 text-foreground" />
                         </button>
@@ -393,10 +396,10 @@ const HomePage = () => {
         >
           <DrawerHeader className="flex items-center justify-between">
             <DrawerTitle className="text-foreground">
-              {expanded?.kind === "mood" ? "Mood-Eintrag" : "Tagebuch-Eintrag"}
+              {expanded?.kind === "mood" ? t("Mood-Eintrag") : t("Tagebuch-Eintrag")}
             </DrawerTitle>
             <DrawerClose asChild>
-              <button className="text-muted-foreground" aria-label="Schließen"><X className="w-5 h-5" /></button>
+              <button className="text-muted-foreground" aria-label={t("Schließen")}><X className="w-5 h-5" /></button>
             </DrawerClose>
           </DrawerHeader>
           <div className="px-4 pb-6 overflow-y-auto scrollbar-hide">
@@ -406,7 +409,7 @@ const HomePage = () => {
               return (
                 <>
                   <p className="text-center text-[12px] text-muted-foreground mb-4">
-                    {new Date(m.created_at).toLocaleString("de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                    {new Date(m.created_at).toLocaleString(i18n.language === "en" ? "en-US" : "de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
                   </p>
                   <div className="flex justify-around gap-3 mb-4">
                     {vals.map((val, i) => {
@@ -420,7 +423,7 @@ const HomePage = () => {
                               <span className="text-foreground font-bold text-[12px]">{pct}%</span>
                             </div>
                           </div>
-                          <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{CORE_LABELS[i]}</span>
+                          <span className="text-[10px] text-muted-foreground mt-2 text-center leading-tight">{t(CORE_LABEL_KEYS[i])}</span>
                         </div>
                       );
                     })}
@@ -445,12 +448,12 @@ const HomePage = () => {
                   <div className="flex items-center gap-2 mb-2">
                     <Arkie size="small" />
                     <p className="text-[12px] text-muted-foreground">
-                      {new Date(j.created_at).toLocaleString("de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                      {new Date(j.created_at).toLocaleString(i18n.language === "en" ? "en-US" : "de-DE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>
                   <h2 className="text-foreground font-bold text-[20px] mb-3">{j.title}</h2>
                   <p className="text-foreground text-[16px] leading-relaxed whitespace-pre-wrap">
-                    {j.content || "Kein Inhalt."}
+                    {j.content || t("Kein Inhalt.")}
                   </p>
                 </>
               );

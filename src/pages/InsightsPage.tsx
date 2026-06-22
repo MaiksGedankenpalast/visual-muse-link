@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -13,11 +14,14 @@ import {
 import { motion, type PanInfo } from "framer-motion";
 import { haptic } from "@/lib/haptics";
 
-const WEEKDAYS = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
-const WEEKDAYS_SHORT = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAYS_DE = ["SO", "MO", "DI", "MI", "DO", "FR", "SA"];
+const WEEKDAYS_EN = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+const WEEKDAYS_SHORT_DE = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
+const WEEKDAYS_SHORT_EN = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const MONTHS_DE = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+const MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-const CORE_LABELS = ["Stimmung", "Energie", "Entspannung"];
+const CORE_LABEL_KEYS = ["Stimmung", "Energie", "Entspannung"];
 
 const COLORS = {
   stimmung: "#9B6FD4",

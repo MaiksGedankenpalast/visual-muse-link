@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
@@ -35,10 +36,11 @@ const PROMPTS_DIFFICULT = [
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
 const JournalNewPage = () => {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profileName } = useAuth();
-  const name = profileName || "du";
+  const name = profileName || t("du");
 
   const prefillTitle = (location.state as any)?.prefillTitle ?? "";
 
@@ -94,7 +96,7 @@ const JournalNewPage = () => {
       mood_snapshot: moodAvg !== null ? Math.round(moodAvg) : null,
     });
     awardPoints(user.id, 50, "journal");
-    toast({ title: "Gespeichert 💜" });
+    toast({ title: t("Gespeichert 💜") });
     setSaving(false);
     navigate("/journal");
   };
@@ -109,9 +111,9 @@ const JournalNewPage = () => {
   };
 
   const handleSaveWithoutTitle = async () => {
-    const dateStr = new Date().toLocaleDateString("de-DE", { day: "numeric", month: "long" });
+    const dateStr = new Date().toLocaleDateString(i18n.language === "en" ? "en-US" : "de-DE", { day: "numeric", month: "long" });
     setShowNoTitleDialog(false);
-    await persistEntry(`Eintrag vom ${dateStr}`);
+    await persistEntry(t("Eintrag vom {{date}}", { date: dateStr }));
   };
 
   const focusTitle = () => {
@@ -131,12 +133,12 @@ const JournalNewPage = () => {
       <div className="flex items-center justify-between mb-5">
         <button onClick={() => {
           if (title.trim() || content.trim()) {
-            if (confirm("Ungespeicherte Änderungen verwerfen?")) navigate("/journal");
+            if (confirm(t("Ungespeicherte Änderungen verwerfen?"))) navigate("/journal");
           } else navigate("/journal");
         }}>
           <ArrowLeft className="w-6 h-6 text-foreground" />
         </button>
-        <h1 className="font-bold text-foreground text-lg">Neuer Eintrag</h1>
+        <h1 className="font-bold text-foreground text-lg">{t("Neuer Eintrag")}</h1>
         <span className="w-6" />
       </div>
 
@@ -150,7 +152,7 @@ const JournalNewPage = () => {
           <button onClick={() => setShowPrompt(false)} className="absolute top-3 right-3">
             <X className="w-4 h-4 text-foreground/50" />
           </button>
-          <p className="text-[11px] text-foreground/60 uppercase tracking-widest mb-1.5">Arkies Frage für heute</p>
+          <p className="text-[11px] text-foreground/60 uppercase tracking-widest mb-1.5">{t("Arkies Frage für heute")}</p>
           <p className="text-foreground text-[15px] italic text-center">{prompt}</p>
         </div>
       )}
@@ -170,7 +172,7 @@ const JournalNewPage = () => {
                 border: active && isArbeit ? "1px solid rgba(99,102,241,0.5)" : "1px solid transparent",
                 color: active ? "white" : "rgba(255,255,255,0.5)",
               }}>
-              {c}
+              {t(c)}
             </button>
           );
         })}
@@ -178,18 +180,18 @@ const JournalNewPage = () => {
 
       {/* TITLE */}
       <input ref={titleInputRef} value={title} onChange={(e) => setTitle(e.target.value)}
-        placeholder="Titel..."
+        placeholder={t("Titel...")}
         className="w-full text-[22px] font-bold text-foreground placeholder:text-muted-foreground bg-transparent outline-none mb-4" />
 
       {/* CONTENT */}
       <textarea value={content} onChange={(e) => setContent(e.target.value)}
-        placeholder={`Schreib einfach drauf los, ${name}...`}
+        placeholder={t("Schreib einfach drauf los, {{name}}...", { name })}
         className="w-full min-h-[300px] text-[16px] text-foreground placeholder:text-muted-foreground leading-relaxed resize-none outline-none rounded-[16px] p-4"
         style={{ background: "rgba(255,255,255,0.03)" }} />
 
       {/* MOOD SNAPSHOT */}
       <div className="mt-4 flex items-center gap-2">
-        <span className="text-[13px] text-muted-foreground">Mood heute:</span>
+        <span className="text-[13px] text-muted-foreground">{t("Mood heute:")}</span>
         {moodValues ? (
           <div className="flex gap-1">
             {moodValues.map((v, i) => (
@@ -201,7 +203,7 @@ const JournalNewPage = () => {
         ) : (
           <button onClick={() => navigate("/moodtracker")}
             className="text-[13px] underline" style={{ color: "var(--mindark-accent-start)" }}>
-            Jetzt eintragen
+            {t("Jetzt eintragen")}
           </button>
         )}
       </div>
@@ -223,7 +225,7 @@ const JournalNewPage = () => {
             pointerEvents: "auto",
           }}
         >
-          Speichern
+          {t("Speichern")}
         </button>
       </div>
 
@@ -236,10 +238,10 @@ const JournalNewPage = () => {
           <div className="flex flex-col items-center">
             <div className="w-10 h-10 mb-3"><Arkie size="small" /></div>
             <DialogTitle className="text-white text-[18px] font-bold text-center">
-              Ohne Titel speichern?
+              {t("Ohne Titel speichern?")}
             </DialogTitle>
             <DialogDescription className="text-muted-foreground text-[14px] text-center mt-2">
-              Kein Problem — Arkie speichert trotzdem alles. 💜
+              {t("Kein Problem — Arkie speichert trotzdem alles. 💜")}
             </DialogDescription>
             <div className="w-full mt-5 space-y-2">
               <button
@@ -247,13 +249,13 @@ const JournalNewPage = () => {
                 className="w-full h-[48px] rounded-full font-bold text-white gradient-primary"
                 style={{ boxShadow: "0 4px 20px rgba(139,92,246,0.3)" }}
               >
-                Ja, speichern
+                {t("Ja, speichern")}
               </button>
               <button
                 onClick={focusTitle}
                 className="w-full h-[48px] rounded-full font-medium text-white bg-transparent"
               >
-                Titel hinzufügen
+                {t("Titel hinzufügen")}
               </button>
             </div>
           </div>

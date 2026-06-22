@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { seedPitchData } from "@/lib/seedPitchData";
@@ -8,6 +9,7 @@ import StarBackground from "@/components/StarBackground";
 import OnboardingProgress from "@/components/OnboardingProgress";
 
 const OnboardingReady = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { user, profileName } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -36,19 +38,19 @@ const OnboardingReady = () => {
         </div>
 
         <h2 className="text-[26px] font-bold text-center mb-3">
-          Arkie ist bereit, <span style={{ color: "#C99EF0" }}>{profileName || "du"}</span>.
+          {t("Arkie ist bereit,")} <span style={{ color: "#C99EF0" }}>{profileName || t("du")}</span>.
         </h2>
 
         <p className="text-muted-foreground text-[15px] text-center mb-3">
-          Dein Raum wartet. Lass uns anfangen.
+          {t("Dein Raum wartet. Lass uns anfangen.")}
         </p>
 
         <p className="text-center mb-12" style={{ fontSize: 12, color: "rgba(255,255,255,0.4)" }}>
-          Du kannst jederzeit alles ändern.
+          {t("Du kannst jederzeit alles ändern.")}
         </p>
 
         <button onClick={handleStart} className="btn-pill w-full" disabled={loading}>
-          {loading ? "..." : "LOS GEHT'S 💜"}
+          {loading ? "..." : t("LOS GEHT'S 💜")}
         </button>
       </div>
     </div>
