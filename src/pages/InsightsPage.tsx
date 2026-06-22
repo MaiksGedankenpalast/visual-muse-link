@@ -340,16 +340,16 @@ const InsightsPage = () => {
       onDragEnd={handleSwipe}
       className="px-4 pt-6 pb-32 onboarding-slide min-h-screen"
     >
-      <h1 className="font-bold text-foreground text-[24px] mb-5">Deine Insights</h1>
+      <h1 className="font-bold text-foreground text-[24px] mb-5">{t("Deine Insights")}</h1>
 
       {/* MODE TOGGLE */}
       <div className="flex justify-center mb-6 overflow-x-auto scrollbar-hide">
         <div className="flex rounded-full p-1 gap-0.5 shrink-0" style={{ background: "rgba(255,255,255,0.08)" }}>
           {([
-            { k: "week", label: "Woche" },
-            { k: "month", label: "Monat" },
-            { k: "weekly_review", label: "7-Tage" },
-            { k: "four_weekly_review", label: "28-Tage" },
+            { k: "week", label: t("Woche") },
+            { k: "month", label: t("Monat") },
+            { k: "weekly_review", label: t("7-Tage") },
+            { k: "four_weekly_review", label: t("28-Tage") },
           ] as const).map(({ k, label }) => (
             <button key={k} onClick={() => setMode(k)}
               className="px-4 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap"
