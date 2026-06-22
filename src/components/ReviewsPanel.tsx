@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import { ChevronDown, ChevronUp, RefreshCw, ChevronRight, Hourglass } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -41,6 +42,8 @@ function trendArrow(trend: "improving" | "declining" | "stable" | undefined): st
 }
 
 const ReviewsPanel = ({ userId, type }: Props) => {
+  const { t, i18n } = useTranslation();
+  const isEN = i18n.language === "en";
   const [loading, setLoading] = useState(true);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [firstSeenAt, setFirstSeenAt] = useState<string | null>(null);
@@ -50,8 +53,8 @@ const ReviewsPanel = ({ userId, type }: Props) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [briefExpanded, setBriefExpanded] = useState(false);
 
-  const sizeLabel = type === "weekly" ? "Woche" : "4-Wochen-Zyklus";
-  const periodCountLabel = type === "weekly" ? "Woche" : "4 Wochen";
+  const sizeLabel = type === "weekly" ? t("Woche") : t("4-Wochen-Zyklus");
+  const periodCountLabel = type === "weekly" ? t("Woche") : t("4 Wochen");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,7 +68,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
       const periods = calculatePeriods(first, type, today);
       setMissing(findMissingPeriods(periods, list));
     } catch (e: any) {
-      setError(e?.message ?? "Konnte Reviews nicht laden.");
+      setError(e?.message ?? t("Konnte Reviews nicht laden."));
     } finally {
       setLoading(false);
     }
@@ -88,7 +91,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
       }
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Generierung fehlgeschlagen.");
+      setError(e?.message ?? t("Generierung fehlgeschlagen."));
     } finally {
       setGenerating(false);
     }
@@ -108,7 +111,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
       else await generateFourWeeklyReview(userId, period, firstSeenAt);
       await load();
     } catch (e: any) {
-      setError(e?.message ?? "Generierung fehlgeschlagen.");
+      setError(e?.message ?? t("Generierung fehlgeschlagen."));
     } finally {
       setGenerating(false);
     }
@@ -131,19 +134,19 @@ const ReviewsPanel = ({ userId, type }: Props) => {
   const briefDate = isReady ? today : (nextDue ?? today);
   const isWeekly = type === "weekly";
 
-  const briefLabel = isWeekly ? "ARKIES WOCHENBRIEF" : "ARKIES MONATSBRIEF";
+  const briefLabel = isWeekly ? t("ARKIES WOCHENBRIEF") : t("ARKIES MONATSBRIEF");
   const briefMidReady = isWeekly
-    ? "Arkies Wochenbrief wartet auf dich ✨"
-    : "Dein Monatsbrief ist angekommen 💜";
+    ? t("Arkies Wochenbrief wartet auf dich ✨")
+    : t("Dein Monatsbrief ist angekommen 💜");
   const briefSubReady = isWeekly
-    ? "Tippe um zu lesen"
-    : "28 Tage — Arkie hat alles gesehen";
+    ? t("Tippe um zu lesen")
+    : t("28 Tage — Arkie hat alles gesehen");
   const briefMidPending = isWeekly
-    ? "Arkie hat bald einen Brief für dich 💌"
-    : "Arkie schreibt deinen Monatsbrief 🔮";
+    ? t("Arkie hat bald einen Brief für dich 💌")
+    : t("Arkie schreibt deinen Monatsbrief 🔮");
   const briefSubPending = isWeekly
-    ? `Dein nächster Wochenrückblick ist bereit am ${formatLongDe(briefDate)}`
-    : `Bereit am ${formatLongDe(briefDate)}`;
+    ? t("Dein nächster Wochenrückblick ist bereit am {{date}}", { date: formatLongDe(briefDate) })
+    : t("Bereit am {{date}}", { date: formatLongDe(briefDate) });
 
   return (
     <div className="space-y-4">
@@ -182,7 +185,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
             {isReady ? briefMidReady : briefMidPending}
           </p>
           <p className="text-muted-foreground mt-0.5" style={{ fontSize: 13 }}>
-            {generating ? "Dein Brief wird geschrieben..." : (isReady ? briefSubReady : briefSubPending)}
+            {generating ? t("Dein Brief wird geschrieben...") : (isReady ? briefSubReady : briefSubPending)}
           </p>
         </div>
         <div className="shrink-0 text-muted-foreground">
@@ -205,21 +208,21 @@ const ReviewsPanel = ({ userId, type }: Props) => {
       {currentReview?.stats_snapshot && (briefExpanded || (!isReady && currentReview.status === "complete")) && (
         <div className="grid grid-cols-2 gap-2">
           <div className="glass-card p-3 text-center">
-            <p className="text-[11px] text-muted-foreground mb-1">Mood-Ø</p>
+            <p className="text-[11px] text-muted-foreground mb-1">{t("Mood-Ø")}</p>
             <p className="text-foreground font-bold text-lg">
               {currentReview.stats_snapshot.mood.avg_score ?? "—"} <span className="text-sm">{trendArrow(currentReview.stats_snapshot.mood.trend)}</span>
             </p>
           </div>
           <div className="glass-card p-3 text-center">
-            <p className="text-[11px] text-muted-foreground mb-1">Challenges</p>
+            <p className="text-[11px] text-muted-foreground mb-1">{t("Challenges")}</p>
             <p className="text-foreground font-bold text-lg">{currentReview.stats_snapshot.challenges.completion_rate}%</p>
           </div>
           <div className="glass-card p-3 text-center">
-            <p className="text-[11px] text-muted-foreground mb-1">Tagebuch</p>
+            <p className="text-[11px] text-muted-foreground mb-1">{t("Tagebuch")}</p>
             <p className="text-foreground font-bold text-lg">📝 {currentReview.stats_snapshot.diary.total}</p>
           </div>
           <div className="glass-card p-3 text-center">
-            <p className="text-[11px] text-muted-foreground mb-1">Chats</p>
+            <p className="text-[11px] text-muted-foreground mb-1">{t("Chats")}</p>
             <p className="text-foreground font-bold text-lg">💬 {currentReview.stats_snapshot.chat.sessions}</p>
           </div>
         </div>
@@ -228,7 +231,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
       {/* HISTORY */}
       {reviews.length > 1 && (
         <div>
-          <p className="font-bold text-foreground text-sm mb-2 mt-2">Frühere Rückblicke</p>
+          <p className="font-bold text-foreground text-sm mb-2 mt-2">{t("Frühere Rückblicke")}</p>
           <div className="space-y-2">
             {reviews.slice(1).map((r, idx) => {
               const periodNumber = reviews.length - (idx + 1); // descending; oldest has smallest number
@@ -244,7 +247,7 @@ const ReviewsPanel = ({ userId, type }: Props) => {
                         {periodCountLabel} {periodNumber}: {formatDe(r.period_start)} – {formatDe(r.period_end)}
                       </p>
                       <p className="text-muted-foreground text-xs mt-0.5">
-                        Mood-Ø {r.stats_snapshot?.mood.avg_score ?? "—"} · {r.stats_snapshot?.challenges.completion_rate ?? 0}% Challenges
+                        {t("Mood-Ø")} {r.stats_snapshot?.mood.avg_score ?? "—"} · {r.stats_snapshot?.challenges.completion_rate ?? 0}% {t("Challenges")}
                       </p>
                     </div>
                     {open ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -276,6 +279,7 @@ const ReviewContent = ({
   compact?: boolean;
 }) => {
   if (review.status === "generating") {
+    const tg = (k: string) => k;
     return (
       <div className="space-y-2">
         <Skeleton className="h-4 w-2/3" />
