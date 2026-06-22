@@ -446,7 +446,7 @@ const InsightsPage = () => {
           {/* COMBINED CHART */}
           {totalDimPoints >= 5 && (
             <div className="glass-card p-4 mb-3">
-              <p className="font-bold text-foreground text-[14px] mb-3">Alle auf einen Blick</p>
+              <p className="font-bold text-foreground text-[14px] mb-3">{t("Alle auf einen Blick")}</p>
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={combinedData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
@@ -470,9 +470,9 @@ const InsightsPage = () => {
               </div>
               <div className="flex justify-center gap-4 mt-3">
                 {[
-                  { c: COLORS.stimmung, l: "Stimmung" },
-                  { c: COLORS.energie, l: "Energie" },
-                  { c: COLORS.stress, l: "Stress" },
+                  { c: COLORS.stimmung, l: t("Stimmung") },
+                  { c: COLORS.energie, l: t("Energie") },
+                  { c: COLORS.stress, l: t("Stress") },
                 ].map(({ c, l }) => (
                   <div key={l} className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full" style={{ background: c }} />
@@ -486,7 +486,7 @@ const InsightsPage = () => {
           {/* HOUR PATTERN */}
           {hourData && (
             <div className="glass-card p-4 mb-4">
-              <p className="font-bold text-foreground text-[14px] mb-3">Wann schreibst du?</p>
+              <p className="font-bold text-foreground text-[14px] mb-3">{t("Wann schreibst du?")}</p>
               <div className="h-[140px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={hourData} margin={{ top: 8, right: 4, left: 4, bottom: 0 }}>
@@ -509,8 +509,8 @@ const InsightsPage = () => {
                         borderRadius: 8,
                         color: "white",
                       }}
-                      formatter={(v: number | string) => [`${v} Einträge`, ""]}
-                      labelFormatter={(h) => `${h}:00 Uhr`}
+                      formatter={(v: number | string) => [`${v} ${t("Einträge")}`, ""]}
+                      labelFormatter={(h) => isEN ? `${h}:00` : `${h}:00 Uhr`}
                     />
                     <Bar dataKey="count" fill="url(#barGrad)" radius={[4, 4, 0, 0]} isAnimationActive={true} animationDuration={800} />
                   </BarChart>
@@ -523,18 +523,18 @@ const InsightsPage = () => {
           <ResilienceCard moods={moods} />
 
           <div className="mb-4">
-            <p className="font-bold text-foreground text-sm mb-3">Arkie hat etwas bemerkt 🔮</p>
+            <p className="font-bold text-foreground text-sm mb-3">{t("Arkie hat etwas bemerkt 🔮")}</p>
             {moods.length < 7 ? (
               <div className="glass-card p-5 text-center">
                 <div className="arkie-float inline-block mb-3"><Arkie size="small" /></div>
                 <p className="text-muted-foreground text-sm">
-                  Arkie sammelt noch Daten für dich. Komm in ein paar Tagen wieder! 🔮
+                  {t("Arkie sammelt noch Daten für dich. Komm in ein paar Tagen wieder! 🔮")}
                 </p>
                 <div className="w-full h-[6px] rounded-full mt-3" style={{ background: "rgba(255,255,255,0.1)" }}>
                   <div className="h-full rounded-full gradient-primary transition-all"
                     style={{ width: `${Math.min(100, (moods.length / 7) * 100)}%` }} />
                 </div>
-                <p className="text-muted-foreground text-xs mt-1">{moods.length}/7 Einträge erfasst</p>
+                <p className="text-muted-foreground text-xs mt-1">{t("{{n}}/7 Einträge erfasst", { n: moods.length })}</p>
               </div>
             ) : arkieInsights.length > 0 ? (
               <div className="space-y-2">
@@ -548,7 +548,7 @@ const InsightsPage = () => {
               </div>
             ) : (
               <div className="glass-card p-4 text-center">
-                <p className="text-muted-foreground text-sm">Noch keine Muster erkannt. Mach weiter so! ✨</p>
+                <p className="text-muted-foreground text-sm">{t("Noch keine Muster erkannt. Mach weiter so! ✨")}</p>
               </div>
             )}
           </div>
