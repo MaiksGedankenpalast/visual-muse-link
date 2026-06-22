@@ -278,7 +278,9 @@ const ArkieChat = ({ open, onOpenChange, userName }: ArkieChatProps) => {
           if (safety?.rule === "REGEL_2_DIAGNOSE") parts.push(diagnoseHint());
           return parts.length ? { role: "system", content: parts.join("\n\n") } : null;
         })(),
-        richSystem || null
+        richSystem || null,
+        activeSession.id,
+        (i18n.language as "de" | "en") || "de"
       );
 
       // Persist assistant reply
