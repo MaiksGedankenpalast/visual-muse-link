@@ -385,4 +385,15 @@
   "Schreibe eine Nachricht...": "Write a message..."
   ,
   "Eintrag nicht gefunden.": "Entry not found."
+  ,
+  "Stress": "Stress",
+  "Alle auf einen Blick": "All at a glance",
+  "Wann schreibst du?": "When do you write?",
+  "Einträge": "Entries",
+  "Arkie hat etwas bemerkt 🔮": "Arkie noticed something 🔮",
+  "Arkie sammelt noch Daten für dich. Komm in ein paar Tagen wieder! 🔮": "Arkie is still gathering data for you. Come back in a few days! 🔮",
+  "{{n}}/7 Einträge erfasst": "{{n}}/7 entries recorded",
+  "Noch keine Muster erkannt. Mach weiter so! ✨": "No patterns detected yet. Keep going! ✨",
+  "Mood Heatmap": "Mood Heatmap",
+  "Streak": "Streak"
 }
