@@ -19,9 +19,19 @@ const SundayIndex = () => {
               {row.weekly.map((v, i) => {
                 const intensity = Math.min(Math.abs(v) / 12, 1);
                 const bg = v < 0
-                  ? `rgba(248, 113, 113, ${0.2 + intensity * 0.7})`
-                  : `rgba(134, 239, 172, ${0.2 + intensity * 0.7})`;
-                return <div key={i} className="h-6 rounded" style={{ background: bg }} title={`Week -${8 - i}: ${v}`} />;
+                  ? `rgba(248, 113, 113, ${0.25 + intensity * 0.65})`
+                  : `rgba(134, 239, 172, ${0.25 + intensity * 0.55})`;
+                const fg = v < 0 ? "text-white" : "text-emerald-950";
+                return (
+                  <div
+                    key={i}
+                    className={`h-7 rounded flex items-center justify-center text-[10px] font-semibold tabular-nums ${fg}`}
+                    style={{ background: bg }}
+                    title={`Week -${8 - i}: ${v > 0 ? "+" : ""}${v}`}
+                  >
+                    {v > 0 ? `+${v}` : v}
+                  </div>
+                );
               })}
             </div>
             <span className={`text-xs text-right ${row.avg < 0 ? "text-rose-300" : "text-emerald-300"}`}>

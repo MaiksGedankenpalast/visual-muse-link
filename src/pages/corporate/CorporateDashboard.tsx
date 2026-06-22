@@ -86,24 +86,39 @@ const CorporateDashboard = () => {
             <SundayIndex />
             <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
               <h3 className="text-foreground font-semibold mb-1">Workload Pressure</h3>
-              <p className="text-xs text-muted-foreground mb-4">% perceived workload, weekly per department</p>
+              <p className="text-xs text-muted-foreground mb-4">
+                % perceived workload per department. Lower is healthier — high pressure is the risk signal, not low pressure.
+              </p>
               <div className="space-y-2.5">
                 {workload.map((w) => {
                   const last = w.weekly[w.weekly.length - 1];
-                  const tone = last > 75 ? "bg-rose-400" : last > 60 ? "bg-amber-400" : "bg-emerald-400";
+                  const status =
+                    last > 75
+                      ? { tone: "bg-rose-400", label: "Overloaded", color: "text-rose-300" }
+                      : last > 60
+                      ? { tone: "bg-amber-400", label: "Elevated", color: "text-amber-300" }
+                      : last > 40
+                      ? { tone: "bg-emerald-400", label: "Healthy range", color: "text-emerald-300" }
+                      : { tone: "bg-emerald-400/80", label: "Comfortable · sustainable pace", color: "text-emerald-300" };
                   return (
                     <div key={w.dept}>
-                      <div className="flex justify-between text-xs mb-1">
+                      <div className="flex justify-between text-xs mb-1 items-baseline">
                         <span className="text-foreground/85">{w.name}</span>
-                        <span className="text-muted-foreground">{last}%</span>
+                        <span className="flex items-baseline gap-2">
+                          <span className={`text-[10px] ${status.color}`}>{status.label}</span>
+                          <span className="text-muted-foreground tabular-nums">{last}%</span>
+                        </span>
                       </div>
                       <div className="h-2 rounded-full bg-white/5 overflow-hidden">
-                        <div className={`h-full rounded-full ${tone}`} style={{ width: `${last}%` }} />
+                        <div className={`h-full rounded-full ${status.tone}`} style={{ width: `${last}%` }} />
                       </div>
                     </div>
                   );
                 })}
               </div>
+              <p className="mt-4 text-[10px] text-muted-foreground leading-relaxed">
+                Goal isn't 100% — it's a sustainable 45–60% range. Low values mean teams have recovery headroom, which protects long-term performance.
+              </p>
             </div>
           </div>
         </section>
@@ -119,19 +134,45 @@ const CorporateDashboard = () => {
         <section>
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <h3 className="text-foreground font-semibold mb-1">Emotional Bandwidth</h3>
-            <p className="text-xs text-muted-foreground mb-4">Mood volatility per department (weekly). Both extremes can signal trouble.</p>
+            <p className="text-xs text-muted-foreground mb-4">
+              Mood volatility per department (σ, weekly). Low = stable. High = swings — both apathy and chaos look similar from outside, so this is an early signal, not a verdict.
+            </p>
             <div className="space-y-1.5">
-              {bandwidth.map((row) => (
-                <div key={row.dept} className="grid grid-cols-[140px_1fr] items-center gap-3">
-                  <span className="text-xs text-muted-foreground truncate">{row.name}</span>
-                  <div className="grid grid-cols-12 gap-1">
-                    {row.weekly.map((v, i) => {
-                      const intensity = Math.min(v / 18, 1);
-                      return <div key={i} className="h-5 rounded" style={{ background: `rgba(180, 127, 232, ${0.15 + intensity * 0.7})` }} title={`Week ${i + 1}: σ≈${v}`} />;
-                    })}
+              {bandwidth.map((row) => {
+                const avg = Math.round(row.weekly.reduce((a, b) => a + b, 0) / row.weekly.length);
+                return (
+                  <div key={row.dept} className="grid grid-cols-[130px_1fr_44px] items-center gap-3">
+                    <span className="text-xs text-muted-foreground truncate">{row.name}</span>
+                    <div className="grid grid-cols-12 gap-1">
+                      {row.weekly.map((v, i) => {
+                        let bg: string;
+                        let fg: string;
+                        if (v >= 12) { bg = "rgba(244, 114, 182, 0.85)"; fg = "text-white"; }
+                        else if (v >= 8) { bg = "rgba(168, 85, 247, 0.7)"; fg = "text-white"; }
+                        else if (v >= 5) { bg = "rgba(99, 102, 241, 0.55)"; fg = "text-indigo-50"; }
+                        else { bg = "rgba(56, 189, 248, 0.4)"; fg = "text-sky-50"; }
+                        return (
+                          <div
+                            key={i}
+                            className={`h-7 rounded flex items-center justify-center text-[10px] font-semibold tabular-nums ${fg}`}
+                            style={{ background: bg }}
+                            title={`Week ${i + 1}: σ≈${v}`}
+                          >
+                            {v}
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <span className="text-xs tabular-nums text-foreground/80 text-right">⌀{avg}</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-[10px]">
+              <span className="px-2 py-0.5 rounded text-sky-50" style={{ background: "rgba(56, 189, 248, 0.4)" }}>&lt;5 Stable</span>
+              <span className="px-2 py-0.5 rounded text-indigo-50" style={{ background: "rgba(99, 102, 241, 0.55)" }}>5–7 Normal</span>
+              <span className="px-2 py-0.5 rounded text-white" style={{ background: "rgba(168, 85, 247, 0.7)" }}>8–11 Elevated swings</span>
+              <span className="px-2 py-0.5 rounded text-white" style={{ background: "rgba(244, 114, 182, 0.85)" }}>12+ Volatile</span>
             </div>
           </div>
         </section>
