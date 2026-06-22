@@ -114,7 +114,14 @@ const Splash = () => {
                 className="w-full h-[48px] rounded-full font-bold text-foreground gradient-primary"
                 style={{ boxShadow: "0 4px 20px rgba(139,92,246,0.3)" }}
               >
-                🇬🇧 English
+                🇬🇧 English · Test Account
+              </button>
+              <button
+                onClick={() => { setLangPicker(false); navigate("/corporate/login"); }}
+                className="w-full h-[48px] rounded-full font-bold text-foreground"
+                style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                🏢 English · Test Dashboard
               </button>
               <button
                 onClick={() => setLangPicker(false)}

@@ -1,1 +1,4 @@
 project_id = "ueevhvlhysplycwdqovu"
+
+[functions.arkie-leadership]
+verify_jwt = false

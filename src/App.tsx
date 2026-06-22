@@ -30,6 +30,8 @@ import MicroWinsPage from "@/pages/MicroWinsPage";
 import SettingsPage from "@/pages/SettingsPage";
 import SanctuaryPage from "@/pages/SanctuaryPage";
 import NotFound from "@/pages/NotFound";
+import CorporateLogin from "@/pages/corporate/CorporateLogin";
+import CorporateDashboard from "@/pages/corporate/CorporateDashboard";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,10 @@ const App = () => (
           <Route path="/splash" element={<Splash />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          {/* Corporate dashboard (pitch demo, no auth) */}
+          <Route path="/corporate/login" element={<CorporateLogin />} />
+          <Route path="/corporate" element={<CorporateDashboard />} />
 
           {/* Onboarding (requires auth but not onboarding complete) */}
           <Route path="/onboarding/name" element={<OnboardingName />} />
