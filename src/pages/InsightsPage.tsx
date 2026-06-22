@@ -378,15 +378,15 @@ const InsightsPage = () => {
               <div>
                 {streak > 0 ? (
                   <>
-                    <p className="text-foreground font-bold text-[18px]">🔥 {streak} Tage in Folge</p>
-                    <p className="text-foreground/60 text-[12px] mt-0.5">Rekord: {maxStreak} Tage</p>
+                    <p className="text-foreground font-bold text-[18px]">{t("🔥 {{streak}} Tage in Folge", { streak })}</p>
+                    <p className="text-foreground/60 text-[12px] mt-0.5">{t("Rekord: {{max}} Tage", { max: maxStreak })}</p>
                   </>
                 ) : (
-                  <p className="text-foreground text-[14px]">Starte heute deinen ersten Streak 💜</p>
+                  <p className="text-foreground text-[14px]">{t("Starte heute deinen ersten Streak 💜")}</p>
                 )}
               </div>
               <div className="flex items-center gap-1 text-foreground/70 text-[12px]">
-                Mehr Details <ArrowRight className="w-3.5 h-3.5" />
+                {t("Mehr Details")} <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
           </button>
@@ -394,33 +394,33 @@ const InsightsPage = () => {
           {/* BEST / WORST DAY */}
           <div className="grid grid-cols-2 gap-2 mb-4">
             <div className="glass-card p-3 text-center">
-              <p className="text-[13px] text-muted-foreground mb-1">🌟 Bester Tag</p>
+              <p className="text-[13px] text-muted-foreground mb-1">{t("🌟 Bester Tag")}</p>
               {bestDay ? (
                 <>
                   <p className="text-foreground font-bold text-sm">
-                    {new Date(bestDay.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}
+                    {new Date(bestDay.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "numeric" })}
                   </p>
                   <p className="text-sm font-bold" style={{ color: "#4ade80" }}>{Math.round(score(bestDay))}%</p>
                 </>
-              ) : <p className="text-muted-foreground text-xs">Noch zu wenig Daten</p>}
+              ) : <p className="text-muted-foreground text-xs">{t("Noch zu wenig Daten")}</p>}
             </div>
             <div className="glass-card p-3 text-center">
-              <p className="text-[13px] text-muted-foreground mb-1">🌙 Schwieriger Tag</p>
+              <p className="text-[13px] text-muted-foreground mb-1">{t("🌙 Schwieriger Tag")}</p>
               {worstDay ? (
                 <>
                   <p className="text-foreground font-bold text-sm">
-                    {new Date(worstDay.date).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "numeric" })}
+                    {new Date(worstDay.date).toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "numeric" })}
                   </p>
                   <p className="text-sm font-bold" style={{ color: "#ef4444" }}>{Math.round(score(worstDay))}%</p>
                 </>
-              ) : <p className="text-muted-foreground text-xs">Noch zu wenig Daten</p>}
+              ) : <p className="text-muted-foreground text-xs">{t("Noch zu wenig Daten")}</p>}
             </div>
           </div>
 
           {/* WEEK CAPSULES */}
           {weekCapsules && (
             <div className="glass-card p-4 mb-4">
-              <p className="font-bold text-foreground text-sm mb-3">Deine Woche im Überblick</p>
+              <p className="font-bold text-foreground text-sm mb-3">{t("Deine Woche im Überblick")}</p>
               <div className="flex justify-around gap-3">
                 {weekCapsules.map((pct, i) => (
                   <div key={i} className="flex flex-col items-center flex-1">
