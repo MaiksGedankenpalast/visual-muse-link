@@ -60,7 +60,7 @@ export async function seedDevDataEN(userId: string) {
         user_id: userId,
         date: dateStr,
         created_at: created.toISOString(),
-        eingabe_typ: slot === 0 ? "schnell" : "detailliert",
+        eingabe_typ: slot === 0 ? "schnell" : "tief",
         stimmung,
         energie,
         stress,
@@ -76,7 +76,8 @@ export async function seedDevDataEN(userId: string) {
       });
     }
   }
-  await supabase.from("mood_entries").insert(moodRows);
+  const { error: moodErr } = await supabase.from("mood_entries").insert(moodRows);
+  if (moodErr) console.error("[seedDevDataEN] mood insert failed:", moodErr);
 
   // ---------- JOURNAL ENTRIES (English, ~12 over 16 days) ----------
   const journals = [
@@ -108,7 +109,8 @@ export async function seedDevDataEN(userId: string) {
       mood_snapshot: j.mood,
     };
   });
-  await supabase.from("journal_entries").insert(journalRows);
+  const { error: journalErr } = await supabase.from("journal_entries").insert(journalRows);
+  if (journalErr) console.error("[seedDevDataEN] journal insert failed:", journalErr);
 
   // ---------- ARKIE WEEKLY LETTER ----------
   const periodEnd = new Date(today);
@@ -134,13 +136,13 @@ I'm proud of you. Keep going gently.
 
 — Arkie`;
 
-  await supabase.from("reviews").insert({
+  const { error: reviewErr } = await supabase.from("reviews").insert({
     user_id: userId,
     type: "weekly",
     period_start: periodStart.toISOString().slice(0, 10),
     period_end: periodEnd.toISOString().slice(0, 10),
     llm_narrative: narrative,
-    status: "ready",
+    status: "complete",
     generated_at: new Date().toISOString(),
     stats_snapshot: {
       avg_stimmung: 62,
@@ -150,4 +152,5 @@ I'm proud of you. Keep going gently.
       journal_count: 6,
     },
   });
+  if (reviewErr) console.error("[seedDevDataEN] review insert failed:", reviewErr);
 }
