@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Arkie from "@/components/Arkie";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Grid3x3 } from "lucide-react";
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -76,6 +76,27 @@ const ExperimentPage = () => {
             {winsWeekCount === 1
               ? t("{{count}} Sieg diese Woche", { count: winsWeekCount })
               : t("{{count}} Siege diese Woche", { count: winsWeekCount })}
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
+      </button>
+
+      {/* Sudoku */}
+      <button
+        onClick={() => navigate("/experiment/sudoku")}
+        className="w-full text-left p-[14px] rounded-[16px] flex items-center justify-between active:scale-[0.98] active:brightness-90 transition-all duration-150 mb-3"
+        style={{
+          background: "rgba(255,255,255,0.06)",
+          border: "1px solid rgba(255,255,255,0.1)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <Grid3x3 className="w-5 h-5 text-foreground/80" />
+          <div>
+            <div className="text-foreground font-bold text-[15px]">{t("Sudoku")}</div>
+            <div className="text-muted-foreground text-[12px] mt-0.5">
+              {t("Kopf frei rätseln · 3 Schwierigkeiten")}
+            </div>
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-white/40 shrink-0" />
