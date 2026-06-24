@@ -35,6 +35,24 @@ const SudokuGamePage = () => {
   const [loading, setLoading] = useState(true);
   const [won, setWon] = useState(false);
   const hydrated = useRef(false);
+  const boardRef = useRef<HTMLDivElement>(null);
+  const padRef = useRef<HTMLDivElement>(null);
+
+  // Deselect when clicking outside the board and number pad
+  useEffect(() => {
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const t = e.target as Node;
+      if (boardRef.current?.contains(t)) return;
+      if (padRef.current?.contains(t)) return;
+      setSelected(null);
+    };
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
+    return () => {
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
+    };
+  }, []);
 
   // Load saved game OR generate new one on mount / difficulty change
   useEffect(() => {
@@ -187,6 +205,7 @@ const SudokuGamePage = () => {
 
       {/* Board */}
       <div
+        ref={boardRef}
         className="relative mx-auto aspect-square w-full max-w-[400px] rounded-[12px] overflow-hidden select-none"
         style={{
           background: "rgba(255,255,255,0.04)",
@@ -285,7 +304,7 @@ const SudokuGamePage = () => {
       </div>
 
       {/* Number pad */}
-      <div className="mt-3 mx-auto max-w-[400px] grid grid-cols-9 gap-1.5">
+      <div ref={padRef} className="mt-3 mx-auto max-w-[400px] grid grid-cols-9 gap-1.5">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
           const done = counts[n] >= 9;
           return (
