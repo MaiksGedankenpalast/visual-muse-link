@@ -28,6 +28,7 @@ import ExperimentPage from "@/pages/ExperimentPage";
 import VibePage from "@/pages/VibePage";
 import MicroWinsPage from "@/pages/MicroWinsPage";
 import SudokuPage from "@/pages/SudokuPage";
+import SudokuGamePage from "@/pages/SudokuGamePage";
 import SettingsPage from "@/pages/SettingsPage";
 import SanctuaryPage from "@/pages/SanctuaryPage";
 import NotFound from "@/pages/NotFound";
@@ -77,6 +78,7 @@ const App = () => (
               <Route path="/experiment/vibe" element={<VibePage />} />
               <Route path="/experiment/microwins" element={<MicroWinsPage />} />
               <Route path="/experiment/sudoku" element={<SudokuPage />} />
+              <Route path="/experiment/sudoku/:difficulty" element={<SudokuGamePage />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Route>
           </Route>
