@@ -304,7 +304,7 @@ const SudokuGamePage = () => {
       </div>
 
       {/* Number pad */}
-      <div className="mt-3 mx-auto max-w-[400px] grid grid-cols-9 gap-1.5">
+      <div ref={padRef} className="mt-3 mx-auto max-w-[400px] grid grid-cols-9 gap-1.5">
         {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => {
           const done = counts[n] >= 9;
           return (
